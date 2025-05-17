@@ -62,7 +62,8 @@ export default function DashboardSidebar() {
   // Participant navigation items
   const participantNavItems: NavItem[] = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "My Hackathons", href: "/dashboard/hackathons", icon: Sparkles },
+    { name: "Marketplace", href: "/dashboard/marketplace", icon: Sparkles },
+    { name: "My Hackathons", href: "/dashboard/hackathons", icon: Trophy },
     { name: "Teams", href: "/dashboard/teams", icon: Users },
     { name: "Schedule", href: "/dashboard/schedule", icon: Calendar },
     { name: "Messages", href: "/dashboard/messages", icon: MessageSquare, badge: "3" },

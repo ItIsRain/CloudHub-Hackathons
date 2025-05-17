@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Bell, Plus, ChevronDown, Settings, LogOut, User, Link as LinkIcon } from "lucide-react"
+import { Bell, Plus, ChevronDown, Settings, LogOut, User, Link as LinkIcon, SidebarOpen } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -35,14 +35,17 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs"
+import { useScrollHandler } from "@/hooks/use-scroll-handler"
+import { cn } from "@/lib/utils"
 
 export default function DashboardHeader() {
   const [notifications] = useState(3)
-  const { userRole, setUserRole, isOrganizer } = useUserRole()
+  const { userRole, setUserRole, isOrganizer, isParticipant } = useUserRole()
   const pathname = usePathname()
   const [joinDialogOpen, setJoinDialogOpen] = useState(false)
   const [inviteCode, setInviteCode] = useState("")
   const [inviteLink, setInviteLink] = useState("")
+  const { isSticky, scrollY } = useScrollHandler()
 
   // Get page title based on pathname
   const getPageTitle = () => {
@@ -65,40 +68,25 @@ export default function DashboardHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-slate-100 bg-white/70 backdrop-blur-md px-4 sm:px-6 shadow-sm">
-      <div className="md:hidden">
-        <SidebarTrigger />
-      </div>
-
-      <div className="hidden md:flex md:flex-1 md:items-center md:gap-4 md:overflow-hidden">
-        <div className="flex flex-1 items-center gap-2">
-          <h1 className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700">{getPageTitle()}</h1>
+    <header
+      className={cn(
+        "sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-white/70 px-4 backdrop-blur-md transition-all duration-200 dark:border-slate-700 dark:bg-slate-900/80",
+        isSticky && scrollY > 0 && "border-b shadow-sm"
+      )}
+    >
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="icon" className="md:hidden">
+          <SidebarOpen className="h-5 w-5" />
+        </Button>
+        <div className="relative hidden md:flex">
+          <span className="font-medium text-slate-700">
+            {isOrganizer ? "Organizer Dashboard" : "Participant Dashboard"}
+          </span>
         </div>
       </div>
 
       <div className="flex flex-1 items-center justify-end md:gap-4">
         <div className="flex items-center gap-3">
-          <div className="hidden md:flex items-center gap-3 bg-white/80 backdrop-blur-sm border border-slate-100 p-1 px-3 rounded-full shadow-sm">
-            <Label
-              htmlFor="role-toggle"
-              className={`text-xs ${!isOrganizer ? "font-medium text-[#2684ff]" : "text-slate-600"}`}
-            >
-              Participant
-            </Label>
-            <Switch
-              id="role-toggle"
-              checked={isOrganizer}
-              onCheckedChange={(checked) => setUserRole(checked ? "organizer" : "participant")}
-              className="data-[state=checked]:bg-[#2684ff]"
-            />
-            <Label
-              htmlFor="role-toggle"
-              className={`text-xs ${isOrganizer ? "font-medium text-[#2684ff]" : "text-slate-600"}`}
-            >
-              Organizer
-            </Label>
-          </div>
-
           {isOrganizer ? (
             <Button
               variant="outline"
@@ -263,17 +251,6 @@ export default function DashboardHeader() {
                 Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="md:hidden hover:bg-slate-50 hover:text-slate-900 cursor-pointer">
-                <div className="flex items-center w-full justify-between">
-                  <span>Switch to {isOrganizer ? "Participant" : "Organizer"}</span>
-                  <Switch
-                    checked={isOrganizer}
-                    onCheckedChange={(checked) => setUserRole(checked ? "organizer" : "participant")}
-                    className="data-[state=checked]:bg-[#2684ff]"
-                  />
-                </div>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="md:hidden" />
               <DropdownMenuItem className="hover:bg-red-50 hover:text-red-600 cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />
                 Log out
