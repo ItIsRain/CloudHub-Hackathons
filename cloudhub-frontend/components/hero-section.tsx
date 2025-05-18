@@ -114,16 +114,9 @@ export default function HeroSection() {
         <div className="grid gap-12 lg:grid-cols-2 lg:gap-8 items-center">
           <div className="max-w-xl">
             <div className="inline-flex items-center rounded-full bg-white/10 backdrop-blur-sm px-3 py-1 text-sm font-medium text-white mb-6 border border-white/10 shadow-xl shadow-violet-950/20">
-              <Image 
-                src="/CloudHub.svg" 
-                alt="CloudHub Logo" 
-                width={20} 
-                height={20} 
-                className="mr-2"
-              />
               <span className="relative overflow-hidden">
                 <span className="animate-marquee whitespace-nowrap">
-                  The Future of Hackathons • The Future of Hackathons •
+                  The Future of Hackathons
                 </span>
               </span>
             </div>
