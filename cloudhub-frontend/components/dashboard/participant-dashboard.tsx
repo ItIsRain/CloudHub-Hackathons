@@ -83,48 +83,70 @@ export default function ParticipantDashboard() {
     <div className="space-y-8 pb-10">
       {/* Welcome Section */}
       <section className="relative overflow-hidden rounded-2xl shadow-lg">
+        {/* Gradient background with animated elements */}
         <div className="absolute inset-0 bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600"></div>
-        <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-20"></div>
-        <div className="absolute top-0 right-0 w-1/3 h-4/5 bg-gradient-to-b from-white/10 to-transparent rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/4"></div>
+        <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-black/5 to-black/20"></div>
         
-        <div className="relative p-6 sm:p-8">
-          <div className="grid gap-6 md:grid-cols-2 items-center">
-            <div>
-              <div className="inline-flex items-center rounded-full bg-white/10 backdrop-blur-sm px-3 py-1 text-sm font-medium text-white mb-4 border border-white/20">
-                <Sparkles className="h-3.5 w-3.5 mr-2 text-amber-300" />
-                <span>Dashboard Overview</span>
+        {/* Animated background elements */}
+        <div className="absolute top-0 right-0 w-1/3 h-4/5 bg-gradient-to-b from-white/10 to-transparent rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/4"></div>
+        <div className="absolute bottom-0 left-0 w-2/3 h-1/2 bg-gradient-to-t from-blue-400/10 to-transparent rounded-full blur-3xl"></div>
+        <div className="absolute top-1/3 right-1/4 w-24 h-24 bg-white/5 rounded-full blur-xl"></div>
+        
+        {/* Decorative elements */}
+        <div className="absolute top-1/4 left-[10%] w-12 h-12 rounded-full bg-blue-500/10 backdrop-blur-md border border-white/10"></div>
+        <div className="absolute bottom-1/4 right-[15%] w-20 h-20 rounded-full bg-violet-500/10 backdrop-blur-md border border-white/10"></div>
+        <div className="absolute top-1/2 left-[30%] w-16 h-16 rounded-full bg-indigo-500/10 backdrop-blur-md border border-white/10"></div>
+        
+        <div className="relative p-8 sm:p-10 md:p-12">
+          <div className="grid gap-8 md:grid-cols-2 items-center">
+            <div className="max-w-xl">
+              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-xl px-4 py-1.5 rounded-full mb-5 text-white text-sm border border-white/20 shadow-xl">
+                <LayoutDashboard className="h-4 w-4 text-blue-200" />
+                <span className="font-medium tracking-wide">Dashboard Overview</span>
               </div>
-              <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Welcome back, John!</h1>
-              <p className="text-white/80 mb-6">You have 2 active hackathons and 1 upcoming submission deadline.</p>
-              <div className="flex flex-wrap gap-3">
-                <Button className="bg-white text-indigo-700 hover:bg-white/90 shadow-md">
-                  Browse Hackathons
+              
+              <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight">
+                Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-violet-200">John!</span>
+              </h1>
+              
+              <p className="text-white/90 text-lg mb-8 max-w-lg font-light">
+                You have 2 active hackathons and 1 upcoming submission deadline.
+              </p>
+              
+              <div className="flex flex-wrap gap-4">
+                <Button className="bg-white text-indigo-700 hover:bg-white/90 shadow-lg transition-all group px-5 py-2 h-auto text-sm font-medium rounded-xl border border-white/50">
+                  <Trophy className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+                  <span>Browse Hackathons</span>
                 </Button>
-                <Button variant="outline" className="text-white border-white/20 bg-indigo-800/30 hover:bg-white hover:text-indigo-700 backdrop-blur-sm transition-colors">
-                  View My Teams
+                <Button variant="outline" className="text-white border-white/20 bg-white/10 hover:bg-white hover:text-indigo-700 backdrop-blur-xl transition-all group px-5 py-2 h-auto text-sm font-medium rounded-xl">
+                  <Users className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+                  <span>View My Teams</span>
                 </Button>
               </div>
             </div>
+            
             <div className="hidden md:flex justify-end">
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 p-4 w-full max-w-xs shadow-lg">
-                <h3 className="font-medium mb-3 flex items-center text-white">
-                  <Clock className="h-4 w-4 mr-2" />
-                  Upcoming Deadline
+              <div className="bg-white/10 backdrop-blur-xl rounded-xl border border-white/20 p-5 w-full max-w-xs shadow-xl">
+                <h3 className="font-medium mb-4 flex items-center text-white">
+                  <Clock className="h-4 w-4 mr-2 text-amber-300" />
+                  <span className="text-base">Upcoming Deadline</span>
                 </h3>
-                <div className="bg-white/10 rounded-lg p-4 mb-3">
-                  <Badge className="bg-amber-500/90 mb-2 border-0">In 3 days</Badge>
-                  <h4 className="font-medium text-white">AI Innovation Challenge</h4>
-                  <p className="text-sm text-white/70">Project submission due June 15, 2025</p>
-                  <div className="mt-3 h-1.5 w-full bg-white/20 rounded-full overflow-hidden">
-                    <div className="h-full bg-amber-400 rounded-full" style={{ width: "65%" }}></div>
+                <div className="bg-white/10 rounded-lg backdrop-blur-md p-5 mb-4">
+                  <Badge className="bg-amber-500/90 mb-3 border-0 px-3 py-1 text-xs">In 3 days</Badge>
+                  <h4 className="font-medium text-white text-lg mb-1">AI Innovation Challenge</h4>
+                  <p className="text-sm text-white/80 mb-4">Project submission due June 15, 2025</p>
+                  <div className="mt-3 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full" style={{ width: "65%" }}></div>
                   </div>
-                  <div className="flex justify-between mt-1.5 text-xs text-white/70">
+                  <div className="flex justify-between mt-2 text-xs text-white/80">
                     <span>Progress</span>
-                    <span>65%</span>
+                    <span className="font-medium">65%</span>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" className="w-full text-white border-white/20 bg-indigo-800/30 hover:bg-white hover:text-indigo-700 backdrop-blur-sm transition-colors">
-                  View Submission Details
+                <Button variant="outline" className="w-full text-white border-white/20 bg-white/10 hover:bg-white hover:text-indigo-700 backdrop-blur-xl transition-all group px-4 py-2 h-auto text-sm font-medium rounded-xl">
+                  <CalendarDays className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+                  <span>View Submission Details</span>
                 </Button>
               </div>
             </div>
