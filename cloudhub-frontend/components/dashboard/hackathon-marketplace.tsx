@@ -398,12 +398,12 @@ export default function HackathonMarketplace() {
 
           <Card>
             <CardContent className="p-4">
-              <h3 className="font-medium mb-3">Create Your Own</h3>
+              <h3 className="font-medium mb-3">Apply to be a Mentor</h3>
               <p className="text-sm text-slate-500 mb-4">
-                Have an idea for a hackathon? Create your own and invite participants from around the world.
+                Share your expertise and guide participants through their hackathon journey. Make a difference!
               </p>
               <Button className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700">
-                Create Hackathon
+                Apply Now
               </Button>
             </CardContent>
           </Card>

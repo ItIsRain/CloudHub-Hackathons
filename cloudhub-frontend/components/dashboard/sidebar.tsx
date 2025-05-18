@@ -63,7 +63,7 @@ export default function DashboardSidebar() {
   const participantNavItems: NavItem[] = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Marketplace", href: "/dashboard/marketplace", icon: Sparkles },
-    { name: "My Hackathons", href: "/dashboard/hackathons", icon: Trophy },
+    { name: "My Hackathons", href: "/dashboard/my-hackathons", icon: Trophy },
     { name: "Teams", href: "/dashboard/teams", icon: Users },
     { name: "Schedule", href: "/dashboard/schedule", icon: Calendar },
     { name: "Messages", href: "/dashboard/messages", icon: MessageSquare, badge: "3" },
@@ -73,7 +73,7 @@ export default function DashboardSidebar() {
   // Organizer navigation items
   const organizerNavItems: NavItem[] = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "My Hackathons", href: "/dashboard/hackathons", icon: Sparkles },
+    { name: "My Hackathons", href: "/dashboard/my-hackathons", icon: Sparkles },
     { name: "Participants", href: "/dashboard/participants", icon: Users },
     { name: "Judging", href: "/dashboard/judging", icon: Award },
     { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
@@ -94,7 +94,7 @@ export default function DashboardSidebar() {
         <div className="flex items-center justify-center h-16 px-4">
           <Link href="/dashboard" className="group flex items-center justify-center w-full py-2">
             <Image 
-              src="/CloudHub.svg" 
+              src="/CloudHubV2.svg" 
               alt="CloudHub Logo" 
               width={200} 
               height={64}
