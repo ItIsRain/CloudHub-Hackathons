@@ -131,20 +131,20 @@ export default function HeroSection() {
             <div className="inline-flex items-center rounded-full bg-white/10 backdrop-blur-sm px-3 py-1 text-sm font-medium text-white mb-6 border border-white/10 shadow-xl shadow-violet-950/20">
               <span className="relative overflow-hidden">
                 <span className="animate-marquee whitespace-nowrap">
-                  The Future of Hackathons
+                  UAE's First Hackathon Platform
                 </span>
               </span>
             </div>
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white mb-4 sm:mb-6 leading-tight">
-              Create Epic{" "}
+              Ignite{" "}
               <span className="relative inline-block">
-                <span className="relative z-10">Hackathons</span>
+                <span className="relative z-10">Breakthroughs</span>
                 <span className="absolute bottom-1 sm:bottom-2 left-0 w-full h-2 sm:h-3 bg-gradient-to-r from-violet-600 to-indigo-600 opacity-50 rounded animate-pulse"></span>
               </span>{" "}
               with CloudHub
             </h1>
             <p className="text-lg sm:text-xl text-white/80 mb-6 sm:mb-8 leading-relaxed">
-              The premier platform where anyone can create or join hackathons with all the tools you need for success.
+              The UAE's pioneering all-in-one platform empowering creators, participants, and organizations with integrated tools to launch world-class hackathons.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <Button 
@@ -160,19 +160,19 @@ export default function HeroSection() {
                 <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm mb-2 sm:mb-3 border border-white/10 transition-transform duration-300 group-hover:scale-110 group-hover:bg-white/20">
                   <Code className="h-5 w-5 sm:h-6 sm:w-6 text-violet-300" />
                 </div>
-                <p className="text-xs sm:text-sm font-medium text-white">100+ Active Hackathons</p>
+                <p className="text-xs sm:text-sm font-medium text-white">Global Innovation Network</p>
               </div>
               <div className="group flex flex-col items-center text-center">
                 <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm mb-2 sm:mb-3 border border-white/10 transition-transform duration-300 group-hover:scale-110 group-hover:bg-white/20">
                   <Award className="h-5 w-5 sm:h-6 sm:w-6 text-violet-300" />
                 </div>
-                <p className="text-xs sm:text-sm font-medium text-white">2M+ AED Prize Money</p>
+                <p className="text-xs sm:text-sm font-medium text-white">Prestigious Competitions</p>
               </div>
               <div className="group flex flex-col items-center text-center">
                 <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm mb-2 sm:mb-3 border border-white/10 transition-transform duration-300 group-hover:scale-110 group-hover:bg-white/20">
                   <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-violet-300" />
                 </div>
-                <p className="text-xs sm:text-sm font-medium text-white">Secure Escrow</p>
+                <p className="text-xs sm:text-sm font-medium text-white">Enterprise-Grade Security</p>
               </div>
             </div>
           </div>
