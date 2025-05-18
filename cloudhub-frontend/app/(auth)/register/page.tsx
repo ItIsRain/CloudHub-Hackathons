@@ -336,20 +336,20 @@ export default function RegisterPage() {
   const isThirdStep = currentStep === 2;
   const isLastStep = currentStep === 3;
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleRadioChange = (value, name) => {
+  const handleRadioChange = (value: string, name: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSelectChange = (value, name) => {
+  const handleSelectChange = (value: string, name: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleCheckboxChange = (checked, name) => {
+  const handleCheckboxChange = (checked: boolean, name: string) => {
     setFormData((prev) => ({ ...prev, [name]: checked }));
   };
 
@@ -367,7 +367,7 @@ export default function RegisterPage() {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     // Simulate API call
@@ -377,7 +377,7 @@ export default function RegisterPage() {
     }, 1500);
   };
 
-  const handleSocialSignUp = async (provider) => {
+  const handleSocialSignUp = async (provider: string) => {
     setIsLoading(true);
     // Simulate social sign up
     setTimeout(() => {
@@ -491,7 +491,7 @@ export default function RegisterPage() {
 
   // Optimize rendering of country selects (these are expensive due to large lists)
   const CountrySelect = useMemo(() => {
-    return ({ value, onValueChange, placeholder, label }) => (
+    return ({ value, onValueChange, placeholder }: { value: string, onValueChange: (value: string) => void, placeholder: string }) => (
       <Select value={value} onValueChange={onValueChange}>
         <SelectTrigger className="border-slate-200 dark:border-slate-700 focus:border-blue-500 hover:border-blue-400 dark:hover:border-blue-500 transition-colors h-11 rounded-lg shadow-sm">
           <SelectValue placeholder={placeholder} />
@@ -509,7 +509,7 @@ export default function RegisterPage() {
   
   // Optimize rendering of country code select
   const CountryCodeSelect = useMemo(() => {
-    return ({ value, onValueChange }) => (
+    return ({ value, onValueChange }: { value: string, onValueChange: (value: string) => void }) => (
       <Select value={value} onValueChange={onValueChange}>
         <SelectTrigger className="border-slate-200 dark:border-slate-700 focus:border-blue-500 hover:border-blue-400 dark:hover:border-blue-500 transition-colors h-11 rounded-lg shadow-sm">
           <SelectValue placeholder="+971" />
@@ -719,7 +719,7 @@ export default function RegisterPage() {
                 <div className="w-24">
                   <CountryCodeSelect 
                     value={formData.countryCode} 
-                    onValueChange={(value) => handleSelectChange(value, 'countryCode')} 
+                    onValueChange={(value: string) => handleSelectChange(value, 'countryCode')} 
                   />
                 </div>
                 <div className="relative group flex-1">
@@ -742,7 +742,7 @@ export default function RegisterPage() {
               </Label>
               <CountrySelect 
                 value={formData.country} 
-                onValueChange={(value) => handleSelectChange(value, 'country')}
+                onValueChange={(value: string) => handleSelectChange(value, 'country')}
                 placeholder="Select your country"
               />
             </div>
@@ -753,7 +753,7 @@ export default function RegisterPage() {
               </Label>
               <CountrySelect 
                 value={formData.nationality} 
-                onValueChange={(value) => handleSelectChange(value, 'nationality')}
+                onValueChange={(value: string) => handleSelectChange(value, 'nationality')}
                 placeholder="Select your nationality"
               />
             </div>

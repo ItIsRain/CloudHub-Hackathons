@@ -42,32 +42,32 @@ export default function FeaturesSection() {
 
   const features = [
     {
-      icon: <Users className="h-6 w-6 text-violet-600" />,
+      icon: <Users className="h-6 w-6" />,
       title: "Community Marketplace",
       description: "Connect with a global community of innovators, creators, and problem-solvers.",
     },
     {
-      icon: <Award className="h-6 w-6 text-violet-600" />,
+      icon: <Award className="h-6 w-6" />,
       title: "Hackathon Infrastructure",
       description: "Everything you need to run successful hackathons, from registration to judging.",
     },
     {
-      icon: <Shield className="h-6 w-6 text-violet-600" />,
+      icon: <Shield className="h-6 w-6" />,
       title: "Secure Escrow Services",
       description: "Guaranteed, transparent prize distribution with our trusted escrow system.",
     },
     {
-      icon: <Zap className="h-6 w-6 text-violet-600" />,
+      icon: <Zap className="h-6 w-6" />,
       title: "AI-Powered Tools",
       description: "Boost productivity with our suite of AI tools designed for hackathon participants.",
     },
     {
-      icon: <Code className="h-6 w-6 text-violet-600" />,
+      icon: <Code className="h-6 w-6" />,
       title: "Expert Mentorship",
       description: "Connect with industry experts who can help take your project to the next level.",
     },
     {
-      icon: <DollarSign className="h-6 w-6 text-violet-600" />,
+      icon: <DollarSign className="h-6 w-6" />,
       title: "CloudHub Credits",
       description: "Flexible credit system for accessing premium features and services.",
     },
@@ -116,7 +116,7 @@ export default function FeaturesSection() {
                     "flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl mb-4 sm:mb-5 transition-all duration-300",
                     index === activeFeature
                       ? "bg-gradient-to-r from-violet-500 to-indigo-500 text-white scale-110"
-                      : "bg-violet-100 group-hover:bg-violet-200",
+                      : "bg-violet-100 group-hover:bg-violet-200 text-violet-600",
                   )}
                 >
                   {feature.icon}

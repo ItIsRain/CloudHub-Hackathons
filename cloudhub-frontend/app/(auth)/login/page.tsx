@@ -1,17 +1,55 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useTheme } from "next-themes";
 import { Mail, Lock, Github, Eye, EyeOff, ShieldCheck, Globe, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+// Country code options for phone login
+const countryCodes = [
+  { value: "+1", label: "+1 (US/Canada)" },
+  { value: "+44", label: "+44 (UK)" },
+  { value: "+91", label: "+91 (India)" },
+  { value: "+61", label: "+61 (Australia)" },
+  { value: "+86", label: "+86 (China)" },
+  { value: "+49", label: "+49 (Germany)" },
+  { value: "+33", label: "+33 (France)" },
+  { value: "+81", label: "+81 (Japan)" },
+  { value: "+7", label: "+7 (Russia)" },
+  { value: "+55", label: "+55 (Brazil)" },
+  { value: "+52", label: "+52 (Mexico)" },
+  { value: "+966", label: "+966 (Saudi Arabia)" },
+  { value: "+971", label: "+971 (UAE)" },
+  { value: "+65", label: "+65 (Singapore)" },
+  { value: "+82", label: "+82 (South Korea)" },
+  { value: "+234", label: "+234 (Nigeria)" },
+  { value: "+27", label: "+27 (South Africa)" },
+  { value: "+20", label: "+20 (Egypt)" },
+  { value: "+34", label: "+34 (Spain)" },
+  { value: "+39", label: "+39 (Italy)" },
+  { value: "+31", label: "+31 (Netherlands)" },
+  { value: "+90", label: "+90 (Turkey)" },
+  { value: "+92", label: "+92 (Pakistan)" },
+  { value: "+62", label: "+62 (Indonesia)" },
+  { value: "+60", label: "+60 (Malaysia)" },
+  { value: "+63", label: "+63 (Philippines)" },
+  { value: "+84", label: "+84 (Vietnam)" },
+  { value: "+66", label: "+66 (Thailand)" },
+  { value: "+48", label: "+48 (Poland)" },
+  { value: "+46", label: "+46 (Sweden)" },
+  { value: "+41", label: "+41 (Switzerland)" },
+  { value: "+43", label: "+43 (Austria)" },
+  { value: "+32", label: "+32 (Belgium)" },
+  { value: "+45", label: "+45 (Denmark)" },
+  { value: "+64", label: "+64 (New Zealand)" }
+];
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -21,6 +59,9 @@ export default function LoginPage() {
   const [countryCode, setCountryCode] = useState("+971");
   const [phone, setPhone] = useState("");
 
+  // Memoize the logo source to prevent unnecessary rerenders
+  const logoSrc = useMemo(() => theme === 'dark' ? "/CloudHubDark.svg" : "/CloudHub.svg", [theme]);
+
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -28,9 +69,169 @@ export default function LoginPage() {
     setTimeout(() => setIsLoading(false), 1500);
   };
 
-  // Determine which logo to use based on theme
-  const logoSrc = theme === 'dark' ? "/CloudHubDark.svg" : "/CloudHub.svg";
+  // Memoize tab switcher to prevent rerenders when other state changes
+  const TabSwitcher = useMemo(() => (
+    <div className="mx-auto max-w-[280px] bg-slate-100/70 dark:bg-slate-800/50 rounded-full p-0.5 flex relative shadow-sm">
+      <div 
+        className={`absolute inset-0 m-0.5 ${loginMethod === 'email' ? 'translate-x-0' : 'translate-x-full'} bg-white dark:bg-slate-700 rounded-full transition-transform duration-300 ease-out shadow-sm`} 
+        style={{width: 'calc(50% - 2px)'}}
+      ></div>
+      <button
+        type="button"
+        onClick={() => setLoginMethod('email')}
+        className={`flex items-center justify-center w-1/2 h-10 rounded-full relative z-10 transition-colors duration-200 ${loginMethod === 'email' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
+      >
+        <Mail className="h-4 w-4 mr-2" />
+        <span className="font-medium text-sm">Email</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => setLoginMethod('phone')}
+        className={`flex items-center justify-center w-1/2 h-10 rounded-full relative z-10 transition-colors duration-200 ${loginMethod === 'phone' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
+      >
+        <Phone className="h-4 w-4 mr-2" />
+        <span className="font-medium text-sm">Phone</span>
+      </button>
+    </div>
+  ), [loginMethod]);
 
+  // Memoize email login form
+  const EmailLoginForm = useMemo(() => (
+    <div className="space-y-3">
+      <div className="space-y-1.5">
+        <Label htmlFor="email" className="text-sm font-medium flex items-center">
+          Email Address <Mail className="h-3.5 w-3.5 ml-1 text-muted-foreground" />
+        </Label>
+        <div className="relative group">
+          <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+          <Input
+            id="email"
+            placeholder="name@example.com"
+            type="email"
+            autoCapitalize="none"
+            autoComplete="email"
+            autoCorrect="off"
+            className="pl-10 border-slate-200 dark:border-slate-700 focus:border-blue-500 group-hover:border-blue-400 dark:group-hover:border-blue-500 transition-colors h-11 rounded-lg shadow-sm"
+            disabled={isLoading}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="password" className="text-sm font-medium flex items-center">
+          Password <Lock className="h-3.5 w-3.5 ml-1 text-muted-foreground" />
+        </Label>
+        <div className="relative group">
+          <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+          <Input
+            id="password"
+            placeholder="••••••••"
+            type={showPassword ? "text" : "password"}
+            autoCapitalize="none"
+            autoComplete="current-password"
+            className="pl-10 pr-10 border-slate-200 dark:border-slate-700 focus:border-blue-500 group-hover:border-blue-400 dark:group-hover:border-blue-500 transition-colors h-11 rounded-lg shadow-sm"
+            disabled={isLoading}
+          />
+          <button 
+            type="button"
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors" 
+            onClick={() => setShowPassword(!showPassword)}
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+      </div>
+    </div>
+  ), [isLoading, showPassword]);
+
+  // Memoize phone login form
+  const PhoneLoginForm = useMemo(() => (
+    <div className="space-y-3">
+      <Label htmlFor="phone" className="text-sm font-medium flex items-center">
+        Phone Number <Phone className="h-3.5 w-3.5 ml-1 text-muted-foreground" />
+      </Label>
+      <div className="flex space-x-2">
+        <div className="w-24">
+          <Select value={countryCode} onValueChange={setCountryCode}>
+            <SelectTrigger className="border-slate-200 dark:border-slate-700 focus:border-blue-500 hover:border-blue-400 dark:hover:border-blue-500 transition-colors h-11 rounded-lg shadow-sm">
+              <SelectValue placeholder="+1" />
+            </SelectTrigger>
+            <SelectContent className="max-h-[200px]">
+              {countryCodes.map(code => (
+                <SelectItem key={code.value} value={code.value}>{code.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="relative group flex-1">
+          <Input
+            id="phone"
+            placeholder="(555) 123-4567"
+            type="tel"
+            className="border-slate-200 dark:border-slate-700 focus:border-blue-500 group-hover:border-blue-400 dark:group-hover:border-blue-500 transition-colors h-11 rounded-lg shadow-sm"
+            disabled={isLoading}
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
+        </div>
+      </div>
+    </div>
+  ), [countryCode, phone, isLoading]);
+
+  // Memoize loading button for performance
+  const SubmitButton = useMemo(() => (
+    <Button 
+      className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-700 hover:via-indigo-700 hover:to-violet-700 shadow-md px-6 h-11 min-w-[140px] font-medium rounded-xl transition-all duration-300 border-0 group mt-4" 
+      disabled={isLoading}
+    >
+      {isLoading ? (
+        <div className="flex items-center justify-center">
+          <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Signing in...
+        </div>
+      ) : (
+        <span className="flex items-center justify-center">
+          Sign In
+        </span>
+      )}
+    </Button>
+  ), [isLoading]);
+
+  // Memoize social login buttons
+  const SocialLoginButtons = useMemo(() => (
+    <>
+      <div className="relative flex items-center justify-center my-4">
+        <div className="absolute inset-y-0 left-0 w-1/3 bg-slate-200 dark:bg-slate-700 h-px" />
+        <span className="relative text-sm text-slate-500 dark:text-slate-400 px-2">or continue with</span>
+        <div className="absolute inset-y-0 right-0 w-1/3 bg-slate-200 dark:bg-slate-700 h-px" />
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        <Button variant="outline" className="h-11 border-slate-200 dark:border-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/30 text-slate-700 dark:text-slate-300 transition-colors rounded-lg shadow-sm" disabled={isLoading}>
+          <svg className="h-5 w-5 mr-1.5" aria-hidden="true" focusable="false" data-icon="google" viewBox="0 0 488 512">
+            <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z" />
+          </svg>
+          Google
+        </Button>
+        
+        <Button variant="outline" className="h-11 border-slate-200 dark:border-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/30 text-slate-700 dark:text-slate-300 transition-colors rounded-lg shadow-sm" disabled={isLoading}>
+          <svg className="h-5 w-5 mr-1.5" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 23 23">
+            <path d="M21.1 0H12v9.1h9.1V0zM9.1 0H0v9.1h9.1V0zM21.1 12H12v9.1h9.1V12zM9.1 12H0v9.1h9.1V12z" />
+          </svg>
+          Microsoft
+        </Button>
+        
+        <Button variant="outline" className="h-11 border-slate-200 dark:border-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/30 text-slate-700 dark:text-slate-300 transition-colors rounded-lg shadow-sm" disabled={isLoading}>
+          <Github className="h-5 w-5 mr-1.5" />
+          GitHub
+        </Button>
+      </div>
+    </>
+  ), [isLoading]);
+
+  // Render the optimized UI
   return (
     <div className="min-h-screen w-full relative flex items-center justify-center bg-gradient-to-b from-slate-50 to-blue-50 dark:from-slate-950 dark:to-slate-900 overflow-hidden">
       {/* Modern decorative elements */}
@@ -79,142 +280,12 @@ export default function LoginPage() {
           <Card className="border-none shadow-xl w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md mx-auto overflow-hidden rounded-2xl">
             {/* Simplified tab switcher */}
             <div className="pt-6 px-6 pb-4">
-              <div className="mx-auto max-w-[280px] bg-slate-100/70 dark:bg-slate-800/50 rounded-full p-0.5 flex relative shadow-sm">
-                <div 
-                  className={`absolute inset-0 m-0.5 ${loginMethod === 'email' ? 'translate-x-0' : 'translate-x-full'} bg-white dark:bg-slate-700 rounded-full transition-transform duration-300 ease-out shadow-sm`} 
-                  style={{width: 'calc(50% - 2px)'}}
-                ></div>
-                <button
-                  type="button"
-                  onClick={() => setLoginMethod('email')}
-                  className={`flex items-center justify-center w-1/2 h-10 rounded-full relative z-10 transition-colors duration-200 ${loginMethod === 'email' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
-                >
-                  <Mail className="h-4 w-4 mr-2" />
-                  <span className="font-medium text-sm">Email</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLoginMethod('phone')}
-                  className={`flex items-center justify-center w-1/2 h-10 rounded-full relative z-10 transition-colors duration-200 ${loginMethod === 'phone' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
-                >
-                  <Phone className="h-4 w-4 mr-2" />
-                  <span className="font-medium text-sm">Phone</span>
-                </button>
-              </div>
+              {TabSwitcher}
             </div>
             
             <CardContent className="pt-3 px-6 sm:px-8">
               <form onSubmit={handleEmailLogin} className="space-y-4">
-                {loginMethod === "email" ? (
-                  <div className="space-y-3">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="email" className="text-sm font-medium flex items-center">
-                        Email Address <Mail className="h-3.5 w-3.5 ml-1 text-muted-foreground" />
-                      </Label>
-                      <div className="relative group">
-                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                        <Input
-                          id="email"
-                          placeholder="name@example.com"
-                          type="email"
-                          autoCapitalize="none"
-                          autoComplete="email"
-                          autoCorrect="off"
-                          className="pl-10 border-slate-200 dark:border-slate-700 focus:border-blue-500 group-hover:border-blue-400 dark:group-hover:border-blue-500 transition-colors h-11 rounded-lg shadow-sm"
-                          disabled={isLoading}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <Label htmlFor="password" className="text-sm font-medium flex items-center">
-                        Password <Lock className="h-3.5 w-3.5 ml-1 text-muted-foreground" />
-                      </Label>
-                      <div className="relative group">
-                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                        <Input
-                          id="password"
-                          placeholder="••••••••"
-                          type={showPassword ? "text" : "password"}
-                          autoCapitalize="none"
-                          autoComplete="current-password"
-                          className="pl-10 pr-10 border-slate-200 dark:border-slate-700 focus:border-blue-500 group-hover:border-blue-400 dark:group-hover:border-blue-500 transition-colors h-11 rounded-lg shadow-sm"
-                          disabled={isLoading}
-                        />
-                        <button 
-                          type="button"
-                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors" 
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <Label htmlFor="phone" className="text-sm font-medium flex items-center">
-                      Phone Number <Phone className="h-3.5 w-3.5 ml-1 text-muted-foreground" />
-                    </Label>
-                    <div className="flex space-x-2">
-                      <div className="w-24">
-                        <Select value={countryCode} onValueChange={setCountryCode}>
-                          <SelectTrigger className="border-slate-200 dark:border-slate-700 focus:border-blue-500 hover:border-blue-400 dark:hover:border-blue-500 transition-colors h-11 rounded-lg shadow-sm">
-                            <SelectValue placeholder="+1" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="+1">+1 (US/Canada)</SelectItem>
-                            <SelectItem value="+44">+44 (UK)</SelectItem>
-                            <SelectItem value="+91">+91 (India)</SelectItem>
-                            <SelectItem value="+61">+61 (Australia)</SelectItem>
-                            <SelectItem value="+86">+86 (China)</SelectItem>
-                            <SelectItem value="+49">+49 (Germany)</SelectItem>
-                            <SelectItem value="+33">+33 (France)</SelectItem>
-                            <SelectItem value="+81">+81 (Japan)</SelectItem>
-                            <SelectItem value="+7">+7 (Russia)</SelectItem>
-                            <SelectItem value="+55">+55 (Brazil)</SelectItem>
-                            <SelectItem value="+52">+52 (Mexico)</SelectItem>
-                            <SelectItem value="+966">+966 (Saudi Arabia)</SelectItem>
-                            <SelectItem value="+971">+971 (UAE)</SelectItem>
-                            <SelectItem value="+65">+65 (Singapore)</SelectItem>
-                            <SelectItem value="+82">+82 (South Korea)</SelectItem>
-                            <SelectItem value="+234">+234 (Nigeria)</SelectItem>
-                            <SelectItem value="+27">+27 (South Africa)</SelectItem>
-                            <SelectItem value="+20">+20 (Egypt)</SelectItem>
-                            <SelectItem value="+34">+34 (Spain)</SelectItem>
-                            <SelectItem value="+39">+39 (Italy)</SelectItem>
-                            <SelectItem value="+31">+31 (Netherlands)</SelectItem>
-                            <SelectItem value="+90">+90 (Turkey)</SelectItem>
-                            <SelectItem value="+92">+92 (Pakistan)</SelectItem>
-                            <SelectItem value="+62">+62 (Indonesia)</SelectItem>
-                            <SelectItem value="+60">+60 (Malaysia)</SelectItem>
-                            <SelectItem value="+63">+63 (Philippines)</SelectItem>
-                            <SelectItem value="+84">+84 (Vietnam)</SelectItem>
-                            <SelectItem value="+66">+66 (Thailand)</SelectItem>
-                            <SelectItem value="+48">+48 (Poland)</SelectItem>
-                            <SelectItem value="+46">+46 (Sweden)</SelectItem>
-                            <SelectItem value="+41">+41 (Switzerland)</SelectItem>
-                            <SelectItem value="+43">+43 (Austria)</SelectItem>
-                            <SelectItem value="+32">+32 (Belgium)</SelectItem>
-                            <SelectItem value="+45">+45 (Denmark)</SelectItem>
-                            <SelectItem value="+64">+64 (New Zealand)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="relative group flex-1">
-                        <Input
-                          id="phone"
-                          placeholder="(555) 123-4567"
-                          type="tel"
-                          className="border-slate-200 dark:border-slate-700 focus:border-blue-500 group-hover:border-blue-400 dark:group-hover:border-blue-500 transition-colors h-11 rounded-lg shadow-sm"
-                          disabled={isLoading}
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
+                {loginMethod === "email" ? EmailLoginForm : PhoneLoginForm}
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
@@ -235,54 +306,8 @@ export default function LoginPage() {
                   </Link>
                 </div>
 
-                <Button 
-                  className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-700 hover:via-indigo-700 hover:to-violet-700 shadow-md px-6 h-11 min-w-[140px] font-medium rounded-xl transition-all duration-300 border-0 group mt-4" 
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Signing in...
-                    </div>
-                  ) : (
-                    <span className="flex items-center justify-center">
-                      Sign In
-                    </span>
-                  )}
-                </Button>
-
-                <div className="relative flex items-center justify-center my-4">
-                  <div className="absolute inset-y-0 left-0 w-1/3 bg-slate-200 dark:bg-slate-700 h-px" />
-                  <span className="relative text-sm text-slate-500 dark:text-slate-400 px-2">or continue with</span>
-                  <div className="absolute inset-y-0 right-0 w-1/3 bg-slate-200 dark:bg-slate-700 h-px" />
-                </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                  <Button variant="outline" className="h-11 border-slate-200 dark:border-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/30 text-slate-700 dark:text-slate-300 transition-colors rounded-lg shadow-sm" disabled={isLoading}>
-                    <svg className="h-5 w-5 mr-1.5" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M47.532 24.5528C47.532 22.9214 47.3997 21.2811 47.1175 19.6761H24.48V28.9181H37.4434C36.9055 31.8988 35.177 34.5356 32.6461 36.2111V42.2078H40.3801C44.9217 38.0278 47.532 31.8547 47.532 24.5528Z" fill="#4285F4" />
-                      <path d="M24.48 48.0016C30.9529 48.0016 36.4116 45.8764 40.3888 42.2078L32.6549 36.2111C30.5031 37.675 27.7252 38.5039 24.4888 38.5039C18.2275 38.5039 12.9187 34.2798 11.0139 28.6006H3.03296V34.7825C7.10718 42.8868 15.4056 48.0016 24.48 48.0016Z" fill="#34A853" />
-                      <path d="M11.0051 28.6006C9.99973 25.6199 9.99973 22.3922 11.0051 19.4115V13.2296H3.03298C-0.371021 20.0112 -0.371021 28.0009 3.03298 34.7825L11.0051 28.6006Z" fill="#FBBC04" />
-                      <path d="M24.48 9.49932C27.9016 9.44641 31.2086 10.7339 33.6866 13.0973L40.5387 6.24523C36.2 2.17101 30.4414 -0.068932 24.48 0.00161733C15.4055 0.00161733 7.10718 5.11644 3.03296 13.2296L11.005 19.4115C12.901 13.7235 18.2187 9.49932 24.48 9.49932Z" fill="#EA4335" />
-                    </svg>
-                    Google
-                  </Button>
-                  
-                  <Button variant="outline" className="h-11 border-slate-200 dark:border-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/30 text-slate-700 dark:text-slate-300 transition-colors rounded-lg shadow-sm" disabled={isLoading}>
-                    <svg className="h-5 w-5 mr-1.5" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 23 23">
-                      <path d="M21.1 0H12v9.1h9.1V0zM9.1 0H0v9.1h9.1V0zM21.1 12H12v9.1h9.1V12zM9.1 12H0v9.1h9.1V12z" />
-                    </svg>
-                    Microsoft
-                  </Button>
-                  
-                  <Button variant="outline" className="h-11 border-slate-200 dark:border-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/30 text-slate-700 dark:text-slate-300 transition-colors rounded-lg shadow-sm" disabled={isLoading}>
-                    <Github className="h-5 w-5 mr-1.5" />
-                    GitHub
-                  </Button>
-                </div>
+                {SubmitButton}
+                {SocialLoginButtons}
 
                 <div className="bg-blue-50/70 dark:bg-blue-900/30 p-4 rounded-xl border border-blue-100 dark:border-blue-800/30 flex items-center text-sm text-blue-700 dark:text-blue-300 mt-4 shadow-sm">
                   <ShieldCheck className="h-4 w-4 mr-2 flex-shrink-0" />
