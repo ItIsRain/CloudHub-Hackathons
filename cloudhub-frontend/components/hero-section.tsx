@@ -1,25 +1,66 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useMemo, useCallback } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Code, Award, Shield, Sparkles } from "lucide-react"
+
+// Throttle function to limit the rate of function calls
+function throttle(callback: Function, delay: number) {
+  let lastCall = 0;
+  return function (...args: any[]) {
+    const now = new Date().getTime();
+    if (now - lastCall < delay) {
+      return;
+    }
+    lastCall = now;
+    return callback(...args);
+  };
+}
 
 export default function HeroSection() {
   const [mounted, setMounted] = useState(false)
   const heroRef = useRef<HTMLDivElement>(null)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
 
-  useEffect(() => {
-    setMounted(true)
+  // Memoize the particles data so it doesn't get recreated on each render
+  const particles = useMemo(() => [
+    { width: 4.4, height: 6.0, top: 34.5, left: 77.4, opacity: 0.39, duration: 14.5, delay: 0.06 },
+    { width: 3.7, height: 2.2, top: 70.7, left: 51.3, opacity: 0.31, duration: 13.5, delay: 1.42 },
+    { width: 5.2, height: 3.0, top: 32.0, left: 9.4, opacity: 0.35, duration: 10.3, delay: 4.27 },
+    { width: 4.0, height: 2.3, top: 22.8, left: 29.9, opacity: 0.44, duration: 19.8, delay: 1.61 },
+    { width: 2.6, height: 5.7, top: 86.3, left: 76.8, opacity: 0.42, duration: 19.3, delay: 4.10 },
+    { width: 4.8, height: 3.5, top: 43.5, left: 91.8, opacity: 0.47, duration: 16.9, delay: 2.55 },
+    { width: 4.3, height: 2.6, top: 78.9, left: 56.7, opacity: 0.59, duration: 11.8, delay: 2.92 },
+    { width: 2.5, height: 5.5, top: 18.0, left: 85.8, opacity: 0.66, duration: 14.0, delay: 3.87 },
+    { width: 4.8, height: 2.1, top: 15.1, left: 62.6, opacity: 0.62, duration: 14.3, delay: 4.86 },
+    { width: 2.8, height: 5.9, top: 1.2, left: 93.0, opacity: 0.57, duration: 12.9, delay: 0.20 },
+    { width: 5.6, height: 4.6, top: 15.7, left: 63.5, opacity: 0.23, duration: 12.0, delay: 1.94 },
+    { width: 4.5, height: 4.4, top: 61.8, left: 62.2, opacity: 0.42, duration: 20.0, delay: 3.81 },
+    { width: 5.8, height: 5.6, top: 45.4, left: 17.0, opacity: 0.45, duration: 17.3, delay: 3.11 },
+    { width: 2.3, height: 4.9, top: 25.9, left: 41.7, opacity: 0.69, duration: 19.7, delay: 1.10 },
+    { width: 2.9, height: 5.6, top: 35.5, left: 85.9, opacity: 0.46, duration: 16.3, delay: 1.26 },
+    { width: 4.6, height: 3.7, top: 40.8, left: 62.1, opacity: 0.38, duration: 17.0, delay: 2.80 },
+    { width: 3.1, height: 2.7, top: 74.6, left: 59.5, opacity: 0.52, duration: 12.2, delay: 2.73 },
+    { width: 3.9, height: 4.5, top: 100.0, left: 3.2, opacity: 0.35, duration: 17.4, delay: 3.29 },
+    { width: 5.3, height: 6.0, top: 82.0, left: 63.3, opacity: 0.34, duration: 13.5, delay: 0.87 },
+    { width: 2.9, height: 3.5, top: 7.0, left: 64.9, opacity: 0.58, duration: 13.6, delay: 1.02 }
+  ], []);
 
-    const handleMouseMove = (e: MouseEvent) => {
+  // Throttled mouse move handler to prevent excessive updates
+  const handleMouseMove = useCallback(
+    throttle((e: MouseEvent) => {
       if (!heroRef.current) return
       const rect = heroRef.current.getBoundingClientRect()
       const x = (e.clientX - rect.left) / rect.width
       const y = (e.clientY - rect.top) / rect.height
       setMousePosition({ x, y })
-    }
+    }, 50), // 50ms throttle
+    []
+  );
+
+  useEffect(() => {
+    setMounted(true)
 
     const heroElement = heroRef.current
     if (heroElement) {
@@ -31,17 +72,17 @@ export default function HeroSection() {
         heroElement.removeEventListener("mousemove", handleMouseMove)
       }
     }
-  }, [])
+  }, [handleMouseMove])
 
   // Calculate transform values based on mouse position
-  const calcTransform = (factor = 1) => {
+  const calcTransform = useCallback((factor = 1) => {
     if (!mounted) return {}
     const moveX = (mousePosition.x - 0.5) * factor
     const moveY = (mousePosition.y - 0.5) * factor
     return {
       transform: `translate(${moveX}px, ${moveY}px)`,
     }
-  }
+  }, [mounted, mousePosition.x, mousePosition.y])
 
   return (
     <section
@@ -66,47 +107,21 @@ export default function HeroSection() {
 
         {/* Animated Particles */}
         <div className="absolute inset-0">
-          {Array.from({ length: 20 }).map((_, i) => {
-            // Fixed values for each particle
-            const particles = [
-              { width: 4.4, height: 6.0, top: 34.5, left: 77.4, opacity: 0.39, duration: 14.5, delay: 0.06 },
-              { width: 3.7, height: 2.2, top: 70.7, left: 51.3, opacity: 0.31, duration: 13.5, delay: 1.42 },
-              { width: 5.2, height: 3.0, top: 32.0, left: 9.4, opacity: 0.35, duration: 10.3, delay: 4.27 },
-              { width: 4.0, height: 2.3, top: 22.8, left: 29.9, opacity: 0.44, duration: 19.8, delay: 1.61 },
-              { width: 2.6, height: 5.7, top: 86.3, left: 76.8, opacity: 0.42, duration: 19.3, delay: 4.10 },
-              { width: 4.8, height: 3.5, top: 43.5, left: 91.8, opacity: 0.47, duration: 16.9, delay: 2.55 },
-              { width: 4.3, height: 2.6, top: 78.9, left: 56.7, opacity: 0.59, duration: 11.8, delay: 2.92 },
-              { width: 2.5, height: 5.5, top: 18.0, left: 85.8, opacity: 0.66, duration: 14.0, delay: 3.87 },
-              { width: 4.8, height: 2.1, top: 15.1, left: 62.6, opacity: 0.62, duration: 14.3, delay: 4.86 },
-              { width: 2.8, height: 5.9, top: 1.2, left: 93.0, opacity: 0.57, duration: 12.9, delay: 0.20 },
-              { width: 5.6, height: 4.6, top: 15.7, left: 63.5, opacity: 0.23, duration: 12.0, delay: 1.94 },
-              { width: 4.5, height: 4.4, top: 61.8, left: 62.2, opacity: 0.42, duration: 20.0, delay: 3.81 },
-              { width: 5.8, height: 5.6, top: 45.4, left: 17.0, opacity: 0.45, duration: 17.3, delay: 3.11 },
-              { width: 2.3, height: 4.9, top: 25.9, left: 41.7, opacity: 0.69, duration: 19.7, delay: 1.10 },
-              { width: 2.9, height: 5.6, top: 35.5, left: 85.9, opacity: 0.46, duration: 16.3, delay: 1.26 },
-              { width: 4.6, height: 3.7, top: 40.8, left: 62.1, opacity: 0.38, duration: 17.0, delay: 2.80 },
-              { width: 3.1, height: 2.7, top: 74.6, left: 59.5, opacity: 0.52, duration: 12.2, delay: 2.73 },
-              { width: 3.9, height: 4.5, top: 100.0, left: 3.2, opacity: 0.35, duration: 17.4, delay: 3.29 },
-              { width: 5.3, height: 6.0, top: 82.0, left: 63.3, opacity: 0.34, duration: 13.5, delay: 0.87 },
-              { width: 2.9, height: 3.5, top: 7.0, left: 64.9, opacity: 0.58, duration: 13.6, delay: 1.02 }
-            ];
-            const particle = particles[i];
-            return (
-              <div
-                key={i}
-                className="absolute rounded-full bg-white/20 blur-sm"
-                style={{
-                  width: `${particle.width}px`,
-                  height: `${particle.height}px`,
-                  top: `${particle.top}%`,
-                  left: `${particle.left}%`,
-                  opacity: particle.opacity,
-                  animation: `float ${particle.duration}s linear infinite`,
-                  animationDelay: `${particle.delay}s`
-                }}
-              ></div>
-            );
-          })}
+          {particles.map((particle, i) => (
+            <div
+              key={i}
+              className="absolute rounded-full bg-white/20 blur-sm"
+              style={{
+                width: `${particle.width}px`,
+                height: `${particle.height}px`,
+                top: `${particle.top}%`,
+                left: `${particle.left}%`,
+                opacity: particle.opacity,
+                animation: `float ${particle.duration}s linear infinite`,
+                animationDelay: `${particle.delay}s`
+              }}
+            ></div>
+          ))}
         </div>
       </div>
 
@@ -185,6 +200,7 @@ export default function HeroSection() {
                       width={800}
                       height={600}
                       className="w-full h-auto"
+                      priority
                     />
                   </div>
 

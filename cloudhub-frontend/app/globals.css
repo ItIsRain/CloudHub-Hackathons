@@ -1,3 +1,80 @@
+/* Critical CSS - Add to top of file for immediate loading of critical styles */
+:root {
+  --font-sans: var(--font-inter);
+  --header-height: 70px;
+}
+
+/* Performance optimizations */
+html {
+  text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Progressive loading for images */
+img.progressive-load {
+  transition: filter 0.3s, opacity 0.3s;
+  filter: blur(10px);
+  opacity: 0;
+}
+img.progressive-load.loaded {
+  filter: blur(0);
+  opacity: 1;
+}
+
+/* Critical animation required immediately */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+
+/* Critical layout classes */
+.container {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container {
+    max-width: 640px;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .container {
+    max-width: 768px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    max-width: 1024px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .container {
+    max-width: 1280px;
+  }
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

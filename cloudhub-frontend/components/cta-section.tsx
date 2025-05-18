@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useEffect, useState, useMemo } from "react"
+import { useRef, useEffect, useState, useMemo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Sparkles, Rocket, Zap, CheckCircle } from "lucide-react"
 
@@ -17,16 +17,35 @@ const particles = [
   { width: 6.6, height: 4.5, top: 60.1, left: 42.6, opacity: 0.57, duration: 10.3, delay: 3.63 }
 ];
 
+// Precomputed benefit items for performance
+const benefits = [
+  "One-click hackathon creation",
+  "Built-in mentorship marketplace",
+  "Secure escrow payment system"
+];
+
+// Precomputed stats for performance
+const stats = [
+  { label: "Community Members", value: "Active" },
+  { label: "AI Tools Available", value: "15+" },
+  { label: "Success Rate", value: "98%" },
+  { label: "Innovation Score", value: "+42%" }
+];
+
 export default function CtaSection() {
   const sectionRef = useRef<HTMLDivElement>(null)
   const [isVisible, setIsVisible] = useState(false)
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
-
+  const [mousePosition, setMousePosition] = useState({ x: 0.5, y: 0.5 }) // Default center position
+  const rafRef = useRef<number | null>(null)
+  
+  // Use IntersectionObserver for efficient visibility tracking
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true)
+          // Once visible, no need to keep observing
+          observer.disconnect()
         }
       },
       { threshold: 0.1, rootMargin: "100px" },
@@ -36,31 +55,44 @@ export default function CtaSection() {
       observer.observe(sectionRef.current)
     }
 
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!sectionRef.current || !isVisible) return
-      const rect = sectionRef.current.getBoundingClientRect()
-      // Throttle mouse move calculations by only updating every 50ms
-      if (window.requestAnimationFrame) {
-        window.requestAnimationFrame(() => {
-          const x = (e.clientX - rect.left) / rect.width
-          const y = (e.clientY - rect.top) / rect.height
-          setMousePosition({ x, y })
-        })
-      }
-    }
+    return () => observer.disconnect()
+  }, [])
 
-    // Only add mousemove listener if section is visible
-    if (isVisible) {
-      document.addEventListener("mousemove", handleMouseMove, { passive: true })
+  // Optimized mouse move handler with debouncing via requestAnimationFrame
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!sectionRef.current || !isVisible) return
+    
+    // Cancel any pending animation frame
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current)
     }
-
-    return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current)
-      }
-      document.removeEventListener("mousemove", handleMouseMove)
-    }
+    
+    // Schedule new position calculation
+    rafRef.current = requestAnimationFrame(() => {
+      const rect = sectionRef.current?.getBoundingClientRect()
+      if (!rect) return
+      
+      const x = (e.clientX - rect.left) / rect.width
+      const y = (e.clientY - rect.top) / rect.height
+      setMousePosition({ x, y })
+      rafRef.current = null
+    })
   }, [isVisible])
+
+  // Attach/detach mouse move listener with passive option for better performance
+  useEffect(() => {
+    if (!isVisible) return
+    
+    document.addEventListener("mousemove", handleMouseMove, { passive: true })
+    
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove)
+      // Clean up any pending animation frame on unmount
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current)
+      }
+    }
+  }, [isVisible, handleMouseMove])
 
   // Memoize transform values to avoid recalculations
   const calcTransform = useMemo(() => {
@@ -70,22 +102,28 @@ export default function CtaSection() {
     return {
       transform: `translate(${moveX}px, ${moveY}px)`,
     }
-  }, [mousePosition.x, mousePosition.y])
+  }, [mousePosition])
 
-  // Memoize benefits array to avoid recreation on each render
-  const benefits = useMemo(() => [
-    "One-click hackathon creation",
-    "Built-in mentorship marketplace",
-    "Secure escrow payment system"
-  ], [])
-
-  // Memoize stats array to avoid recreation on each render
-  const stats = useMemo(() => [
-    { label: "Community Members", value: "Active" },
-    { label: "AI Tools Available", value: "15+" },
-    { label: "Success Rate", value: "98%" },
-    { label: "Innovation Score", value: "+42%" }
-  ], [])
+  // Optimization: Only render particles when section is visible
+  const renderParticles = isVisible && (
+    <div className="absolute inset-0 z-0 pointer-events-none">
+      {particles.map((particle, i) => (
+        <div
+          key={i}
+          className="absolute rounded-full bg-white/30 blur-sm"
+          style={{
+            width: `${particle.width}px`,
+            height: `${particle.height}px`,
+            top: `${particle.top}%`,
+            left: `${particle.left}%`,
+            opacity: particle.opacity,
+            animation: `float ${particle.duration}s linear infinite`,
+            animationDelay: `${particle.delay}s`
+          }}
+        ></div>
+      ))}
+    </div>
+  )
 
   return (
     <section className="py-20 sm:py-28 bg-white relative">
@@ -115,34 +153,22 @@ export default function CtaSection() {
           <div className="absolute top-[15%] left-[30%] w-80 h-20 bg-white/20 blur-xl rounded-full rotate-45 z-0"></div>
           <div className="absolute bottom-[20%] right-[20%] w-60 h-16 bg-white/15 blur-xl rounded-full -rotate-45 z-0"></div>
 
-          {/* Animated Particles with fixed values - reduced count for performance */}
-          <div className="absolute inset-0 z-0 pointer-events-none">
-            {particles.map((particle, i) => (
-              <div
-                key={i}
-                className="absolute rounded-full bg-white/30 blur-sm"
-                style={{
-                  width: `${particle.width}px`,
-                  height: `${particle.height}px`,
-                  top: `${particle.top}%`,
-                  left: `${particle.left}%`,
-                  opacity: particle.opacity,
-                  animation: `float ${particle.duration}s linear infinite`,
-                  animationDelay: `${particle.delay}s`
-                }}
-              ></div>
-            ))}
-          </div>
+          {/* Conditionally rendered particles only when visible */}
+          {renderParticles}
 
           {/* Glass elements */}
-          <div
-            className="absolute top-1/4 right-1/4 h-24 w-24 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 z-0"
-            style={calcTransform}
-          ></div>
-          <div
-            className="absolute bottom-1/4 left-1/4 h-32 w-32 rounded-full bg-white/5 backdrop-blur-sm border border-white/20 z-0"
-            style={calcTransform}
-          ></div>
+          {isVisible && (
+            <>
+              <div
+                className="absolute top-1/4 right-1/4 h-24 w-24 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 z-0"
+                style={calcTransform}
+              ></div>
+              <div
+                className="absolute bottom-1/4 left-1/4 h-32 w-32 rounded-full bg-white/5 backdrop-blur-sm border border-white/20 z-0"
+                style={calcTransform}
+              ></div>
+            </>
+          )}
 
           <div className="relative px-6 py-16 sm:px-12 sm:py-20 md:py-24 z-[1]">
             <div className="max-w-5xl mx-auto">
@@ -235,14 +261,18 @@ export default function CtaSection() {
                   </div>
                   
                   {/* Simplified pulse effects - reduced opacity and size for performance */}
-                  <div 
-                    className="absolute -top-6 -right-6 h-20 w-20 rounded-full bg-gradient-to-br from-indigo-400 to-violet-400 blur-xl opacity-20 animate-pulse"
-                    style={{animationDuration: '4s'}}
-                  ></div>
-                  <div 
-                    className="absolute -bottom-8 -left-8 h-24 w-24 rounded-full bg-gradient-to-br from-violet-400 to-fuchsia-400 blur-xl opacity-15 animate-pulse"
-                    style={{animationDuration: '6s'}}
-                  ></div>
+                  {isVisible && (
+                    <>
+                      <div 
+                        className="absolute -top-6 -right-6 h-20 w-20 rounded-full bg-gradient-to-br from-indigo-400 to-violet-400 blur-xl opacity-20 animate-pulse"
+                        style={{animationDuration: '4s'}}
+                      ></div>
+                      <div 
+                        className="absolute -bottom-8 -left-8 h-24 w-24 rounded-full bg-gradient-to-br from-violet-400 to-fuchsia-400 blur-xl opacity-15 animate-pulse"
+                        style={{animationDuration: '6s'}}
+                      ></div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
