@@ -139,15 +139,11 @@ export default function HeroSection() {
               The premier platform where anyone can create or join hackathons with all the tools you need for success.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <Button className="group bg-white text-violet-900 hover:bg-white/90 px-6 sm:px-8 py-5 sm:py-6 h-auto text-base font-medium rounded-xl shadow-lg shadow-violet-950/20 hover:shadow-violet-950/30 transition-all duration-300">
-                Create a Hackathon
-                <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
-              </Button>
-              <Button
-                variant="outline"
-                className="border-white/20 text-white hover:bg-white/10 px-6 sm:px-8 py-5 sm:py-6 h-auto text-base font-medium rounded-xl backdrop-blur-sm"
+              <Button 
+                className="group bg-violet-600/10 border border-violet-600/40 text-violet-100 hover:bg-white hover:text-violet-900 px-6 sm:px-8 py-5 sm:py-6 h-auto text-base font-medium rounded-xl shadow-lg shadow-violet-950/20 hover:shadow-violet-950/30 transition-all duration-300"
               >
                 Explore Hackathons
+                <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
               </Button>
             </div>
 
@@ -187,7 +183,7 @@ export default function HeroSection() {
                       <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-yellow-500"></div>
                       <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-500"></div>
                     </div>
-                    <div className="mx-auto text-xs font-medium text-white/70">CloudHub Dashboard</div>
+                    <div className="absolute left-0 right-0 text-center text-xs font-medium text-white/70">CloudHub Dashboard</div>
                   </div>
                   <div className="pt-10 sm:pt-14">
                     <Image
