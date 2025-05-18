@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -9,6 +9,12 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 import { Input } from "@/components/ui/input" 
+import { Textarea } from "@/components/ui/textarea"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Users,
   Trophy,
@@ -26,8 +32,63 @@ import {
   Clock,
   MoreHorizontal,
   Pin,
-  X
+  X,
+  Mail,
+  Briefcase,
+  Globe,
+  Lock,
+  AlertCircle,
+  Info
 } from "lucide-react"
+
+// Mock data for users that can be invited to a team
+const availableUsers = [
+  {
+    id: 7,
+    name: "Ava Wilson",
+    email: "ava.wilson@example.com",
+    role: "Full-stack Developer",
+    skills: ["JavaScript", "React", "Node.js"],
+    avatar: "/placeholder.svg?height=40&width=40&text=AW",
+    isOnline: true,
+  },
+  {
+    id: 8,
+    name: "Raj Patel",
+    email: "raj.patel@example.com",
+    role: "Machine Learning Engineer",
+    skills: ["Python", "TensorFlow", "Data Science"],
+    avatar: "/placeholder.svg?height=40&width=40&text=RP",
+    isOnline: true,
+  },
+  {
+    id: 9,
+    name: "Maya Chen",
+    email: "maya.chen@example.com",
+    role: "UI/UX Designer",
+    skills: ["Figma", "UI Design", "User Research"],
+    avatar: "/placeholder.svg?height=40&width=40&text=MC",
+    isOnline: false,
+  },
+  {
+    id: 10,
+    name: "Luke Johnson",
+    email: "luke.johnson@example.com",
+    role: "DevOps Engineer",
+    skills: ["Docker", "Kubernetes", "CI/CD"],
+    avatar: "/placeholder.svg?height=40&width=40&text=LJ",
+    isOnline: false,
+  },
+  {
+    id: 11,
+    name: "Sophia Garcia",
+    email: "sophia.garcia@example.com",
+    role: "Blockchain Developer",
+    skills: ["Solidity", "Ethereum", "Web3"],
+    avatar: "/placeholder.svg?height=40&width=40&text=SG",
+    isOnline: true,
+  },
+];
 
 // Mock data for teams
 const myTeamsData = [
@@ -128,6 +189,94 @@ export default function TeamsDashboard() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   
+  // Create Team Dialog State
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [teamName, setTeamName] = useState("")
+  const [teamDescription, setTeamDescription] = useState("")
+  const [selectedHackathon, setSelectedHackathon] = useState("")
+  const [maxTeamSize, setMaxTeamSize] = useState("5")
+  const [isLookingForMembers, setIsLookingForMembers] = useState(true)
+  const [isPublic, setIsPublic] = useState(true)
+  
+  // Team Members State
+  const [selectedMembers, setSelectedMembers] = useState<typeof availableUsers>([])
+  const [emailInvites, setEmailInvites] = useState<string[]>([])
+  const [currentEmail, setCurrentEmail] = useState("")
+  const [memberSearchTerm, setMemberSearchTerm] = useState("")
+
+  // Update looking for members state when max team size changes
+  useEffect(() => {
+    if (maxTeamSize === "6" && isLookingForMembers) {
+      setIsLookingForMembers(false)
+    }
+  }, [maxTeamSize, isLookingForMembers])
+
+  // Handle invitation by email
+  const handleAddEmailInvite = () => {
+    if (currentEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(currentEmail)) {
+      if (!emailInvites.includes(currentEmail)) {
+        setEmailInvites([...emailInvites, currentEmail])
+      }
+      setCurrentEmail("")
+    }
+  }
+
+  const handleRemoveEmailInvite = (email: string) => {
+    setEmailInvites(emailInvites.filter(e => e !== email))
+  }
+
+  // Handle adding/removing team members
+  const handleToggleMember = (user: typeof availableUsers[0]) => {
+    const isSelected = selectedMembers.some(m => m.id === user.id)
+    
+    if (isSelected) {
+      setSelectedMembers(selectedMembers.filter(m => m.id !== user.id))
+    } else {
+      setSelectedMembers([...selectedMembers, user])
+    }
+  }
+
+  // Filter available users based on search
+  const filteredAvailableUsers = availableUsers.filter(user => {
+    if (!memberSearchTerm.trim()) return true
+    
+    const searchLower = memberSearchTerm.toLowerCase()
+    return (
+      user.name.toLowerCase().includes(searchLower) ||
+      user.email.toLowerCase().includes(searchLower) ||
+      user.role.toLowerCase().includes(searchLower) ||
+      user.skills.some(skill => skill.toLowerCase().includes(searchLower))
+    )
+  })
+
+  // Create new team
+  const handleCreateTeam = () => {
+    // Here you would typically make an API call to create the team
+    console.log("Creating team:", {
+      name: teamName,
+      description: teamDescription,
+      hackathon: selectedHackathon,
+      maxSize: maxTeamSize,
+      isLookingForMembers,
+      isPublic,
+      members: selectedMembers,
+      emailInvites
+    })
+    
+    // Reset form and close dialog
+    setTeamName("")
+    setTeamDescription("")
+    setSelectedHackathon("")
+    setMaxTeamSize("5")
+    setIsLookingForMembers(true)
+    setIsPublic(true)
+    setSelectedMembers([])
+    setEmailInvites([])
+    setCurrentEmail("")
+    setMemberSearchTerm("")
+    setIsCreateDialogOpen(false)
+  }
+
   // Handle keyboard events for search
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Escape') {
@@ -166,60 +315,78 @@ export default function TeamsDashboard() {
     <div className="space-y-8 pb-10 px-4">
       {/* Header Section */}
       <section className="relative overflow-hidden rounded-2xl shadow-lg">
+        {/* Gradient background with animated elements */}
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600"></div>
-        <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-20"></div>
+        <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-black/5 to-black/20"></div>
+        
         {/* Animated background elements */}
         <div className="absolute top-0 right-0 w-1/3 h-4/5 bg-gradient-to-b from-white/10 to-transparent rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/4"></div>
         <div className="absolute bottom-0 left-0 w-2/3 h-1/2 bg-gradient-to-t from-blue-400/10 to-transparent rounded-full blur-3xl"></div>
         <div className="absolute top-1/3 right-1/4 w-24 h-24 bg-white/5 rounded-full blur-xl"></div>
         
-        <div className="relative p-6 sm:p-8">
-          <div className="grid gap-6 md:grid-cols-2 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full mb-4 text-white/90 text-sm">
-                <Users className="h-3.5 w-3.5" />
-                <span>Team Management</span>
+        {/* Decorative elements */}
+        <div className="absolute top-1/4 left-[10%] w-12 h-12 rounded-full bg-blue-500/10 backdrop-blur-md border border-white/10"></div>
+        <div className="absolute bottom-1/4 right-[15%] w-20 h-20 rounded-full bg-violet-500/10 backdrop-blur-md border border-white/10"></div>
+        <div className="absolute top-1/2 left-[30%] w-16 h-16 rounded-full bg-indigo-500/10 backdrop-blur-md border border-white/10"></div>
+        
+        <div className="relative p-8 sm:p-10 md:p-12">
+          <div className="grid gap-8 md:grid-cols-2 items-center">
+            <div className="max-w-xl">
+              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-xl px-4 py-1.5 rounded-full mb-5 text-white text-sm border border-white/20 shadow-xl">
+                <Users className="h-4 w-4 text-blue-200" />
+                <span className="font-medium tracking-wide">Team Management</span>
               </div>
-              <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">My Teams</h1>
-              <p className="text-white/80 mb-6">Manage your hackathon teams and find new teammates</p>
-              <div className="flex flex-wrap gap-3">
-                <Button className="bg-white text-indigo-700 hover:bg-white/90 shadow-md transition-all group">
+              
+              <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight">
+                My <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-violet-200">Teams</span>
+              </h1>
+              
+              <p className="text-white/90 text-lg mb-8 max-w-lg font-light">
+                Manage your hackathon teams and find new teammates to collaborate with on exciting projects.
+              </p>
+              
+              <div className="flex flex-wrap gap-4">
+                <Button className="bg-white text-indigo-700 hover:bg-white/90 shadow-lg transition-all group px-5 py-2 h-auto text-sm font-medium rounded-xl border border-white/50">
                   <PlusCircle className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
                   <span>Create New Team</span>
                 </Button>
-                <Button variant="outline" className="text-white border-white/20 bg-indigo-800/30 hover:bg-white hover:text-indigo-700 backdrop-blur-sm transition-all group">
-                  <UserPlus className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
-                  <span>Find Teammates</span>
-                </Button>
               </div>
             </div>
+            
             <div className="hidden md:flex justify-end">
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 p-4 w-full max-w-xs shadow-lg">
-                <h3 className="font-medium mb-3 flex items-center text-white">
+              <div className="bg-white/10 backdrop-blur-xl rounded-xl border border-white/20 p-5 w-full max-w-xs shadow-xl">
+                <h3 className="font-medium mb-4 flex items-center text-white">
                   <Star className="h-4 w-4 mr-2 text-amber-300" />
-                  Team Stats
+                  <span className="text-base">Team Statistics</span>
                 </h3>
-                <div className="space-y-4">
+                <div className="space-y-5">
                   <div>
-                    <div className="flex justify-between text-sm mb-1">
+                    <div className="flex justify-between text-sm mb-1.5">
                       <span className="text-white/80">Active Teams</span>
                       <span className="text-white font-medium">{myTeamsData.length}</span>
                     </div>
-                    <Progress value={myTeamsData.length * 50} className="h-1.5 bg-white/20" indicatorClassName="bg-gradient-to-r from-blue-400 to-blue-500" />
+                    <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-blue-400 to-blue-500 rounded-full" style={{ width: `${myTeamsData.length * 50}%` }}></div>
+                    </div>
                   </div>
                   <div>
-                    <div className="flex justify-between text-sm mb-1">
+                    <div className="flex justify-between text-sm mb-1.5">
                       <span className="text-white/80">Average Completion</span>
                       <span className="text-white font-medium">47.5%</span>
                     </div>
-                    <Progress value={47.5} className="h-1.5 bg-white/20" indicatorClassName="bg-gradient-to-r from-emerald-400 to-emerald-500" />
+                    <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full" style={{ width: '47.5%' }}></div>
+                    </div>
                   </div>
                   <div>
-                    <div className="flex justify-between text-sm mb-1">
+                    <div className="flex justify-between text-sm mb-1.5">
                       <span className="text-white/80">Overall Activity</span>
                       <span className="text-white font-medium">High</span>
                     </div>
-                    <Progress value={80} className="h-1.5 bg-white/20" indicatorClassName="bg-gradient-to-r from-amber-400 to-amber-500" />
+                    <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full" style={{ width: '80%' }}></div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -360,7 +527,7 @@ export default function TeamsDashboard() {
                             <Badge 
                               key={index} 
                               variant="outline" 
-                              className="bg-slate-50 text-slate-700 border-slate-200 group-hover:bg-blue-50 group-hover:text-blue-700 group-hover:border-blue-200 transition-colors"
+                              className="bg-slate-50 text-slate-700 border-slate-200 group-hover:bg-blue-50 group-hover:text-blue-700 group-hover:border-blue-200 transition-colors px-3 py-1 mr-1.5 mb-1.5"
                             >
                               {skill}
                             </Badge>
@@ -390,7 +557,7 @@ export default function TeamsDashboard() {
                                     </Avatar>
                                     <div className="space-y-1 flex-1">
                                       <h4 className="text-sm font-semibold">{member.name}</h4>
-                                      <div className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-800">
+                                      <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 shadow-sm">
                                         {member.role}
                                       </div>
                                       <div className="flex space-x-2 mt-2">
@@ -550,7 +717,7 @@ export default function TeamsDashboard() {
                               <Badge 
                                 key={index} 
                                 variant="outline" 
-                                className="bg-slate-50 text-slate-700 border-slate-200 text-xs group-hover:bg-blue-50 group-hover:text-blue-700 group-hover:border-blue-200 transition-colors"
+                                className="bg-slate-50 text-slate-700 border-slate-200 text-xs group-hover:bg-blue-50 group-hover:text-blue-700 group-hover:border-blue-200 transition-colors px-2.5 py-0.5 mr-1 mb-1"
                               >
                                 {skill}
                               </Badge>
@@ -564,7 +731,7 @@ export default function TeamsDashboard() {
                             {team.lookingFor.map((role, index) => (
                               <Badge 
                                 key={index} 
-                                className="bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 border-0 text-xs group-hover:from-blue-200 group-hover:to-indigo-200 transition-all"
+                                className="bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 border-0 text-xs group-hover:from-blue-200 group-hover:to-indigo-200 transition-all px-2.5 py-0.5 mr-1 mb-1"
                               >
                                 {role}
                               </Badge>
