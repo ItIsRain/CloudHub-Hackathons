@@ -68,7 +68,7 @@ export default function MentorSection() {
           <div className="relative">
             <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed mb-8">
               Share your expertise with hackathon teams while earning competitive rates you control.
-              <span className="block mt-2 text-violet-600 font-medium">Join over 2,000+ expert mentors on CloudHub.</span>
+              <span className="block mt-2 text-violet-600 font-medium">Join over 15+ expert mentors on CloudHub.</span>
             </p>
             {/* Removed the pulse animations that added colored background effects */}
           </div>
@@ -89,7 +89,7 @@ export default function MentorSection() {
             
             <div className="space-y-2 md:space-y-0 md:space-x-4 flex flex-col md:flex-row md:items-center md:order-2 order-1">
               {socialProofItems.map((item, i) => (
-                <div key={i} className="flex items-center bg-white rounded-full px-4 py-2 shadow-sm border border-slate-100">
+                <div key={i} className="flex items-center bg-white rounded-full px-4 py-2 shadow-sm border border-slate-100 h-12">
                   {item.type === "avatars" ? (
                     <div className="flex -space-x-2 mr-3">
                       {item.content.map((initial, j) => (
@@ -99,7 +99,9 @@ export default function MentorSection() {
                       ))}
                     </div>
                   ) : (
-                    <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 mr-1.5" />
+                    <div className="flex items-center h-8">
+                      <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 mr-1.5" />
+                    </div>
                   )}
                   <span className="text-sm text-slate-600">{item.label}</span>
                 </div>
