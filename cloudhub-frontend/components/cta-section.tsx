@@ -81,10 +81,10 @@ export default function CtaSection() {
 
   // Memoize stats array to avoid recreation on each render
   const stats = useMemo(() => [
-    { label: "Active Hackathons", value: "100+" },
-    { label: "Community Members", value: "10K+" },
-    { label: "Prize Money", value: "2M+ AED" },
-    { label: "Success Rate", value: "98%" }
+    { label: "Community Members", value: "Active" },
+    { label: "AI Tools Available", value: "15+" },
+    { label: "Success Rate", value: "98%" },
+    { label: "Innovation Score", value: "+42%" }
   ], [])
 
   return (
@@ -177,13 +177,13 @@ export default function CtaSection() {
                   
                   <div className="flex gap-4">
                     <Button
-                      className="group bg-white text-violet-900 hover:bg-white/90 px-6 sm:px-8 py-6 sm:py-7 h-auto text-base sm:text-lg font-medium rounded-xl shadow-lg shadow-violet-950/20 hover:shadow-violet-950/30 transition-all duration-300"
+                      className="group bg-white text-violet-900 hover:bg-white/90 px-6 sm:px-6 py-3 sm:py-3 h-auto text-base font-medium rounded-xl shadow-lg shadow-violet-950/20 hover:shadow-violet-950/30 transition-all duration-300"
                     >
                       Create a Hackathon
                       <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
                     </Button>
                     <Button
-                      className="group bg-transparent border border-white/30 text-white hover:bg-white/10 px-6 sm:px-8 py-6 sm:py-7 h-auto text-base sm:text-lg font-medium rounded-xl transition-all duration-300"
+                      className="group bg-transparent border border-white/30 text-white hover:bg-white/10 px-6 sm:px-6 py-3 sm:py-3 h-auto text-base font-medium rounded-xl transition-all duration-300"
                     >
                       Learn More
                     </Button>
@@ -195,36 +195,36 @@ export default function CtaSection() {
                     isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
                   }`}
                 >
-                  <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-xl p-6 sm:p-8 transform transition-all duration-500 hover:scale-[1.02]">
-                    <div className="space-y-6">
-                      <div className="flex items-center mb-4">
-                        <div className="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center mr-4 border border-white/20">
-                          <Zap className="h-6 w-6 text-white" />
+                  <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-xl p-6 transform transition-all duration-500 hover:scale-[1.02]">
+                    <div className="space-y-4">
+                      <div className="flex items-center mb-3">
+                        <div className="h-11 w-11 rounded-full bg-white/10 flex items-center justify-center mr-3 border border-white/20">
+                          <Zap className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <h3 className="text-xl font-bold text-white">CloudHub Advantage</h3>
+                          <h3 className="text-lg font-bold text-white">CloudHub Advantage</h3>
                           <p className="text-white/70 text-sm">All-in-one hackathon platform</p>
                         </div>
                       </div>
                       
-                      <div className="space-y-4">
+                      <div className="space-y-3.5">
                         {stats.map((stat, i) => (
                           <div 
                             key={i} 
-                            className={`flex justify-between items-center py-3 border-b border-white/10 transition-all duration-700 delay-${200 + i * 100} ${
+                            className={`flex justify-between items-center py-2.5 border-b border-white/10 transition-all duration-700 delay-${200 + i * 100} ${
                               isVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
                             }`}
                           >
                             <span className="text-white/70">{stat.label}</span>
-                            <span className="text-lg font-semibold text-white">{stat.value}</span>
+                            <span className="text-base font-semibold text-white">{stat.value}</span>
                           </div>
                         ))}
                       </div>
                       
-                      <div className="pt-4">
-                        <div className="bg-gradient-to-r from-violet-500/20 to-indigo-500/20 rounded-xl p-4 backdrop-blur-sm border border-white/10">
+                      <div className="pt-3">
+                        <div className="bg-gradient-to-r from-violet-500/20 to-indigo-500/20 rounded-xl p-3.5 backdrop-blur-sm border border-white/10">
                           <div className="flex items-center">
-                            <Sparkles className="h-5 w-5 text-white mr-2" />
+                            <Sparkles className="h-4 w-4 text-white mr-2" />
                             <span className="text-sm font-medium text-white">
                               Launch your hackathon in under 10 minutes
                             </span>
