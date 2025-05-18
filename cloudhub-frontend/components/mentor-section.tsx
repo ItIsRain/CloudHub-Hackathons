@@ -1,8 +1,59 @@
+"use client"
+
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Clock, DollarSign, Star, Users } from "lucide-react"
+import { Clock, DollarSign, Star, Briefcase, Calendar, Users, Sparkles, ArrowRight } from "lucide-react"
+import { useRef, useEffect, useState, useMemo } from "react"
+
+// Define fixed particle values to avoid hydration mismatch
+// Reduced particle count for better performance
+const particles = [
+  { width: 3.1, height: 5.8, top: 10.4, left: 25.1, opacity: 0.30, duration: 13.2, delay: 2.41 },
+  { width: 5.2, height: 5.3, top: 60.5, left: 15.4, opacity: 0.40, duration: 14.1, delay: 0.95 },
+  { width: 4.9, height: 3.2, top: 75.8, left: 60.1, opacity: 0.30, duration: 15.1, delay: 1.61 },
+  { width: 3.5, height: 4.8, top: 85.8, left: 80.7, opacity: 0.35, duration: 16.6, delay: 2.30 },
+  { width: 4.3, height: 5.6, top: 50.6, left: 70.4, opacity: 0.40, duration: 15.4, delay: 0.83 },
+  { width: 5.1, height: 3.7, top: 20.5, left: 30.2, opacity: 0.30, duration: 14.3, delay: 1.82 }
+];
+
+// Define types for social proof items
+type SocialProofItem = 
+  | { type: "avatars"; content: string[]; label: string }
+  | { type: "rating"; label: string };
 
 export default function MentorSection() {
+  const sectionRef = useRef<HTMLElement>(null)
+  const ctaRef = useRef<HTMLDivElement>(null)
+  const [isVisible, setIsVisible] = useState(false)
+
+  useEffect(() => {
+    // Use IntersectionObserver with rootMargin for earlier loading
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true)
+        }
+      },
+      { threshold: 0.1, rootMargin: "100px" }
+    )
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current)
+    }
+
+    return () => {
+      if (sectionRef.current) {
+        observer.unobserve(sectionRef.current)
+      }
+    }
+  }, [])
+
+  // Memoize social proof content
+  const socialProofItems = useMemo<SocialProofItem[]>(() => [
+    { type: "avatars", content: ["AJ", "SC", "MO"], label: "Joined this month" },
+    { type: "rating", label: "4.9/5 average rating" }
+  ], []);
+
   const mentors = [
     {
       name: "Alex Johnson",
@@ -31,154 +82,166 @@ export default function MentorSection() {
   ]
 
   return (
-    <section id="mentors" className="py-16 sm:py-24 bg-white">
-      <div className="container mx-auto px-4 sm:px-6">
-        <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
-          <div className="inline-flex items-center rounded-full bg-violet-100 px-3 py-1 text-sm font-medium text-violet-800 mb-4">
-            <span className="flex h-2 w-2 rounded-full bg-violet-600 mr-2"></span>
-            Mentorship
+    <section 
+      id="mentors" 
+      ref={sectionRef} 
+      className="py-12 sm:py-16 bg-white relative overflow-hidden"
+    >
+      {/* Decorative elements - reduced blur intensity for better performance */}
+      <div className="absolute top-0 right-0 w-1/3 h-1/3 bg-gradient-to-b from-violet-50 to-transparent rounded-full blur-2xl opacity-60 pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 w-1/3 h-1/3 bg-gradient-to-t from-indigo-50 to-transparent rounded-full blur-2xl opacity-60 pointer-events-none"></div>
+      
+      <div className="container mx-auto px-4 sm:px-6 relative">
+        <div 
+          className={`text-center max-w-3xl mx-auto mb-8 sm:mb-12 transition-all duration-700 ${
+            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+          }`}
+        >
+          <div className="inline-flex items-center rounded-full bg-gradient-to-r from-violet-100 to-indigo-100 px-4 py-2 text-sm font-medium text-violet-800 mb-5 shadow-sm hardware-accelerated">
+            <Sparkles className="h-4 w-4 text-violet-600 mr-2" />
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-indigo-600 font-semibold">Mentorship Marketplace</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 mb-4">
-            Connect with Expert Mentors
+          
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-slate-900 mb-6 bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700">
+            Become a <span className="bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-indigo-600">Mentor</span> & Get Paid
           </h2>
-          <p className="text-base sm:text-lg text-slate-600">
-            Get guidance from industry professionals who can help take your hackathon project to the next level.
-          </p>
-        </div>
-
-        <div className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {mentors.map((mentor, index) => (
-            <div
-              key={index}
-              className="group bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-all"
-            >
-              <div className="relative h-40 sm:h-48 w-full bg-gradient-to-r from-violet-100 to-indigo-100">
-                <div className="absolute inset-0 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px] opacity-40"></div>
-                <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white to-transparent"></div>
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
-                  <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-full border-4 border-white overflow-hidden bg-white">
-                    <Image src={mentor.image || "/placeholder.svg"} alt={mentor.name} fill className="object-cover" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-12 sm:pt-16 px-4 sm:px-6 pb-6 text-center">
-                <h3 className="text-lg sm:text-xl font-semibold text-slate-900">{mentor.name}</h3>
-                <p className="text-sm sm:text-base text-slate-600 mb-2">{mentor.role}</p>
-                <div className="flex items-center justify-center mb-4">
-                  <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                  <span className="ml-1 text-sm font-medium text-slate-700">{mentor.rating}</span>
-                </div>
-
-                <div className="flex items-center justify-between mb-6 px-4 py-3 bg-slate-50 rounded-xl">
-                  <div className="flex items-center">
-                    <DollarSign className="h-4 w-4 text-slate-500 mr-1" />
-                    <span className="text-sm text-slate-700">${mentor.hourlyRate}/hour</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Clock className="h-4 w-4 text-slate-500 mr-1" />
-                    <span className="text-sm text-slate-700">Available</span>
-                  </div>
-                </div>
-
-                <div className="mb-6">
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {mentor.expertise.map((skill, i) => (
-                      <span
-                        key={i}
-                        className="inline-flex items-center rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-medium text-violet-800"
-                      >
-                        {skill}
-                      </span>
+          
+          <div className="relative">
+            <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
+              Share your expertise with hackathon teams while earning competitive rates you control.
+              <span className="block mt-2 text-violet-600 font-medium">Join over 2,000+ expert mentors on CloudHub.</span>
+            </p>
+            {/* Simplified pulse animations - reduced size and opacity */}
+            <div className="absolute -right-10 top-1/2 transform -translate-y-1/2 hidden lg:block">
+              <div className="h-16 w-16 rounded-full bg-gradient-to-r from-violet-500/20 to-indigo-500/20 blur-xl animate-pulse"></div>
+            </div>
+            <div className="absolute -left-10 top-1/2 transform -translate-y-1/2 hidden lg:block">
+              <div className="h-12 w-12 rounded-full bg-gradient-to-r from-indigo-500/20 to-violet-500/20 blur-xl animate-pulse" style={{animationDuration: '1s'}}></div>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap justify-center gap-4 mt-8">
+            {socialProofItems.map((item, i) => (
+              <div key={i} className="flex items-center bg-white rounded-full px-4 py-2 shadow-sm border border-slate-100">
+                {item.type === "avatars" ? (
+                  <div className="flex -space-x-2 mr-3">
+                    {item.content.map((initial, j) => (
+                      <div key={j} className="h-8 w-8 rounded-full bg-gradient-to-r from-violet-400 to-indigo-400 flex items-center justify-center text-white text-xs font-medium border-2 border-white">
+                        {initial}
+                      </div>
                     ))}
                   </div>
-                </div>
-
-                <Button className="w-full bg-white border border-slate-200 text-slate-900 hover:bg-violet-50 hover:border-violet-200 group-hover:bg-gradient-to-r group-hover:from-violet-600 group-hover:to-indigo-600 group-hover:text-white transition-all duration-300">
-                  Book Session
-                </Button>
+                ) : (
+                  <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 mr-1.5" />
+                )}
+                <span className="text-sm text-slate-600">{item.label}</span>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
-        <div className="mt-16 sm:mt-20 relative rounded-2xl overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-indigo-600"></div>
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
-
-          <div className="relative p-6 sm:p-12 text-white">
-            <div className="grid gap-8 lg:grid-cols-2 items-center">
-              <div>
-                <div className="inline-flex items-center rounded-full bg-white/10 backdrop-blur-sm px-3 py-1 text-sm font-medium text-white mb-4 border border-white/10">
-                  <Users className="h-4 w-4 text-white mr-2" />
-                  Become a Mentor
+        {/* Reduced spacing */}
+        <div className="h-8 sm:h-12"></div>
+        
+        <div 
+          ref={ctaRef}
+          className={`relative rounded-2xl overflow-hidden backdrop-blur-optimized p-8 sm:p-10 md:p-12 shadow-xl transform transition-all duration-700 delay-300 z-10 hardware-accelerated ${
+            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+          }`}
+        >
+          {/* Gradient background with glass effect */}
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-600/80 via-indigo-500/70 to-purple-600/75 z-[-1]"></div>
+          
+          {/* Frosted glass overlay */}
+          <div className="absolute inset-0 backdrop-filter backdrop-blur-sm bg-white/10 z-[-1]"></div>
+          
+          {/* Mesh grid pattern - simplified */}
+          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_2px,transparent_2px)] [background-size:24px_24px] z-[-1]"></div>
+          
+          {/* Glass elements - reduced for better performance */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 backdrop-blur-sm rounded-full -translate-y-1/2 translate-x-1/2 border border-white/20 z-[0]"></div>
+          
+          {/* Light reflection effects - consolidated */}
+          <div className="absolute top-[10%] left-[20%] w-80 h-20 bg-white/20 blur-xl rounded-full rotate-45 z-[-1]"></div>
+          
+          {/* Animated particles with pre-defined values - reduced count */}
+          <div className="absolute inset-0 z-[0] pointer-events-none">
+            {particles.map((particle, i) => (
+              <div
+                key={i}
+                className="absolute rounded-full bg-white/30 blur-sm animate-float"
+                style={{
+                  width: `${particle.width}px`,
+                  height: `${particle.height}px`,
+                  top: `${particle.top}%`,
+                  left: `${particle.left}%`,
+                  opacity: particle.opacity,
+                  animationDuration: `${particle.duration}s`,
+                  animationDelay: `${particle.delay}s`
+                }}
+              ></div>
+            ))}
+          </div>
+          
+          <div className="relative max-w-4xl mx-auto z-[1]">
+            <div className="grid md:grid-cols-5 gap-8 items-center">
+              <div className="md:col-span-3">
+                <div className="inline-flex items-center rounded-full bg-white/10 backdrop-blur-sm px-4 py-2 text-sm font-medium text-white mb-6 border border-white/10">
+                  <Sparkles className="h-4 w-4 text-white mr-2" />
+                  Join Our Expert Network
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-bold mb-4">Share Your Expertise</h3>
-                <p className="text-base sm:text-lg text-white/80 mb-6">
-                  Share your expertise with the CloudHub community and earn income by mentoring hackathon participants.
+                
+                <h3 className="text-3xl sm:text-4xl font-bold text-white mb-6 leading-tight">
+                  Ready to share your expertise and get paid?
+                </h3>
+                
+                <p className="text-white/90 text-lg mb-8 leading-relaxed">
+                  Join our global network of mentors helping hackathon teams build amazing projects while earning competitive rates. Our top mentors earn over $5,000 monthly!
                 </p>
-                <ul className="space-y-4 mb-8">
-                  {[
-                    "Set your own hourly rate and availability",
-                    "Choose which hackathons to support",
-                    "Provide guidance in your area of expertise",
-                    "Build your professional network and reputation",
-                  ].map((item, i) => (
-                    <li key={i} className="flex items-start">
-                      <div className="flex-shrink-0 h-6 w-6 rounded-full bg-white/10 flex items-center justify-center mr-3 mt-0.5 border border-white/20">
-                        <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                      <span className="text-white/90">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Button className="bg-white text-violet-900 hover:bg-white/90 px-6 py-6 h-auto text-base font-medium rounded-xl">
-                  Apply as Mentor
-                </Button>
+                
+                <div className="flex flex-wrap gap-4">
+                  <Button className="group bg-white text-violet-900 hover:bg-white/90 px-8 py-6 h-auto text-base font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+                    Apply as Mentor Today
+                    <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
+                  </Button>
+                  
+                  <Button className="group bg-transparent border border-white/30 text-white hover:bg-white/10 px-6 py-6 h-auto text-base font-medium rounded-xl transition-all duration-300">
+                    Learn More
+                  </Button>
+                </div>
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl p-8">
-                <h4 className="text-xl font-semibold text-white mb-6">How It Works</h4>
-                <div className="space-y-6">
-                  <div className="flex">
-                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-white/10 flex items-center justify-center mr-4 border border-white/20">
-                      <span className="text-base font-bold text-white">1</span>
+              
+              <div className="md:col-span-2">
+                <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-xl p-6 transform transition-all duration-500 hover:scale-[1.02] hardware-accelerated">
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between pb-4 border-b border-white/10">
+                      <div>
+                        <p className="text-sm text-white/70">Average Hourly Rate</p>
+                        <p className="text-3xl font-bold text-white">$135</p>
+                      </div>
+                      <div className="h-12 w-12 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
+                        <DollarSign className="h-6 w-6 text-white" />
+                      </div>
                     </div>
-                    <div>
-                      <h5 className="text-lg font-medium text-white mb-2">Create Your Profile</h5>
-                      <p className="text-white/80">
-                        Set up your mentor profile with your skills, experience, and hourly rate.
-                      </p>
+                    
+                    <div className="space-y-3">
+                      {[
+                        { label: "Technical Mentors", value: "$100-180" },
+                        { label: "Design Mentors", value: "$90-150" },
+                        { label: "Business Mentors", value: "$120-200" }
+                      ].map((item, i) => (
+                        <div key={i} className="flex justify-between">
+                          <span className="text-white/70">{item.label}</span>
+                          <span className="font-medium text-white">{item.value}</span>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                  <div className="flex">
-                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-white/10 flex items-center justify-center mr-4 border border-white/20">
-                      <span className="text-base font-bold text-white">2</span>
-                    </div>
-                    <div>
-                      <h5 className="text-lg font-medium text-white mb-2">Choose Hackathons</h5>
-                      <p className="text-white/80">
-                        Browse active hackathons and select those that match your expertise.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex">
-                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-white/10 flex items-center justify-center mr-4 border border-white/20">
-                      <span className="text-base font-bold text-white">3</span>
-                    </div>
-                    <div>
-                      <h5 className="text-lg font-medium text-white mb-2">Book Sessions</h5>
-                      <p className="text-white/80">Participants book time slots based on your availability calendar.</p>
-                    </div>
-                  </div>
-                  <div className="flex">
-                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-white/10 flex items-center justify-center mr-4 border border-white/20">
-                      <span className="text-base font-bold text-white">4</span>
-                    </div>
-                    <div>
-                      <h5 className="text-lg font-medium text-white mb-2">Get Paid</h5>
-                      <p className="text-white/80">Receive payments directly to your account (minus platform fee).</p>
+                    
+                    <div className="pt-4 bg-white/5 rounded-xl p-4 backdrop-blur-sm border border-white/10 mt-4">
+                      <div className="flex items-center">
+                        <Calendar className="h-5 w-5 text-white mr-2" />
+                        <span className="text-sm font-medium text-white">Most mentors work 5-15 hours per event</span>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useEffect, useState } from "react"
-import { Users, Award, Shield, Zap, Code, DollarSign } from "lucide-react"
+import { Users, Award, Shield, Zap, Code, DollarSign, ShieldCheck, BarChart3, Trophy, ClipboardCheck, Laptop, UserPlus } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export default function FeaturesSection() {
@@ -35,7 +35,7 @@ export default function FeaturesSection() {
 
     const interval = setInterval(() => {
       setActiveFeature((prev) => (prev + 1) % features.length)
-    }, 3000)
+    }, 4000)
 
     return () => clearInterval(interval)
   }, [isVisible])
@@ -48,18 +48,18 @@ export default function FeaturesSection() {
     },
     {
       icon: <Award className="h-6 w-6" />,
-      title: "Hackathon Infrastructure",
-      description: "Everything you need to run successful hackathons, from registration to judging.",
+      title: "End-to-End Hackathon Platform",
+      description: "One command to launch your entire hackathon with registration, project submissions, judging, and prize distribution.",
     },
     {
       icon: <Shield className="h-6 w-6" />,
       title: "Secure Escrow Services",
-      description: "Guaranteed, transparent prize distribution with our trusted escrow system.",
+      description: "Bank-grade security with blockchain verification ensures transparent and guaranteed prize distribution.",
     },
     {
       icon: <Zap className="h-6 w-6" />,
       title: "AI-Powered Tools",
-      description: "Boost productivity with our suite of AI tools designed for hackathon participants.",
+      description: "Our proprietary AI assistant helps teams brainstorm, debug code, and optimize projects in real-time.",
     },
     {
       icon: <Code className="h-6 w-6" />,
@@ -71,6 +71,36 @@ export default function FeaturesSection() {
       title: "CloudHub Credits",
       description: "Flexible credit system for accessing premium features and services.",
     },
+    {
+      icon: <ShieldCheck className="h-6 w-6" />,
+      title: "Real-time Collaboration",
+      description: "Built-in tools for team formation, video meetings, and code collaboration.",
+    },
+    {
+      icon: <BarChart3 className="h-6 w-6" />,
+      title: "Analytics Dashboard",
+      description: "Track participation, engagement, and project metrics with our powerful analytics suite.",
+    },
+    {
+      icon: <Trophy className="h-6 w-6" />,
+      title: "Project Showcase",
+      description: "Stunning galleries to showcase winning projects and attract future sponsors.",
+    },
+    {
+      icon: <ClipboardCheck className="h-6 w-6" />,
+      title: "Smart Judging System",
+      description: "Streamlined judging with custom criteria, blind reviews, and automated scoring.",
+    },
+    {
+      icon: <Laptop className="h-6 w-6" />,
+      title: "Virtual Event Spaces",
+      description: "Immersive virtual environments for remote hackathons with networking lounges.",
+    },
+    {
+      icon: <UserPlus className="h-6 w-6" />,
+      title: "Team Formation Tools",
+      description: "Find the perfect teammates with skill matching and project interest algorithms.",
+    },
   ]
 
   return (
@@ -80,20 +110,20 @@ export default function FeaturesSection() {
       <div className="absolute bottom-0 left-0 w-1/3 h-1/3 bg-gradient-to-t from-indigo-50 to-transparent rounded-full blur-3xl opacity-60"></div>
 
       <div className="container mx-auto px-4 sm:px-6 relative">
-        <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
+        <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
           <div className="inline-flex items-center rounded-full bg-violet-100 px-3 py-1 text-sm font-medium text-violet-800 mb-4">
             <span className="flex h-2 w-2 rounded-full bg-violet-600 mr-2"></span>
             Features
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 mb-4">
-            Everything You Need for Successful Hackathons
+            The Ultimate All-in-One Hackathon Platform
           </h2>
           <p className="text-base sm:text-lg text-slate-600">
-            CloudHub provides all the tools and services to create, manage, and participate in hackathons of any size.
+            CloudHub provides a complete ecosystem to create, manage, and participate in world-class hackathons with zero hassle.
           </p>
         </div>
 
-        <div className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {features.map((feature, index) => (
             <div
               key={index}
@@ -139,8 +169,8 @@ export default function FeaturesSection() {
                 </div>
                 <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4">Trusted Escrow & Payment System</h3>
                 <p className="text-base sm:text-lg text-slate-600 mb-6 sm:mb-8">
-                  CloudHub acts as the escrow agent for prize money and sponsorships, ensuring fair and transparent
-                  distribution to winners.
+                  CloudHub handles all financial aspects of your hackathon with bank-level security, ensuring fair and transparent
+                  prize distribution while eliminating payment headaches.
                 </p>
                 <ul className="space-y-4">
                   {[
@@ -148,6 +178,8 @@ export default function FeaturesSection() {
                     "Transparent fee structure with no hidden costs",
                     "Automated prize distribution to winners",
                     "Support for multiple payment methods and currencies",
+                    "Smart contracts for conditional prize releases",
+                    "Real-time financial dashboard for organizers",
                   ].map((item, i) => (
                     <li key={i} className="flex items-start">
                       <div className="flex-shrink-0 h-6 w-6 rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 flex items-center justify-center mr-3 mt-0.5 shadow-sm">

@@ -1,8 +1,21 @@
 "use client"
 
-import { useRef, useEffect, useState } from "react"
+import { useRef, useEffect, useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Sparkles } from "lucide-react"
+import { ArrowRight, Sparkles, Rocket, Zap, CheckCircle } from "lucide-react"
+
+// Define fixed particle values to avoid hydration mismatch
+// Reduced number of particles from 15 to 8 for performance
+const particles = [
+  { width: 2.7, height: 3.3, top: 19.6, left: 50.1, opacity: 0.30, duration: 11.2, delay: 4.41 },
+  { width: 7.9, height: 6.9, top: 45.5, left: 20.4, opacity: 0.69, duration: 13.1, delay: 1.15 },
+  { width: 7.4, height: 5.9, top: 82.8, left: 88.7, opacity: 0.20, duration: 19.6, delay: 3.30 },
+  { width: 4.7, height: 6.6, top: 77.6, left: 60.4, opacity: 0.68, duration: 18.4, delay: 1.83 },
+  { width: 7.1, height: 6.3, top: 73.5, left: 28.0, opacity: 0.39, duration: 12.3, delay: 1.82 },
+  { width: 3.7, height: 7.6, top: 85.6, left: 6.5, opacity: 0.48, duration: 17.3, delay: 2.96 },
+  { width: 5.2, height: 3.7, top: 61.8, left: 85.7, opacity: 0.33, duration: 15.1, delay: 0.65 },
+  { width: 6.6, height: 4.5, top: 60.1, left: 42.6, opacity: 0.57, duration: 10.3, delay: 3.63 }
+];
 
 export default function CtaSection() {
   const sectionRef = useRef<HTMLDivElement>(null)
@@ -16,7 +29,7 @@ export default function CtaSection() {
           setIsVisible(true)
         }
       },
-      { threshold: 0.1 },
+      { threshold: 0.1, rootMargin: "100px" },
     )
 
     if (sectionRef.current) {
@@ -24,14 +37,22 @@ export default function CtaSection() {
     }
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (!sectionRef.current) return
+      if (!sectionRef.current || !isVisible) return
       const rect = sectionRef.current.getBoundingClientRect()
-      const x = (e.clientX - rect.left) / rect.width
-      const y = (e.clientY - rect.top) / rect.height
-      setMousePosition({ x, y })
+      // Throttle mouse move calculations by only updating every 50ms
+      if (window.requestAnimationFrame) {
+        window.requestAnimationFrame(() => {
+          const x = (e.clientX - rect.left) / rect.width
+          const y = (e.clientY - rect.top) / rect.height
+          setMousePosition({ x, y })
+        })
+      }
     }
 
-    document.addEventListener("mousemove", handleMouseMove)
+    // Only add mousemove listener if section is visible
+    if (isVisible) {
+      document.addEventListener("mousemove", handleMouseMove, { passive: true })
+    }
 
     return () => {
       if (sectionRef.current) {
@@ -39,114 +60,190 @@ export default function CtaSection() {
       }
       document.removeEventListener("mousemove", handleMouseMove)
     }
-  }, [])
+  }, [isVisible])
 
-  // Calculate transform values based on mouse position
-  const calcTransform = (factor = 1) => {
+  // Memoize transform values to avoid recalculations
+  const calcTransform = useMemo(() => {
+    const factor = 15
     const moveX = (mousePosition.x - 0.5) * factor
     const moveY = (mousePosition.y - 0.5) * factor
     return {
       transform: `translate(${moveX}px, ${moveY}px)`,
     }
-  }
+  }, [mousePosition.x, mousePosition.y])
+
+  // Memoize benefits array to avoid recreation on each render
+  const benefits = useMemo(() => [
+    "One-click hackathon creation",
+    "Built-in mentorship marketplace",
+    "Secure escrow payment system"
+  ], [])
+
+  // Memoize stats array to avoid recreation on each render
+  const stats = useMemo(() => [
+    { label: "Active Hackathons", value: "100+" },
+    { label: "Community Members", value: "10K+" },
+    { label: "Prize Money", value: "2M+ AED" },
+    { label: "Success Rate", value: "98%" }
+  ], [])
 
   return (
-    <section className="py-16 sm:py-24 bg-slate-50">
-      <div className="container mx-auto px-4 sm:px-6">
-        <div ref={sectionRef} className="relative rounded-3xl overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-indigo-600"></div>
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTAwIDEwMGw1MC01MHY1MEgxMDBtMCAwTDUwIDUwdjUwaDUwbTAgMGw1MCA1MEgxMDBtMCAwbC01MCA1MEgxMDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIxIiBzdHJva2Utb3BhY2l0eT0iLjEiLz48L3N2Zz4=')] bg-center"></div>
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-violet-900/50"></div>
+    <section className="py-20 sm:py-28 bg-white relative">
+      {/* Simplified decorative elements - reduced for performance */}
+      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-1/3 h-1/3 bg-gradient-to-b from-violet-50 to-transparent rounded-full blur-3xl opacity-60"></div>
+        <div className="absolute bottom-0 left-0 w-1/3 h-1/3 bg-gradient-to-t from-indigo-50 to-transparent rounded-full blur-3xl opacity-60"></div>
+      </div>
 
-          {/* Animated Particles */}
-          <div className="absolute inset-0">
-            {Array.from({ length: 15 }).map((_, i) => {
-              // Fixed values for each particle
-              const particles = [
-                { width: 2.7, height: 3.3, top: 19.6, left: 50.1, opacity: 0.30, duration: 11.2, delay: 4.41 },
-                { width: 2.9, height: 4.7, top: 51.6, left: 53.0, opacity: 0.43, duration: 11.9, delay: 2.74 },
-                { width: 7.9, height: 6.9, top: 45.5, left: 20.4, opacity: 0.69, duration: 13.1, delay: 1.15 },
-                { width: 7.6, height: 2.1, top: 55.5, left: 93.1, opacity: 0.49, duration: 17.1, delay: 0.61 },
-                { width: 7.4, height: 5.9, top: 82.8, left: 88.7, opacity: 0.20, duration: 19.6, delay: 3.30 },
-                { width: 4.7, height: 6.6, top: 77.6, left: 60.4, opacity: 0.68, duration: 18.4, delay: 1.83 },
-                { width: 7.1, height: 6.3, top: 73.5, left: 28.0, opacity: 0.39, duration: 12.3, delay: 1.82 },
-                { width: 6.8, height: 4.5, top: 88.5, left: 17.3, opacity: 0.46, duration: 15.8, delay: 1.67 },
-                { width: 3.7, height: 7.6, top: 85.6, left: 6.5, opacity: 0.48, duration: 17.3, delay: 2.96 },
-                { width: 2.1, height: 6.0, top: 77.2, left: 16.6, opacity: 0.68, duration: 18.9, delay: 4.15 },
-                { width: 4.7, height: 3.7, top: 64.1, left: 8.2, opacity: 0.31, duration: 18.7, delay: 1.07 },
-                { width: 2.5, height: 7.6, top: 99.2, left: 21.8, opacity: 0.24, duration: 18.7, delay: 4.32 },
-                { width: 5.2, height: 3.7, top: 61.8, left: 85.7, opacity: 0.33, duration: 15.1, delay: 0.65 },
-                { width: 6.6, height: 4.5, top: 60.1, left: 42.6, opacity: 0.57, duration: 10.3, delay: 3.63 },
-                { width: 6.6, height: 4.8, top: 11.6, left: 81.9, opacity: 0.53, duration: 10.7, delay: 2.41 }
-              ];
-              const particle = particles[i];
-              return (
-                <div
-                  key={i}
-                  className="absolute rounded-full bg-white/30 blur-sm"
-                  style={{
-                    width: `${particle.width}px`,
-                    height: `${particle.height}px`,
-                    top: `${particle.top}%`,
-                    left: `${particle.left}%`,
-                    opacity: particle.opacity,
-                    animation: `float ${particle.duration}s linear infinite`,
-                    animationDelay: `${particle.delay}s`
-                  }}
-                ></div>
-              );
-            })}
+      <div className="container mx-auto px-4 sm:px-6">
+        <div 
+          ref={sectionRef} 
+          className={`relative rounded-3xl overflow-hidden transform transition-all duration-700 ${
+            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+          }`}
+        >
+          {/* Gradient background with glass effect */}
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-600/80 to-indigo-600/75 z-0"></div>
+          
+          {/* Frosted glass overlay */}
+          <div className="absolute inset-0 backdrop-filter backdrop-blur-sm bg-white/10 z-0"></div>
+          
+          {/* Mesh grid pattern */}
+          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] z-0"></div>
+          
+          {/* Light reflection effects */}
+          <div className="absolute top-[15%] left-[30%] w-80 h-20 bg-white/20 blur-xl rounded-full rotate-45 z-0"></div>
+          <div className="absolute bottom-[20%] right-[20%] w-60 h-16 bg-white/15 blur-xl rounded-full -rotate-45 z-0"></div>
+
+          {/* Animated Particles with fixed values - reduced count for performance */}
+          <div className="absolute inset-0 z-0 pointer-events-none">
+            {particles.map((particle, i) => (
+              <div
+                key={i}
+                className="absolute rounded-full bg-white/30 blur-sm"
+                style={{
+                  width: `${particle.width}px`,
+                  height: `${particle.height}px`,
+                  top: `${particle.top}%`,
+                  left: `${particle.left}%`,
+                  opacity: particle.opacity,
+                  animation: `float ${particle.duration}s linear infinite`,
+                  animationDelay: `${particle.delay}s`
+                }}
+              ></div>
+            ))}
           </div>
 
-          {/* Floating Elements */}
+          {/* Glass elements */}
           <div
-            className="absolute top-1/4 right-1/4 h-24 w-24 rounded-full bg-white/10 backdrop-blur-sm"
-            style={calcTransform(-15)}
+            className="absolute top-1/4 right-1/4 h-24 w-24 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 z-0"
+            style={calcTransform}
           ></div>
           <div
-            className="absolute bottom-1/4 left-1/4 h-32 w-32 rounded-full bg-white/5 backdrop-blur-sm"
-            style={calcTransform(-10)}
+            className="absolute bottom-1/4 left-1/4 h-32 w-32 rounded-full bg-white/5 backdrop-blur-sm border border-white/20 z-0"
+            style={calcTransform}
           ></div>
 
-          <div className="relative px-6 py-16 sm:px-12 sm:py-24 text-center">
-            <div
-              className={`transition-all duration-1000 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
-            >
-              <div className="inline-flex items-center rounded-full bg-white/10 backdrop-blur-sm px-4 py-1.5 text-sm font-medium text-white mb-6 border border-white/10">
-                <Sparkles className="h-4 w-4 text-white mr-2" />
-                Join the Future of Hackathons
-              </div>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white mb-4 sm:mb-6 max-w-3xl mx-auto">
-                Ready to Create Your Next Hackathon?
-              </h2>
-              <p className="text-base sm:text-xl text-white/90 max-w-2xl mx-auto mb-8 sm:mb-10">
-                Join CloudHub today and be part of the future of hackathons. Everything you need in one platform.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-xs sm:max-w-md mx-auto">
-                <Button
-                  size="lg"
-                  className="group bg-white text-violet-900 hover:bg-white/90 px-6 sm:px-8 py-6 sm:py-7 h-auto text-base sm:text-lg font-medium rounded-xl shadow-lg shadow-violet-950/20 hover:shadow-violet-950/30 transition-all duration-300"
+          <div className="relative px-6 py-16 sm:px-12 sm:py-20 md:py-24 z-[1]">
+            <div className="max-w-5xl mx-auto">
+              <div className="grid md:grid-cols-2 gap-12 items-center">
+                <div
+                  className={`transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
                 >
-                  Create a Hackathon
-                  <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
-                </Button>
-              </div>
-            </div>
+                  <div className="inline-flex items-center rounded-full bg-white/10 backdrop-blur-sm px-4 py-1.5 text-sm font-medium text-white mb-6 border border-white/10">
+                    <Rocket className="h-4 w-4 text-white mr-2" />
+                    Launch Your Hackathon
+                  </div>
+                  <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white mb-4 sm:mb-6">
+                    Ready to Create Your Next Hackathon?
+                  </h2>
+                  <p className="text-base sm:text-xl text-white/90 mb-8 sm:mb-10">
+                    Join CloudHub today and be part of the future of hackathons. Everything you need in one platform.
+                  </p>
+                  
+                  <div className="space-y-4 mb-8">
+                    {benefits.map((item, i) => (
+                      <div 
+                        key={i} 
+                        className={`flex items-center transition-all duration-700 delay-${i * 100} ${
+                          isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"
+                        }`}
+                      >
+                        <CheckCircle className="h-5 w-5 text-emerald-400 mr-3 flex-shrink-0" />
+                        <span className="text-white/95">{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="flex gap-4">
+                    <Button
+                      className="group bg-white text-violet-900 hover:bg-white/90 px-6 sm:px-8 py-6 sm:py-7 h-auto text-base sm:text-lg font-medium rounded-xl shadow-lg shadow-violet-950/20 hover:shadow-violet-950/30 transition-all duration-300"
+                    >
+                      Create a Hackathon
+                      <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
+                    </Button>
+                    <Button
+                      className="group bg-transparent border border-white/30 text-white hover:bg-white/10 px-6 sm:px-8 py-6 sm:py-7 h-auto text-base sm:text-lg font-medium rounded-xl transition-all duration-300"
+                    >
+                      Learn More
+                    </Button>
+                  </div>
+                </div>
 
-            <div
-              className={`mt-12 sm:mt-16 grid grid-cols-3 gap-4 sm:gap-8 max-w-xs sm:max-w-3xl mx-auto transition-all duration-1000 delay-300 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
-            >
-              <div className="flex flex-col items-center">
-                <div className="text-2xl sm:text-4xl font-bold text-white mb-1 sm:mb-2">100+</div>
-                <p className="text-xs sm:text-base text-white/80">Active Hackathons</p>
-              </div>
-              <div className="flex flex-col items-center">
-                <div className="text-2xl sm:text-4xl font-bold text-white mb-1 sm:mb-2">10K+</div>
-                <p className="text-xs sm:text-base text-white/80">Community Members</p>
-              </div>
-              <div className="flex flex-col items-center">
-                <div className="text-2xl sm:text-4xl font-bold text-white mb-1 sm:mb-2">2M+ AED</div>
-                <p className="text-xs sm:text-base text-white/80">Prize Money</p>
+                <div 
+                  className={`relative transition-all duration-700 delay-200 ${
+                    isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+                  }`}
+                >
+                  <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-xl p-6 sm:p-8 transform transition-all duration-500 hover:scale-[1.02]">
+                    <div className="space-y-6">
+                      <div className="flex items-center mb-4">
+                        <div className="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center mr-4 border border-white/20">
+                          <Zap className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold text-white">CloudHub Advantage</h3>
+                          <p className="text-white/70 text-sm">All-in-one hackathon platform</p>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        {stats.map((stat, i) => (
+                          <div 
+                            key={i} 
+                            className={`flex justify-between items-center py-3 border-b border-white/10 transition-all duration-700 delay-${200 + i * 100} ${
+                              isVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
+                            }`}
+                          >
+                            <span className="text-white/70">{stat.label}</span>
+                            <span className="text-lg font-semibold text-white">{stat.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <div className="pt-4">
+                        <div className="bg-gradient-to-r from-violet-500/20 to-indigo-500/20 rounded-xl p-4 backdrop-blur-sm border border-white/10">
+                          <div className="flex items-center">
+                            <Sparkles className="h-5 w-5 text-white mr-2" />
+                            <span className="text-sm font-medium text-white">
+                              Launch your hackathon in under 10 minutes
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Simplified pulse effects - reduced opacity and size for performance */}
+                  <div 
+                    className="absolute -top-6 -right-6 h-20 w-20 rounded-full bg-gradient-to-br from-indigo-400 to-violet-400 blur-xl opacity-20 animate-pulse"
+                    style={{animationDuration: '4s'}}
+                  ></div>
+                  <div 
+                    className="absolute -bottom-8 -left-8 h-24 w-24 rounded-full bg-gradient-to-br from-violet-400 to-fuchsia-400 blur-xl opacity-15 animate-pulse"
+                    style={{animationDuration: '6s'}}
+                  ></div>
+                </div>
               </div>
             </div>
           </div>
