@@ -40,7 +40,7 @@ import { cn } from "@/lib/utils"
 
 export default function DashboardHeader() {
   const [notifications] = useState(3)
-  const { userRole, setUserRole, isOrganizer, isParticipant } = useUserRole()
+  const { userRole, isOrganizer, isParticipant } = useUserRole()
   const pathname = usePathname()
   const [joinDialogOpen, setJoinDialogOpen] = useState(false)
   const [inviteCode, setInviteCode] = useState("")

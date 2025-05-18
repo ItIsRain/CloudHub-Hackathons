@@ -59,12 +59,27 @@ export default function DashboardSidebar() {
   const { state } = useSidebar()
   const { isOrganizer } = useUserRole()
 
+  // Check if a menu item is active based on the current path
+  const isActive = (href: string) => {
+    // Normalize paths by removing trailing slashes
+    const normalizedPathname = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
+    const normalizedHref = href.endsWith('/') ? href.slice(0, -1) : href
+    
+    // For the dashboard root, check if it's either /dashboard or /dashboard/
+    if (normalizedHref === '/dashboard') {
+      return normalizedPathname === '/dashboard'
+    }
+    // For other pages, check if pathname starts with href
+    return normalizedPathname.startsWith(normalizedHref)
+  }
+
   // Participant navigation items
   const participantNavItems: NavItem[] = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Marketplace", href: "/dashboard/marketplace", icon: Sparkles },
     { name: "My Hackathons", href: "/dashboard/my-hackathons", icon: Trophy },
     { name: "Teams", href: "/dashboard/teams", icon: Users },
+    { name: "Resources", href: "/dashboard/resources", icon: Lightbulb },
     { name: "Schedule", href: "/dashboard/schedule", icon: Calendar },
     { name: "Messages", href: "/dashboard/messages", icon: MessageSquare, badge: "3" },
     { name: "Submissions", href: "/dashboard/submissions", icon: FileText },
@@ -115,13 +130,13 @@ export default function DashboardSidebar() {
                 <SidebarMenuItem key={item.name}>
                   <SidebarMenuButton 
                     asChild 
-                    isActive={pathname === item.href} 
+                    isActive={isActive(item.href)} 
                     tooltip={item.name}
-                    className={pathname === item.href ? 'bg-blue-50 text-blue-700 border-blue-200 shadow-sm font-medium' : ''}
+                    className={isActive(item.href) ? 'bg-blue-50 text-blue-700 border-blue-200 shadow-sm font-medium' : ''}
                   >
                     <Link href={item.href} className="flex items-center gap-2 hover:bg-blue-50 transition-all rounded-md">
-                      <item.icon className={`${pathname === item.href ? 'text-blue-600' : 'text-slate-500 hover:text-blue-600'} transition-colors`} />
-                      <span className={`${pathname === item.href ? 'text-blue-700' : 'text-slate-700 hover:text-blue-700'} transition-colors`}>{item.name}</span>
+                      <item.icon className={`${isActive(item.href) ? 'text-blue-600' : 'text-slate-500 hover:text-blue-600'} transition-colors`} />
+                      <span className={`${isActive(item.href) ? 'text-blue-700' : 'text-slate-700 hover:text-blue-700'} transition-colors`}>{item.name}</span>
                     </Link>
                   </SidebarMenuButton>
                   {item.badge && (
@@ -252,13 +267,13 @@ export default function DashboardSidebar() {
                 <SidebarMenuItem key={item.name}>
                   <SidebarMenuButton 
                     asChild 
-                    isActive={pathname === item.href} 
+                    isActive={isActive(item.href)} 
                     tooltip={item.name}
-                    className={pathname === item.href ? 'bg-slate-50 text-slate-900 shadow-sm font-medium' : ''}
+                    className={isActive(item.href) ? 'bg-slate-50 text-slate-900 shadow-sm font-medium' : ''}
                   >
                     <Link href={item.href} className="flex items-center gap-2 hover:bg-slate-50 transition-all rounded-md">
-                      <item.icon className={`${pathname === item.href ? 'text-slate-700' : 'text-slate-500 hover:text-slate-700'} transition-colors`} />
-                      <span className={`${pathname === item.href ? 'text-slate-900' : 'text-slate-700 hover:text-slate-900'} transition-colors`}>{item.name}</span>
+                      <item.icon className={`${isActive(item.href) ? 'text-slate-700' : 'text-slate-500 hover:text-slate-700'} transition-colors`} />
+                      <span className={`${isActive(item.href) ? 'text-slate-900' : 'text-slate-700 hover:text-slate-900'} transition-colors`}>{item.name}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
