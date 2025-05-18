@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useEffect, useState } from "react"
-import { Users, Award, Shield, Zap, Code, DollarSign, ShieldCheck, BarChart3, Trophy, ClipboardCheck, Laptop, UserPlus } from "lucide-react"
+import { Users, Award, Shield, Zap, Code, DollarSign, ShieldCheck, BarChart3, Trophy, ClipboardCheck, Laptop, UserPlus, Lock as LockIcon, Check as CheckIcon, ShieldCheck as ShieldCheckIcon, ArrowRight as ArrowRightIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export default function FeaturesSection() {
@@ -159,80 +159,125 @@ export default function FeaturesSection() {
         </div>
 
         <div className="mt-16 sm:mt-24 relative">
-          <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-violet-50 to-indigo-50 opacity-50"></div>
-          <div className="relative rounded-3xl overflow-hidden">
-            <div className="grid gap-8 lg:grid-cols-2 items-center">
-              <div className="p-6 sm:p-8 lg:p-12">
-                <div className="inline-flex items-center rounded-full bg-violet-100 px-3 py-1 text-sm font-medium text-violet-800 mb-4">
-                  <Shield className="h-4 w-4 text-violet-600 mr-2" />
-                  Secure Escrow
+          {/* Trusted Escrow & Payment System */}
+          <div className="relative bg-gradient-to-br from-slate-900 to-violet-950 rounded-3xl overflow-hidden transform transition-all duration-500 hover:scale-[1.02] border border-white/10 shadow-xl">
+            {/* Background effects - optimized for performance */}
+            <div className="absolute inset-0 bg-[linear-gradient(110deg,rgba(131,56,236,0.03)_0%,rgba(131,56,236,0)_40%,rgba(131,56,236,0)_60%,rgba(131,56,236,0.03)_100%)] z-0"></div>
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(203,213,225,0.08)_0%,rgba(203,213,225,0)_60%)] z-0"></div>
+            
+            {/* Grid pattern - simplified for performance */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:24px_24px] opacity-40 z-0"></div>
+            
+            <div className="relative z-10 p-8 sm:p-10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-600/20 backdrop-blur-sm text-white">
+                    <LockIcon className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-bold text-white">Trusted Escrow & Payment System</h3>
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4">Trusted Escrow & Payment System</h3>
-                <p className="text-base sm:text-lg text-slate-600 mb-6 sm:mb-8">
-                  CloudHub handles all financial aspects of your hackathon with bank-level security, ensuring fair and transparent
-                  prize distribution while eliminating payment headaches.
-                </p>
-                <ul className="space-y-4">
-                  {[
-                    "Secure deposit of prize funds before the event",
-                    "Transparent fee structure with no hidden costs",
-                    "Automated prize distribution to winners",
-                    "Support for multiple payment methods and currencies",
-                    "Smart contracts for conditional prize releases",
-                    "Real-time financial dashboard for organizers",
-                  ].map((item, i) => (
-                    <li key={i} className="flex items-start">
-                      <div className="flex-shrink-0 h-6 w-6 rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 flex items-center justify-center mr-3 mt-0.5 shadow-sm">
-                        <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                      <span className="text-slate-700">{item}</span>
-                    </li>
-                  ))}
-                </ul>
+                <div className="hidden sm:flex items-center space-x-2">
+                  <div className="flex h-8 items-center rounded-full bg-violet-600/10 px-3 text-xs font-semibold text-violet-200 backdrop-blur-sm border border-violet-600/20">
+                    Enterprise-grade Security
+                  </div>
+                  <div className="flex h-8 items-center rounded-full bg-amber-500/10 px-3 text-xs font-semibold text-amber-200 backdrop-blur-sm border border-amber-500/20">
+                    Optional Feature
+                  </div>
+                </div>
               </div>
-              <div className="relative lg:h-full bg-gradient-to-r from-violet-600 to-indigo-600 p-6 sm:p-8 lg:p-0">
-                <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
-                <div className="relative lg:absolute lg:inset-0 flex items-center justify-center py-8">
-                  <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-xl p-6 sm:p-8 max-w-md w-full mx-4 sm:mx-auto transform transition-transform duration-700 hover:scale-105">
-                    <div className="space-y-6">
-                      <div className="flex justify-between items-center pb-4 border-b border-white/10">
-                        <div>
-                          <p className="text-sm text-white/70">Total Prize Pool</p>
-                          <p className="text-3xl font-bold text-white">25,000 AED</p>
-                        </div>
-                        <div className="h-14 w-14 bg-white/10 rounded-xl flex items-center justify-center border border-white/20">
-                          <DollarSign className="h-7 w-7 text-white" />
-                        </div>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="flex justify-between">
-                          <span className="text-white/70">Escrow Fee (5%)</span>
-                          <span className="font-medium text-white">1,250 AED</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-white/70">Processing Fee (2.5%)</span>
-                          <span className="font-medium text-white">625 AED</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-white/70">Available for Winners</span>
-                          <span className="font-medium text-white">23,125 AED</span>
-                        </div>
-                      </div>
-
-                      <div className="pt-4 border-t border-white/10">
-                        <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm border border-white/20">
-                          <div className="flex items-center">
-                            <Shield className="h-5 w-5 text-white mr-2" />
-                            <span className="text-sm font-medium text-white">
-                              Funds securely held in escrow until hackathon completion
-                            </span>
-                          </div>
-                        </div>
+              
+              <p className="mt-4 text-slate-200 leading-relaxed">
+                CloudHub handles all financial aspects of your hackathon with bank-level security, ensuring fair and transparent prize distribution while eliminating payment headaches.
+              </p>
+              
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 mt-1">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600/20 backdrop-blur-sm border border-emerald-600/30">
+                      <CheckIcon className="h-4 w-4 text-emerald-400" />
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-white">Secure Prize Fund Deposits</h4>
+                    <p className="mt-1 text-sm text-slate-300">Protected escrow before events start</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 mt-1">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600/20 backdrop-blur-sm border border-emerald-600/30">
+                      <CheckIcon className="h-4 w-4 text-emerald-400" />
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-white">Transparent Fee Structure</h4>
+                    <p className="mt-1 text-sm text-slate-300">No hidden costs or surprise charges</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 mt-1">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600/20 backdrop-blur-sm border border-emerald-600/30">
+                      <CheckIcon className="h-4 w-4 text-emerald-400" />
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-white">Automated Prize Distribution</h4>
+                    <p className="mt-1 text-sm text-slate-300">Instant payments to verified winners</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 mt-1">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600/20 backdrop-blur-sm border border-emerald-600/30">
+                      <CheckIcon className="h-4 w-4 text-emerald-400" />
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-white">Multiple Payment Methods</h4>
+                    <p className="mt-1 text-sm text-slate-300">Support for global currencies & methods</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 mt-1">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600/20 backdrop-blur-sm border border-emerald-600/30">
+                      <CheckIcon className="h-4 w-4 text-emerald-400" />
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-white">Smart Contracts</h4>
+                    <p className="mt-1 text-sm text-slate-300">Conditional prize releases with guarantees</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 mt-1">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600/20 backdrop-blur-sm border border-emerald-600/30">
+                      <CheckIcon className="h-4 w-4 text-emerald-400" />
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-white">Financial Dashboard</h4>
+                    <p className="mt-1 text-sm text-slate-300">Real-time monitoring for organizers</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Visual element for added interest */}
+              <div className="mt-8 relative">
+                <div className="absolute -top-6 -right-6 w-24 h-24 bg-violet-600/10 blur-2xl rounded-full"></div>
+                <div className="relative overflow-hidden h-20 rounded-xl bg-gradient-to-r from-slate-800/60 to-slate-900/60 backdrop-blur border border-white/5">
+                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(56,189,248,0)_0%,rgba(56,189,248,0.1)_20%,rgba(56,189,248,0)_40%)] animate-shimmer"></div>
+                  <div className="h-full flex items-center justify-between px-6">
+                    <div className="flex items-center space-x-4">
+                      <ShieldCheckIcon className="h-8 w-8 text-violet-400" />
+                      <div>
+                        <div className="text-sm font-medium text-white">CloudHub Vault Protection</div>
+                        <div className="text-xs text-slate-400">Enterprise-grade encryption with multi-layer security guarantees</div>
                       </div>
                     </div>
+                    <ArrowRightIcon className="h-5 w-5 text-violet-400" />
                   </div>
                 </div>
               </div>
