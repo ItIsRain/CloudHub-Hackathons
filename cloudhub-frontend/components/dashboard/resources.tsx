@@ -7,6 +7,9 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Progress } from "@/components/ui/progress"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   ChevronRight,
   Copy,
@@ -36,7 +39,13 @@ import {
   Laptop,
   School,
   Video,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Plus,
+  BarChartHorizontal,
+  Gauge,
+  Rocket,
+  Download,
+  Upload
 } from "lucide-react"
 import {
   Dialog,
@@ -66,6 +75,108 @@ interface ResourceCategory {
   title: string;
   resources: Resource[];
 }
+
+interface AITool {
+  id: string;
+  name: string;
+  description: string;
+  icon: any;
+  category: string;
+  rateLimit: {
+    requests: number;
+    period: string;
+    used: number;
+  };
+  pricing: string;
+  popular?: boolean;
+  new?: boolean;
+}
+
+// AI Tools data with rate limits
+const aiToolsData: AITool[] = [
+  {
+    id: "text-generation",
+    name: "Text Generation API",
+    description: "Generate human-like text for various applications",
+    icon: MessageSquare,
+    category: "natural-language",
+    rateLimit: {
+      requests: 1000,
+      period: "day",
+      used: 320
+    },
+    pricing: "Free",
+    popular: true
+  },
+  {
+    id: "image-generation",
+    name: "Image Generation API",
+    description: "Create original images from text descriptions",
+    icon: PencilLine,
+    category: "computer-vision",
+    rateLimit: {
+      requests: 500,
+      period: "day",
+      used: 125
+    },
+    pricing: "Free",
+    popular: true
+  },
+  {
+    id: "code-generation",
+    name: "Code Generation API",
+    description: "Generate code snippets from natural language",
+    icon: Code,
+    category: "coding",
+    rateLimit: {
+      requests: 800,
+      period: "day",
+      used: 410
+    },
+    pricing: "Free"
+  },
+  {
+    id: "data-analysis",
+    name: "Data Analysis API",
+    description: "Analyze and visualize data through AI",
+    icon: BarChart,
+    category: "data",
+    rateLimit: {
+      requests: 600,
+      period: "day",
+      used: 180
+    },
+    pricing: "Free"
+  },
+  {
+    id: "chat-api",
+    name: "Conversational AI",
+    description: "Build chatbots and conversational interfaces",
+    icon: Bot,
+    category: "natural-language",
+    rateLimit: {
+      requests: 1500,
+      period: "day",
+      used: 870
+    },
+    pricing: "Free",
+    new: true
+  },
+  {
+    id: "speech-to-text",
+    name: "Speech Recognition API",
+    description: "Convert spoken language to written text",
+    icon: FileText,
+    category: "audio",
+    rateLimit: {
+      requests: 300,
+      period: "day",
+      used: 85
+    },
+    pricing: "Free",
+    new: true
+  }
+];
 
 // Resource categories with their respective resources
 const resourcesData: ResourceCategory[] = [
@@ -165,6 +276,13 @@ export default function Resources() {
   const [tokenName, setTokenName] = useState("");
   const [tokenExpiry, setTokenExpiry] = useState("7");
   const [showToken, setShowToken] = useState(false);
+  const [showCreateNotebook, setShowCreateNotebook] = useState(false);
+  const [notebookName, setNotebookName] = useState("");
+  const [notebookDescription, setNotebookDescription] = useState("");
+  const [notebookTemplate, setNotebookTemplate] = useState("blank");
+  const [isCreatingNotebook, setIsCreatingNotebook] = useState(false);
+  const [showMarketplace, setShowMarketplace] = useState(false);
+  const [aiToolsFilter, setAIToolsFilter] = useState("all");
   
   // Filter resources based on search and category
   const filteredResources = resourcesData.flatMap(category => 
@@ -173,6 +291,13 @@ export default function Resources() {
       (resource.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
        resource.description.toLowerCase().includes(searchTerm.toLowerCase()))
     )
+  );
+
+  // Filter AI tools based on search and category
+  const filteredAITools = aiToolsData.filter(tool =>
+    (aiToolsFilter === "all" || tool.category === aiToolsFilter) &&
+    (tool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+     tool.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   // Animate resources appearing
@@ -222,8 +347,28 @@ export default function Resources() {
     setTokenExpiry("7");
   };
 
+  // Create a new notebook
+  const createNotebook = () => {
+    if (!notebookName) return;
+    
+    setIsCreatingNotebook(true);
+    
+    // Simulate API call with timeout
+    setTimeout(() => {
+      setIsCreatingNotebook(false);
+      setShowCreateNotebook(false);
+      
+      // Reset form
+      setNotebookName("");
+      setNotebookDescription("");
+      setNotebookTemplate("blank");
+      
+      // Add a notification (could be implemented)
+    }, 1500);
+  };
+
   return (
-    <div className="space-y-8 pb-10 px-4">
+    <div className="space-y-8 mb-10 px-6">
       {/* Hero Section */}
       <section className="relative rounded-2xl overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
@@ -297,309 +442,33 @@ export default function Resources() {
         </div>
       </section>
 
-      {/* API Token Generator Card */}
-      <Card className="border-slate-200 bg-gradient-to-br from-white to-violet-50/30 shadow-lg hover:shadow-xl transition-all duration-500 overflow-hidden rounded-xl relative">
-        <div className="absolute top-0 right-0 w-2/3 h-2/3 bg-gradient-to-br from-violet-200/10 to-indigo-300/10 rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/3"></div>
-        <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-gradient-to-tr from-violet-200/10 to-transparent rounded-full blur-3xl"></div>
-        
-        <CardHeader className="bg-gradient-to-r from-violet-50 to-slate-50 border-b border-slate-100 pb-6 pt-6 relative z-10">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="absolute -inset-1 bg-gradient-to-br from-violet-400/30 to-indigo-400/30 rounded-full blur-sm animate-pulse"></div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-md relative">
-                <Sparkles className="h-6 w-6" />
-              </div>
-            </div>
+      {/* Main Header with AI Tools & Notebooks Buttons */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-slate-200">
             <div>
-              <CardTitle className="text-xl text-slate-800 mb-1">API Token Generator</CardTitle>
-              <CardDescription className="text-slate-600">Generate secure API tokens to use CloudHub API Infrastructure</CardDescription>
+          <h1 className="text-2xl font-bold text-slate-800 mb-1">Resources</h1>
+          <p className="text-slate-500">Access AI tools, notebooks, and learning resources</p>
             </div>
-          </div>
-        </CardHeader>
-        
-        <CardContent className="p-8 relative z-10">
-          <div className="flex flex-col gap-6">
-            <div className="flex-grow p-5 bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200/80 shadow-sm">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex-shrink-0">
-                  <div className="bg-violet-100 rounded-full p-1">
-                    <CheckCircle className="h-4 w-4 text-violet-600" />
-                  </div>
-                </div>
-                <div>
-                  <p className="font-medium mb-2 text-slate-800">Using API Tokens</p>
-                  <p className="text-sm text-slate-600 mb-3">Add your token to API requests with the Authorization header:</p>
-                  <div className="bg-slate-50 rounded-lg p-3 border border-slate-200 font-mono text-sm overflow-x-auto shadow-inner mb-2">
-                    <code className="text-violet-700">Authorization: Bearer {tokenResult || 'YOUR_API_TOKEN'}</code>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3 mt-4">
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                      <div className="bg-emerald-100 rounded-full p-0.5">
-                        <CheckCircle className="h-3 w-3 text-emerald-600" />
-                      </div>
-                      <span>Secure HTTPS encryption</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                      <div className="bg-emerald-100 rounded-full p-0.5">
-                        <CheckCircle className="h-3 w-3 text-emerald-600" />
-                      </div>
-                      <span>Custom expiry options</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                      <div className="bg-emerald-100 rounded-full p-0.5">
-                        <CheckCircle className="h-3 w-3 text-emerald-600" />
-                      </div>
-                      <span>Revoke tokens anytime</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Token List */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
-              <div className="p-4 border-b border-slate-100">
-                <h3 className="font-medium text-slate-800">Your API Tokens</h3>
-                <p className="text-sm text-slate-500 mt-1">Manage your active API tokens</p>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-slate-50 text-left">
-                    <tr>
-                      <th className="px-4 py-3 text-xs font-medium text-slate-500">Name</th>
-                      <th className="px-4 py-3 text-xs font-medium text-slate-500">Token</th>
-                      <th className="px-4 py-3 text-xs font-medium text-slate-500">Created</th>
-                      <th className="px-4 py-3 text-xs font-medium text-slate-500">Expires</th>
-                      <th className="px-4 py-3 text-xs font-medium text-slate-500 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    <tr className="text-sm">
-                      <td className="px-4 py-3 font-medium text-slate-700">Development Token</td>
-                      <td className="px-4 py-3 font-mono text-violet-600 text-xs">hub_***************************</td>
-                      <td className="px-4 py-3 text-slate-500 text-xs">May 12, 2023</td>
-                      <td className="px-4 py-3 text-slate-500 text-xs">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700">
-                          14 days left
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right">
+        <div className="flex flex-col sm:flex-row gap-3">
                         <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                    <tr className="text-sm">
-                      <td className="px-4 py-3 font-medium text-slate-700">Production API</td>
-                      <td className="px-4 py-3 font-mono text-violet-600 text-xs">hub_***************************</td>
-                      <td className="px-4 py-3 text-slate-500 text-xs">Apr 28, 2023</td>
-                      <td className="px-4 py-3 text-slate-500 text-xs">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700">
-                          25 days left
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div className="p-4 border-t border-slate-100 bg-slate-50/70">
-                <Button 
-                  onClick={() => setShowTokenForm(true)} 
-                  className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white flex items-center gap-2 rounded-lg px-4 py-2 h-auto text-sm font-medium shadow-sm hover:shadow-md transition-all"
-                  disabled={isGenerating}
-                >
-                  {isGenerating ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
+            onClick={() => setShowMarketplace(true)}
+            className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white border-0 flex items-center gap-2"
+          >
                     <Sparkles className="h-4 w-4" />
-                  )}
-                  Generate New API Token
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Token Dialog */}
-          <Dialog open={showTokenForm} onOpenChange={setShowTokenForm}>
-            <DialogContent className="sm:max-w-md bg-white rounded-2xl border-slate-200 shadow-xl">
-              <DialogHeader>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-indigo-600 text-white">
-                    <Sparkles className="h-5 w-5" />
-                  </div>
-                  <DialogTitle className="text-xl text-slate-800">Create New API Token</DialogTitle>
-                </div>
-                <DialogDescription className="text-slate-600">
-                  Tokens provide secure access to the CloudHub AI API.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-6 py-4">
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="tokenName" className="block text-sm font-medium text-slate-700 mb-1">
-                      Token Name
-                    </label>
-                    <Input
-                      id="tokenName"
-                      placeholder="e.g., Development Token"
-                      value={tokenName}
-                      onChange={(e) => setTokenName(e.target.value)}
-                      className="border-slate-200 w-full rounded-md bg-white text-sm focus-visible:ring-violet-500"
-                      required
-                    />
-                    <p className="mt-1 text-xs text-slate-500">Give your token a descriptive name for easy identification.</p>
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="tokenExpiry" className="block text-sm font-medium text-slate-700 mb-1">
-                      Expiry Period
-                    </label>
-                    <select
-                      id="tokenExpiry"
-                      value={tokenExpiry}
-                      onChange={(e) => setTokenExpiry(e.target.value)}
-                      className="w-full rounded-md border border-slate-200 bg-white py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
-                    >
-                      <option value="1">1 day</option>
-                      <option value="3">3 days</option>
-                      <option value="7">7 days</option>
-                      <option value="14">14 days</option>
-                      <option value="30">1 month</option>
-                    </select>
-                    <p className="mt-1 text-xs text-slate-500">After this period, the token will expire and no longer work.</p>
-                  </div>
-                  
-                  <div className="flex items-start gap-2 p-3 bg-violet-50 rounded-lg border border-violet-100">
-                    <div className="mt-0.5">
-                      <div className="bg-violet-100 rounded-full p-0.5">
-                        <CheckCircle className="h-3.5 w-3.5 text-violet-600" />
-                      </div>
-                    </div>
-                    <div className="text-sm text-violet-700">
-                      <p>Your token will only be shown once after generation. Save it in a secure location.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <DialogFooter className="flex sm:justify-between items-center gap-3">
-                <Button
-                  variant="outline"
-                  className="text-slate-700 border-slate-200"
-                  onClick={() => setShowTokenForm(false)}
-                >
-                  Cancel
+            <span>AI Tools Marketplace</span>
                 </Button>
                 <Button
-                  onClick={generateToken}
-                  className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white"
-                  disabled={!tokenName || isGenerating}
-                >
-                  {isGenerating ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      Create Token
-                    </>
-                  )}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          
-          {/* Token Result Dialog */}
-          <Dialog open={showToken} onOpenChange={setShowToken}>
-            <DialogContent className="sm:max-w-md bg-white rounded-2xl border-slate-200 shadow-xl">
-              <DialogHeader>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-green-600 to-emerald-600 text-white">
-                    <CheckCircle className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <DialogTitle className="text-xl text-slate-800">Token Generated!</DialogTitle>
-                    <p className="text-xs text-slate-500 mt-1">
-                      {tokenName} • Expires in {tokenExpiry} days
-                    </p>
-                  </div>
-                </div>
-              </DialogHeader>
-              <div className="space-y-6 py-4">
-                <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 shadow-inner font-mono text-sm overflow-x-auto">
-                  <div className="flex justify-between items-center">
-                    <code className="text-violet-700 break-all">{tokenResult}</code>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => copyToClipboard(tokenResult)}
-                      className="h-8 w-8 p-0 ml-2 hover:bg-violet-100 hover:text-violet-700 rounded-md flex-shrink-0"
-                      title="Copy to clipboard"
-                    >
-                      <Copy className="h-4 w-4" />
+            onClick={() => setShowCreateNotebook(true)}
+            className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white border-0 flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Create Notebook</span>
                     </Button>
                   </div>
                 </div>
                 
-                <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-100">
-                  <div className="mt-0.5">
-                    <div className="bg-amber-100 rounded-full p-0.5">
-                      <CheckCircle className="h-3.5 w-3.5 text-amber-600" />
-                    </div>
-                  </div>
-                  <div className="text-sm text-amber-700">
-                    <p className="font-medium">Important:</p>
-                    <p>This token will only be shown once. Copy it and store it securely. For security, we don't store tokens in a readable format.</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                  <div className="mt-0.5">
-                    <div className="bg-slate-100 rounded-full p-0.5">
-                      <Code className="h-3.5 w-3.5 text-slate-600" />
-                    </div>
-                  </div>
-                  <div className="text-sm text-slate-700">
-                    <p className="font-medium">Using your token:</p>
-                    <p className="mt-1">Add this token to your API requests with the Authorization header:</p>
-                    <code className="mt-2 block text-xs bg-white px-2 py-1 rounded border border-slate-200">
-                      Authorization: Bearer {tokenResult || 'YOUR_TOKEN'}
-                    </code>
-                  </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  onClick={hideToken}
-                  className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white"
-                >
-                  I've Saved My Token
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          
-          {showCopied && (
-            <div className="fixed bottom-4 right-4 px-4 py-2 bg-slate-800 text-white text-sm rounded-lg shadow-lg animate-fade-in z-50 flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-400" />
-              Token copied to clipboard!
-            </div>
-          )}
-        </CardContent>
+      {/* Your API Access Section */}
+      <Card className="border-slate-200 bg-white rounded-xl overflow-hidden shadow-sm">
+        {/* ... existing code ... */}
       </Card>
 
       {/* Search and Filter */}
@@ -612,25 +481,92 @@ export default function Resources() {
             placeholder="Search resources..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 border-slate-200 rounded-lg py-2 text-sm focus-visible:ring-violet-500 shadow-none"
+            className="pl-10 border-slate-200/80 bg-gradient-to-r from-white to-slate-50/80 rounded-lg py-2 h-10 text-sm focus-visible:ring-violet-400 focus-visible:ring-opacity-25 shadow-sm transition-all hover:border-slate-300 focus-visible:border-violet-300"
           />
+          {searchTerm && (
+            <Button
+              variant="ghost"
+              className="absolute inset-y-0 right-0 h-full px-3 text-slate-400 hover:text-slate-600"
+              onClick={() => setSearchTerm("")}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
-        <Tabs 
-          value={selectedCategory} 
-          onValueChange={setSelectedCategory}
-          className="min-w-[300px]"
-        >
-          <TabsList className="w-full bg-slate-100 p-1 rounded-lg">
-            <TabsTrigger value="all" className="text-xs rounded-md data-[state=active]:bg-white data-[state=active]:text-violet-700 data-[state=active]:shadow-sm">All</TabsTrigger>
-            <TabsTrigger value="notebooks" className="text-xs rounded-md data-[state=active]:bg-white data-[state=active]:text-violet-700 data-[state=active]:shadow-sm">Notebooks</TabsTrigger>
-            <TabsTrigger value="tutorials" className="text-xs rounded-md data-[state=active]:bg-white data-[state=active]:text-violet-700 data-[state=active]:shadow-sm">Tutorials</TabsTrigger>
-            <TabsTrigger value="resources" className="text-xs rounded-md data-[state=active]:bg-white data-[state=active]:text-violet-700 data-[state=active]:shadow-sm">Learning Resources</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="min-w-[300px] bg-gradient-to-r from-slate-50/80 to-white rounded-lg border border-slate-200/80 shadow-sm h-10 overflow-hidden">
+          <Tabs 
+            value={selectedCategory} 
+            onValueChange={setSelectedCategory}
+            className="w-full h-full"
+          >
+            <TabsList className="w-full bg-transparent grid grid-cols-4 h-full p-0">
+              <TabsTrigger 
+                value="all" 
+                className="text-xs font-medium rounded-none text-slate-600 data-[state=active]:bg-white data-[state=active]:text-violet-700 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-violet-500 h-full hover:bg-white/60 hover:text-violet-600 transition-colors relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-violet-500/0 after:transition-opacity hover:after:bg-violet-500/40"
+              >
+                All
+              </TabsTrigger>
+              <TabsTrigger 
+                value="notebooks" 
+                className="text-xs font-medium rounded-none text-slate-600 data-[state=active]:bg-white data-[state=active]:text-violet-700 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-violet-500 h-full hover:bg-white/60 hover:text-violet-600 transition-colors relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-violet-500/0 after:transition-opacity hover:after:bg-violet-500/40"
+              >
+                Notebooks
+              </TabsTrigger>
+              <TabsTrigger 
+                value="tutorials" 
+                className="text-xs font-medium rounded-none text-slate-600 data-[state=active]:bg-white data-[state=active]:text-violet-700 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-violet-500 h-full hover:bg-white/60 hover:text-violet-600 transition-colors relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-violet-500/0 after:transition-opacity hover:after:bg-violet-500/40"
+              >
+                Tutorials
+              </TabsTrigger>
+              <TabsTrigger 
+                value="resources" 
+                className="text-xs font-medium rounded-none text-slate-600 data-[state=active]:bg-white data-[state=active]:text-violet-700 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-violet-500 h-full hover:bg-white/60 hover:text-violet-600 transition-colors relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-violet-500/0 after:transition-opacity hover:after:bg-violet-500/40"
+              >
+                Learning Resources
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
       {/* Resources Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Create New Notebook Card (always visible) */}
+        <Card className="group border border-blue-200 bg-gradient-to-br from-white to-blue-50 hover:shadow-md transition-all duration-300 overflow-hidden rounded-xl animate-fade-up">
+          <div className="p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center bg-blue-100">
+                <Plus className="h-6 w-6 text-blue-600" />
+              </div>
+              <Badge className="bg-blue-100 hover:bg-blue-200 text-blue-700 border-0">
+                New
+              </Badge>
+            </div>
+            
+            <h3 className="text-lg font-semibold text-slate-800 mb-2">Create New Notebook</h3>
+            <p className="text-slate-600 text-sm mb-6">Start a new Google Colab notebook hosted by CloudHub</p>
+            
+            <div className="space-y-2 mb-6">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <span className="text-sm text-slate-600">Hosted on our servers</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <span className="text-sm text-slate-600">Easy sharing with team</span>
+              </div>
+            </div>
+            
+            <Button 
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white border-0 py-2 h-auto rounded-lg text-sm font-medium transition-all group"
+              onClick={() => setShowCreateNotebook(true)}
+            >
+              <span>Create notebook</span>
+              <Plus className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
+        </Card>
+
         {visibleResources.map((resource, index) => (
           <Card 
             key={resource.id} 
@@ -706,57 +642,380 @@ export default function Resources() {
 
       {/* Documentation Section */}
       <Card className="border-slate-200 bg-white shadow-md rounded-xl overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-slate-50 to-indigo-50 border-b border-slate-100 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="absolute -inset-1 bg-gradient-to-br from-slate-300/30 to-indigo-300/30 rounded-full blur-sm"></div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-slate-700 to-slate-800 text-white shadow-sm relative">
-                <FileText className="h-5 w-5" />
+        {/* ... existing code ... */}
+      </Card>
+
+      {/* AI Tools Marketplace Dialog */}
+      <Dialog open={showMarketplace} onOpenChange={setShowMarketplace}>
+        <DialogContent className="sm:max-w-6xl p-0 rounded-xl border-none overflow-hidden bg-gradient-to-b from-slate-50 to-white shadow-lg">
+          <div className="relative py-6 px-6 sm:px-8 border-b border-slate-100 bg-gradient-to-r from-white via-white to-slate-50/80">
+            <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-[0.015]"></div>
+            <DialogHeader className="mb-0 relative">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="absolute -inset-2 bg-gradient-to-br from-violet-400/20 to-indigo-400/20 rounded-full blur-md animate-pulse-slow"></div>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-indigo-600 text-white relative">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                </div>
+                <div>
+                  <DialogTitle className="text-2xl font-bold text-slate-800 flex items-center">
+                    AI Tools Marketplace
+                    <Badge className="ml-3 bg-gradient-to-r from-indigo-100 to-sky-100 text-indigo-700 border-0 px-2">Beta</Badge>
+                  </DialogTitle>
+                  <DialogDescription className="text-slate-500">
+                    Explore our curated collection of AI tools with detailed usage limits and documentation
+                  </DialogDescription>
+                </div>
               </div>
-            </div>
-            <div>
-              <CardTitle className="text-lg text-slate-800">API Documentation</CardTitle>
-              <CardDescription className="text-slate-600 text-sm">Learn how to use the CloudHub AI API</CardDescription>
-            </div>
+            </DialogHeader>
           </div>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="space-y-6">
-            <div className="space-y-3">
-              <h3 className="text-base font-medium text-slate-800">Authentication</h3>
-              <p className="text-sm text-slate-600">All API requests require an API token for authentication. Add the token to your request headers:</p>
-              <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 font-mono text-sm overflow-x-auto shadow-inner">
-                <code className="text-violet-700">Authorization: Bearer YOUR_API_TOKEN</code>
+
+          <div className="px-6 sm:px-8 pt-6">
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+              <div className="relative flex-grow">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3">
+                  <Search className="h-4 w-4 text-slate-400" />
+                </div>
+                <Input 
+                  placeholder="Search AI tools by name or description..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 border-slate-200/80 bg-gradient-to-r from-white to-slate-50/80 rounded-lg py-2 h-10 text-sm focus-visible:ring-violet-400 focus-visible:ring-opacity-25 shadow-sm transition-all hover:border-slate-300 focus-visible:border-violet-300"
+                />
+                {searchTerm && (
+                  <Button
+                    variant="ghost"
+                    className="absolute inset-y-0 right-0 h-full px-3 text-slate-400 hover:text-slate-600"
+                    onClick={() => setSearchTerm("")}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              <div className="min-w-[350px] bg-gradient-to-r from-slate-50/80 to-white rounded-lg border border-slate-200/80 shadow-sm h-10 overflow-hidden">
+                <Tabs 
+                  value={aiToolsFilter} 
+                  onValueChange={setAIToolsFilter}
+                  className="w-full h-full"
+                >
+                  <TabsList className="w-full bg-transparent grid grid-cols-6 h-full p-0">
+                    <TabsTrigger 
+                      value="all" 
+                      className="text-xs font-medium rounded-none text-slate-600 data-[state=active]:bg-white data-[state=active]:text-violet-700 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-violet-500 h-full hover:bg-white/60 hover:text-violet-600 transition-colors relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-violet-500/0 after:transition-opacity hover:after:bg-violet-500/40"
+                    >
+                      All Tools
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="natural-language" 
+                      className="text-xs font-medium rounded-none text-slate-600 data-[state=active]:bg-white data-[state=active]:text-violet-700 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-violet-500 h-full hover:bg-white/60 hover:text-violet-600 transition-colors relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-violet-500/0 after:transition-opacity hover:after:bg-violet-500/40"
+                    >
+                      Language
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="computer-vision" 
+                      className="text-xs font-medium rounded-none text-slate-600 data-[state=active]:bg-white data-[state=active]:text-violet-700 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-violet-500 h-full hover:bg-white/60 hover:text-violet-600 transition-colors relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-violet-500/0 after:transition-opacity hover:after:bg-violet-500/40"
+                    >
+                      Vision
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="coding" 
+                      className="text-xs font-medium rounded-none text-slate-600 data-[state=active]:bg-white data-[state=active]:text-violet-700 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-violet-500 h-full hover:bg-white/60 hover:text-violet-600 transition-colors relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-violet-500/0 after:transition-opacity hover:after:bg-violet-500/40"
+                    >
+                      Coding
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="data" 
+                      className="text-xs font-medium rounded-none text-slate-600 data-[state=active]:bg-white data-[state=active]:text-violet-700 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-violet-500 h-full hover:bg-white/60 hover:text-violet-600 transition-colors relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-violet-500/0 after:transition-opacity hover:after:bg-violet-500/40"
+                    >
+                      Data
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="audio" 
+                      className="text-xs font-medium rounded-none text-slate-600 data-[state=active]:bg-white data-[state=active]:text-violet-700 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-violet-500 h-full hover:bg-white/60 hover:text-violet-600 transition-colors relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-violet-500/0 after:transition-opacity hover:after:bg-violet-500/40"
+                    >
+                      Audio
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </div>
             </div>
-            
-            <div className="space-y-3">
-              <h3 className="text-base font-medium text-slate-800">Example Request</h3>
-              <p className="text-sm text-slate-600">Here's an example of how to use the Code Generator API:</p>
-              <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 font-mono text-sm overflow-x-auto shadow-inner">
-                <pre className="text-violet-700 text-xs">{`fetch('https://api.cloudhub.ai/code/generate', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer YOUR_API_TOKEN'
-  },
-  body: JSON.stringify({
-    language: 'javascript',
-    prompt: 'Create a function to sort an array of objects by date'
-  })
-})`}</pre>
+
+            {filteredAITools.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 px-4 text-center bg-slate-50/40 rounded-xl border border-slate-100/80 shadow-sm">
+                <div className="relative w-16 h-16 mb-4">
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-200/50 to-slate-100/30 rounded-full opacity-70 animate-pulse"></div>
+                  <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm border border-slate-200/60">
+                    <Search className="h-7 w-7 text-slate-400" />
+                  </div>
+                </div>
+                <h3 className="text-lg font-medium text-slate-800 mb-1.5">No AI tools found</h3>
+                <p className="text-slate-500 max-w-md mb-4">Try adjusting your search or filter to find what you're looking for.</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-sm border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-violet-700 hover:border-violet-200"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setAIToolsFilter('all');
+                  }}
+                >
+                  <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                  Reset filters
+                </Button>
               </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6 max-h-[60vh] overflow-y-auto pr-2 pb-6 marketplace-grid">
+                {filteredAITools.map((tool, index) => (
+                  <Card 
+                    key={tool.id} 
+                    className="group border border-slate-200/80 hover:border-violet-200 bg-white hover:shadow-md transition-all duration-300 overflow-hidden rounded-xl animate-fade-up"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <div className="p-6 relative">
+                      {/* Subtle gradient background effect */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-slate-50/80 via-white to-white pointer-events-none"></div>
+                      
+                      {/* Header with Icon and Title */}
+                      <div className="flex items-start relative">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          tool.new ? "bg-gradient-to-br from-green-50 to-emerald-50 ring-1 ring-green-200/70" : 
+                          tool.popular ? "bg-gradient-to-br from-amber-50 to-orange-50 ring-1 ring-amber-200/70" : 
+                          "bg-gradient-to-br from-violet-50 to-indigo-50 ring-1 ring-violet-200/70"
+                        }`}>
+                          <tool.icon className={`h-5 w-5 ${
+                            tool.new ? "text-green-600" : 
+                            tool.popular ? "text-amber-600" : "text-violet-600"
+                          }`} />
+                        </div>
+                        <div className="ml-3 flex-1">
+                          <h3 className="text-base font-semibold text-slate-800 group-hover:text-violet-700 transition-colors flex items-center gap-2">
+                            {tool.name}
+                            {tool.new && (
+                              <Badge className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border-0 ml-1">
+                                New
+                              </Badge>
+                            )}
+                          </h3>
+                          <div className="flex items-center mt-0.5 gap-2">
+                            {tool.popular && (
+                              <Badge className="bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700 border-0 px-1.5 py-0 h-5 text-[10px]">
+                                Popular
+                              </Badge>
+                            )}
+                            <Badge className="bg-gradient-to-r from-blue-100 to-sky-100 text-blue-700 border-0 px-1.5 py-0 h-5 text-[10px]">
+                              {tool.pricing}
+                            </Badge>
+                            <span className="text-xs text-slate-500">
+                              {tool.category === "natural-language" ? "Language" : 
+                               tool.category === "computer-vision" ? "Vision" : 
+                               tool.category.charAt(0).toUpperCase() + tool.category.slice(1)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Description */}
+                      <p className="text-slate-600 text-xs mt-3 min-h-[32px] relative">{tool.description}</p>
+
+                      {/* Usage Metrics */}
+                      <div className="mt-4 pb-1 relative">
+                        <div className="flex justify-between items-center mb-1.5 text-sm">
+                          <div className="font-medium text-slate-700">
+                            Usage <span className="text-violet-700 font-semibold">{tool.rateLimit.used}</span>/<span className="font-semibold">{tool.rateLimit.requests}</span> requests
+                          </div>
+                          {tool.rateLimit.used / tool.rateLimit.requests > 0.8 ? (
+                            <div className="text-xs font-medium px-1.5 py-0.5 rounded-md text-white bg-gradient-to-r from-red-500 to-rose-500 shadow-sm">
+                              {Math.round((tool.rateLimit.used / tool.rateLimit.requests) * 100)}%
+                            </div>
+                          ) : tool.rateLimit.used / tool.rateLimit.requests > 0.6 ? (
+                            <div className="text-xs font-medium px-1.5 py-0.5 rounded-md text-white bg-gradient-to-r from-amber-500 to-orange-500 shadow-sm">
+                              {Math.round((tool.rateLimit.used / tool.rateLimit.requests) * 100)}%
+                            </div>
+                          ) : (
+                            <div className="text-xs font-medium px-1.5 py-0.5 rounded-md text-white bg-gradient-to-r from-emerald-500 to-green-500 shadow-sm">
+                              {Math.round((tool.rateLimit.used / tool.rateLimit.requests) * 100)}%
+                            </div>
+                          )}
+                        </div>
+                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                          <div 
+                            className={`h-full ${
+                              tool.rateLimit.used / tool.rateLimit.requests > 0.8 
+                                ? "bg-gradient-to-r from-red-500 to-rose-500" 
+                                : tool.rateLimit.used / tool.rateLimit.requests > 0.6 
+                                  ? "bg-gradient-to-r from-amber-500 to-orange-500" 
+                                  : "bg-gradient-to-r from-emerald-500 to-green-500"
+                            }`}
+                            style={{ width: `${(tool.rateLimit.used / tool.rateLimit.requests) * 100}%` }}
+                          ></div>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-1">Resets daily at midnight (+4 GMT Abu Dhabi time)</p>
+                      </div>
+
+                      {/* API Endpoint */}
+                      <div className="px-3 py-2 mt-4 bg-gradient-to-r from-slate-50 to-slate-100/80 border border-slate-200/60 rounded-lg flex items-center shadow-sm relative">
+                        <div className="font-mono text-xs text-slate-700 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
+                          api.cloudhub.ai/{tool.id}/v1
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 w-6 p-0 rounded-md text-slate-400 hover:text-violet-700 hover:bg-violet-50 ml-1 flex-shrink-0"
+                          onClick={() => copyToClipboard(`api.cloudhub.ai/${tool.id}/v1`)}
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="mt-4 flex gap-2 relative">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-9 text-xs border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-violet-200 hover:text-violet-700 flex-1 transition-all shadow-sm"
+                        >
+                          <FileText className="h-3.5 w-3.5 mr-1.5" />
+                          Documentation
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-9 text-xs border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-violet-200 hover:text-violet-700 flex-1 transition-all shadow-sm"
+                        >
+                          <Code className="h-3.5 w-3.5 mr-1.5" />
+                          Examples
+                        </Button>
+                      </div>
+                      
+                      <Button 
+                        className="w-full h-9 text-sm bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white border-0 transition-all group mt-2 shadow-sm relative"
+                      >
+                        <div className="absolute inset-0 bg-white/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <Zap className="h-4 w-4 mr-2" />
+                        <span>Try This API</span>
+                        <ArrowRight className="h-3.5 w-3.5 ml-2 opacity-70 group-hover:translate-x-0.5 transition-transform" />
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mt-6 px-6 sm:px-8 py-4 border-t border-slate-100 bg-gradient-to-r from-slate-50/80 to-white">
+            <div className="text-sm text-slate-500 flex items-center">
+              <div className="w-2 h-2 rounded-full bg-green-400 mr-2"></div>
+              Found {filteredAITools.length} AI tool{filteredAITools.length !== 1 ? 's' : ''} for your needs
             </div>
-            
-            <div className="flex justify-center pt-2">
-              <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white flex items-center gap-2 px-4 py-2.5 h-auto rounded-lg text-sm font-medium shadow-sm hover:shadow-md transition-all">
-                <span>View Full Documentation</span>
-                <ExternalLink className="h-4 w-4 ml-1" />
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowMarketplace(false)} 
+                className="border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 shadow-sm"
+              >
+                Close Marketplace
+              </Button>
+              <Button 
+                className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-sm"
+                onClick={() => {
+                  setShowMarketplace(false);
+                  setShowTokenForm(true);
+                }}
+              >
+                <Zap className="h-4 w-4 mr-2" />
+                <span>Generate API Token</span>
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Notebook Dialog */}
+      <Dialog open={showCreateNotebook} onOpenChange={setShowCreateNotebook}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">
+              <div className="flex items-center gap-2">
+                <Plus className="h-5 w-5 text-blue-600" />
+                <span>Create New Notebook</span>
+              </div>
+            </DialogTitle>
+            <DialogDescription>
+              Create a new Google Colab notebook hosted by CloudHub
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Notebook Name</label>
+              <Input 
+                placeholder="My New Notebook" 
+                value={notebookName}
+                onChange={(e) => setNotebookName(e.target.value)}
+                className="border-slate-200"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Description (Optional)</label>
+              <Textarea 
+                placeholder="Describe the purpose of this notebook" 
+                value={notebookDescription}
+                onChange={(e) => setNotebookDescription(e.target.value)}
+                className="border-slate-200 resize-none"
+                rows={3}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Template</label>
+              <Select value={notebookTemplate} onValueChange={setNotebookTemplate}>
+                <SelectTrigger className="border-slate-200">
+                  <SelectValue placeholder="Select a template" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="blank">Blank Notebook</SelectItem>
+                  <SelectItem value="data-analysis">Data Analysis</SelectItem>
+                  <SelectItem value="machine-learning">Machine Learning</SelectItem>
+                  <SelectItem value="nlp">Natural Language Processing</SelectItem>
+                  <SelectItem value="computer-vision">Computer Vision</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <DialogFooter className="sm:justify-between gap-3 flex-wrap">
+            <Button variant="outline" onClick={() => setShowCreateNotebook(false)} className="border-slate-200">
+              Cancel
+            </Button>
+            <Button 
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+              onClick={createNotebook}
+              disabled={!notebookName || isCreatingNotebook}
+            >
+              {isCreatingNotebook ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  <span>Creating...</span>
+                </>
+              ) : (
+                <>
+                  <Laptop className="h-4 w-4 mr-2" />
+                  <span>Create Notebook</span>
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {showCopied && (
+        <div className="fixed bottom-4 right-4 px-4 py-2 bg-slate-800 text-white text-sm rounded-lg shadow-lg animate-fade-in z-50 flex items-center gap-2">
+          <CheckCircle className="h-4 w-4 text-green-400" />
+          Token copied to clipboard!
+        </div>
+      )}
     </div>
   )
 } 
