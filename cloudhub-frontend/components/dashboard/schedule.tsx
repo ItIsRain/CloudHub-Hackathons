@@ -340,8 +340,9 @@ export default function Schedule() {
                     
                     return (
                       <div className="w-full h-full flex flex-col items-center pt-2 relative">
-                        <div 
+                        <button 
                           onClick={onClick}
+                          type="button"
                           className={cn(
                             className,
                             "flex items-center justify-center h-8 w-8 rounded-full cursor-pointer relative",
@@ -350,7 +351,7 @@ export default function Schedule() {
                           {...props}
                         >
                           {day}
-                        </div>
+                        </button>
                         
                         {hasEvents.length > 0 && (
                           <div className="event-indicator flex gap-1 mt-1">
