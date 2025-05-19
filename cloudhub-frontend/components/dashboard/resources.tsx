@@ -459,10 +459,10 @@ export default function Resources() {
                 <Button
             onClick={() => setShowCreateNotebook(true)}
             className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white border-0 flex items-center gap-2"
-          >
+                >
             <Plus className="h-4 w-4" />
             <span>Create Notebook</span>
-                    </Button>
+                </Button>
                   </div>
                 </div>
                 
@@ -494,9 +494,9 @@ export default function Resources() {
           )}
         </div>
         <div className="min-w-[300px] bg-gradient-to-r from-slate-50/80 to-white rounded-lg border border-slate-200/80 shadow-sm h-10 overflow-hidden">
-          <Tabs 
-            value={selectedCategory} 
-            onValueChange={setSelectedCategory}
+        <Tabs 
+          value={selectedCategory} 
+          onValueChange={setSelectedCategory}
             className="w-full h-full"
           >
             <TabsList className="w-full bg-transparent grid grid-cols-4 h-full p-0">
@@ -524,8 +524,8 @@ export default function Resources() {
               >
                 Learning Resources
               </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          </TabsList>
+        </Tabs>
         </div>
       </div>
 
@@ -651,14 +651,14 @@ export default function Resources() {
           <div className="relative py-6 px-6 sm:px-8 border-b border-slate-100 bg-gradient-to-r from-white via-white to-slate-50/80">
             <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-[0.015]"></div>
             <DialogHeader className="mb-0 relative">
-              <div className="flex items-center gap-3">
-                <div className="relative">
+          <div className="flex items-center gap-3">
+            <div className="relative">
                   <div className="absolute -inset-2 bg-gradient-to-br from-violet-400/20 to-indigo-400/20 rounded-full blur-md animate-pulse-slow"></div>
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-indigo-600 text-white relative">
                     <Sparkles className="h-5 w-5" />
-                  </div>
-                </div>
-                <div>
+              </div>
+            </div>
+            <div>
                   <DialogTitle className="text-2xl font-bold text-slate-800 flex items-center">
                     AI Tools Marketplace
                     <Badge className="ml-3 bg-gradient-to-r from-indigo-100 to-sky-100 text-indigo-700 border-0 px-2">Beta</Badge>
@@ -666,8 +666,8 @@ export default function Resources() {
                   <DialogDescription className="text-slate-500">
                     Explore our curated collection of AI tools with detailed usage limits and documentation
                   </DialogDescription>
-                </div>
-              </div>
+            </div>
+          </div>
             </DialogHeader>
           </div>
 
@@ -740,15 +740,15 @@ export default function Resources() {
                 </Tabs>
               </div>
             </div>
-
+            
             {filteredAITools.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 px-4 text-center bg-slate-50/40 rounded-xl border border-slate-100/80 shadow-sm">
                 <div className="relative w-16 h-16 mb-4">
                   <div className="absolute inset-0 bg-gradient-to-br from-slate-200/50 to-slate-100/30 rounded-full opacity-70 animate-pulse"></div>
                   <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm border border-slate-200/60">
                     <Search className="h-7 w-7 text-slate-400" />
-                  </div>
-                </div>
+              </div>
+            </div>
                 <h3 className="text-lg font-medium text-slate-800 mb-1.5">No AI tools found</h3>
                 <p className="text-slate-500 max-w-md mb-4">Try adjusting your search or filter to find what you're looking for.</p>
                 <Button 
@@ -865,8 +865,8 @@ export default function Resources() {
                           onClick={() => copyToClipboard(`api.cloudhub.ai/${tool.id}/v1`)}
                         >
                           <Copy className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
+              </Button>
+            </div>
 
                       {/* Action Buttons */}
                       <div className="mt-4 flex gap-2 relative">
@@ -886,7 +886,7 @@ export default function Resources() {
                           <Code className="h-3.5 w-3.5 mr-1.5" />
                           Examples
                         </Button>
-                      </div>
+          </div>
                       
                       <Button 
                         className="w-full h-9 text-sm bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white border-0 transition-all group mt-2 shadow-sm relative"
@@ -897,7 +897,7 @@ export default function Resources() {
                         <ArrowRight className="h-3.5 w-3.5 ml-2 opacity-70 group-hover:translate-x-0.5 transition-transform" />
                       </Button>
                     </div>
-                  </Card>
+      </Card>
                 ))}
               </div>
             )}
