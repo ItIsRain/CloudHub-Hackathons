@@ -237,7 +237,7 @@ export default function HackathonMarketplace() {
   }) || hackathons.find(h => h.featured) || hackathons[0];
 
   return (
-    <div className="space-y-8 px-6 mt-6 mx-auto">
+    <div className="space-y-8 px-6 mt-6  pb-10">
       {/* Hero Section */}
       <section className="relative rounded-2xl overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
