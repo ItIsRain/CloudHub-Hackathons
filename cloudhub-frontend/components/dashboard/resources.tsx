@@ -462,14 +462,9 @@ export default function Resources() {
                 >
             <Plus className="h-4 w-4" />
             <span>Create Notebook</span>
-                </Button>
-                  </div>
-                </div>
-                
-      {/* Your API Access Section */}
-      <Card className="border-slate-200 bg-white rounded-xl overflow-hidden shadow-sm">
-        {/* ... existing code ... */}
-      </Card>
+        </Button>
+          </div>
+        </div>
 
       {/* Search and Filter */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-4 mb-8">
