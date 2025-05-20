@@ -107,7 +107,7 @@ export default function ParticipantDashboard() {
                 <span className="font-medium tracking-wide">Dashboard Overview</span>
               </div>
               
-              <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight">
+              <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 tracking-tight">
                 Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-violet-200">John!</span>
               </h1>
               

@@ -305,6 +305,19 @@ img.progressive-load.loaded {
   }
 }
 
+/* Animation delays */
+.animate-delay-300 {
+  animation-delay: 300ms;
+}
+
+.animate-delay-500 {
+  animation-delay: 500ms;
+}
+
+.animate-delay-700 {
+  animation-delay: 700ms;
+}
+
 /* Force hardware acceleration for specific elements */
 .hardware-accelerated {
   transform: translateZ(0);
