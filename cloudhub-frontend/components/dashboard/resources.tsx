@@ -443,7 +443,7 @@ export default function Resources() {
       </section>
 
       {/* Main Header with AI Tools & Notebooks Buttons */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-slate-200">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 mb-1">Resources</h1>
           <p className="text-slate-500">Access AI tools, notebooks, and learning resources</p>
@@ -467,7 +467,7 @@ export default function Resources() {
         </div>
 
       {/* Search and Filter */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-4 mb-8">
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-4 mb-4">
         <div className="relative flex-grow">
           <div className="absolute inset-y-0 left-0 flex items-center pl-3">
             <Search className="h-4 w-4 text-slate-400" />

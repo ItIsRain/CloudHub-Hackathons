@@ -193,71 +193,7 @@ export default function DashboardSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-        ) : (
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-xs font-medium text-slate-500">Resources</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton 
-                    asChild 
-                    tooltip="Mentorship"
-                  >
-                    <Link href="/dashboard/mentorship" className="flex items-center gap-2 hover:bg-amber-50 transition-all rounded-md">
-                      <div className="relative flex items-center justify-center h-5 w-5">
-                        <div className="absolute inset-0 rounded-full bg-amber-100 opacity-40 hover:opacity-60 transition-opacity"></div>
-                        <Lightbulb className="h-3.5 w-3.5 text-amber-500 hover:text-amber-600 transition-colors" />
-                      </div>
-                      <span className="text-slate-700 hover:text-slate-900 transition-colors">Mentorship</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton 
-                    asChild 
-                    tooltip="Workshops"
-                  >
-                    <Link href="/dashboard/workshops" className="flex items-center gap-2 hover:bg-emerald-50 transition-all rounded-md">
-                      <div className="relative flex items-center justify-center h-5 w-5">
-                        <div className="absolute inset-0 rounded-full bg-emerald-100 opacity-40 hover:opacity-60 transition-opacity"></div>
-                        <Briefcase className="h-3.5 w-3.5 text-emerald-500 hover:text-emerald-600 transition-colors" />
-                      </div>
-                      <span className="text-slate-700 hover:text-slate-900 transition-colors">Workshops</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton 
-                    asChild 
-                    tooltip="Challenges"
-                  >
-                    <Link href="/dashboard/challenges" className="flex items-center gap-2 hover:bg-rose-50 transition-all rounded-md">
-                      <div className="relative flex items-center justify-center h-5 w-5">
-                        <div className="absolute inset-0 rounded-full bg-rose-100 opacity-40 hover:opacity-60 transition-opacity"></div>
-                        <Gauge className="h-3.5 w-3.5 text-rose-500 hover:text-rose-600 transition-colors" />
-                      </div>
-                      <span className="text-slate-700 hover:text-slate-900 transition-colors">Challenges</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton 
-                    asChild 
-                    tooltip="Prizes"
-                  >
-                    <Link href="/dashboard/prizes" className="flex items-center gap-2 hover:bg-blue-50 transition-all rounded-md">
-                      <div className="relative flex items-center justify-center h-5 w-5">
-                        <div className="absolute inset-0 rounded-full bg-blue-100 opacity-40 hover:opacity-60 transition-opacity"></div>
-                        <Ticket className="h-3.5 w-3.5 text-blue-500 hover:text-blue-600 transition-colors" />
-                      </div>
-                      <span className="text-slate-700 hover:text-slate-900 transition-colors">Prizes & Rewards</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        ) : null}
 
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs font-medium text-slate-500">Support</SidebarGroupLabel>
