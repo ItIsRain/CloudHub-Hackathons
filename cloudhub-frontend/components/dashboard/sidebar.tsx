@@ -80,9 +80,7 @@ export default function DashboardSidebar() {
     { name: "My Hackathons", href: "/dashboard/my-hackathons", icon: Trophy },
     { name: "Teams", href: "/dashboard/teams", icon: Users },
     { name: "Resources", href: "/dashboard/resources", icon: Lightbulb },
-    { name: "Schedule", href: "/dashboard/schedule", icon: Calendar },
     { name: "Messages", href: "/dashboard/messages", icon: MessageSquare, badge: "3" },
-    { name: "Submissions", href: "/dashboard/submissions", icon: FileText },
   ]
 
   // Organizer navigation items
