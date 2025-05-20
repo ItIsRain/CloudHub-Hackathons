@@ -274,10 +274,6 @@ export default function HackathonMarketplace() {
                   <PlusCircle className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
                   <span>Create Hackathon</span>
                 </Button>
-                <Button variant="outline" className="bg-white/10 text-white border-white/30 hover:bg-white/20 hover:border-white/40 shadow-lg transition-all group px-5 py-2 h-auto text-sm font-medium rounded-xl">
-                  <Users className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
-                  <span>Find Teammates</span>
-                </Button>
               </div>
             </div>
             
