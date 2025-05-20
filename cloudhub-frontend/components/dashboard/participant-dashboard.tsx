@@ -27,6 +27,7 @@ import {
 } from "lucide-react"
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area } from "recharts"
 import { useRef, useEffect, useState } from "react"
+import Link from "next/link"
 
 const hackathonData = [
   { month: "Jan", participants: 120, submissions: 45 },
@@ -80,7 +81,7 @@ export default function ParticipantDashboard() {
   }, [])
 
   return (
-    <div className="space-y-8 pb-10">
+    <div className="space-y-8 pb-10 px-6 mt-6">
       {/* Welcome Section */}
       <section className="relative overflow-hidden rounded-2xl shadow-lg">
         {/* Gradient background with animated elements */}
@@ -115,13 +116,17 @@ export default function ParticipantDashboard() {
               </p>
               
               <div className="flex flex-wrap gap-4">
-                <Button className="bg-white text-indigo-700 hover:bg-white/90 shadow-lg transition-all group px-5 py-2 h-auto text-sm font-medium rounded-xl border border-white/50">
-                  <Trophy className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
-                  <span>Browse Hackathons</span>
+                <Button className="bg-white text-indigo-700 hover:bg-white/90 shadow-lg transition-all group px-5 py-2 h-auto text-sm font-medium rounded-xl border border-white/50" asChild>
+                  <Link href="/dashboard/marketplace">
+                    <Trophy className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+                    <span>Browse Hackathons</span>
+                  </Link>
                 </Button>
-                <Button variant="outline" className="text-white border-white/20 bg-white/10 hover:bg-white hover:text-indigo-700 backdrop-blur-xl transition-all group px-5 py-2 h-auto text-sm font-medium rounded-xl">
-                  <Users className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
-                  <span>View My Teams</span>
+                <Button variant="outline" className="text-white border-white/20 bg-white/10 hover:bg-white hover:text-indigo-700 backdrop-blur-xl transition-all group px-5 py-2 h-auto text-sm font-medium rounded-xl" asChild>
+                  <Link href="/dashboard/teams">
+                    <Users className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+                    <span>View My Teams</span>
+                  </Link>
                 </Button>
               </div>
             </div>
@@ -144,9 +149,11 @@ export default function ParticipantDashboard() {
                     <span className="font-medium">65%</span>
                   </div>
                 </div>
-                <Button variant="outline" className="w-full text-white border-white/20 bg-white/10 hover:bg-white hover:text-indigo-700 backdrop-blur-xl transition-all group px-4 py-2 h-auto text-sm font-medium rounded-xl">
-                  <CalendarDays className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
-                  <span>View Submission Details</span>
+                <Button variant="outline" className="w-full text-white border-white/20 bg-white/10 hover:bg-white hover:text-indigo-700 backdrop-blur-xl transition-all group px-4 py-2 h-auto text-sm font-medium rounded-xl" asChild>
+                  <Link href="/dashboard/projects/1">
+                    <CalendarDays className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+                    <span>View Submission Details</span>
+                  </Link>
                 </Button>
               </div>
             </div>
@@ -156,7 +163,7 @@ export default function ParticipantDashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card className="bg-white border border-slate-100 shadow-sm hover:shadow-md transition-all overflow-hidden group">
+        <Card className="bg-white border border-slate-100 shadow-sm hover:shadow-md transition-all overflow-hidden group cursor-pointer" onClick={() => window.location.href = '/dashboard/marketplace'}>
           <CardContent className="p-0">
             <div className="p-5">
               <div className="mb-3 flex justify-between items-start">
@@ -174,7 +181,7 @@ export default function ParticipantDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white border border-slate-100 shadow-sm hover:shadow-md transition-all overflow-hidden group">
+        <Card className="bg-white border border-slate-100 shadow-sm hover:shadow-md transition-all overflow-hidden group cursor-pointer" onClick={() => window.location.href = '/dashboard/teams'}>
           <CardContent className="p-0">
             <div className="p-5">
               <div className="mb-3 flex justify-between items-start">
@@ -390,9 +397,11 @@ export default function ParticipantDashboard() {
                           </div>
                         </div>
                         
-                        <Button size="sm" className="gap-1 bg-white text-violet-700 border border-violet-200 hover:bg-violet-50 hover:text-violet-800 shadow-sm">
-                          View Project
-                          <ArrowRight className="h-3.5 w-3.5" />
+                        <Button size="sm" className="gap-1 bg-white text-violet-700 border border-violet-200 hover:bg-violet-50 hover:text-violet-800 shadow-sm" asChild>
+                          <Link href={`/dashboard/projects/${hackathon.id}`}>
+                            View Project
+                            <ArrowRight className="h-3.5 w-3.5" />
+                          </Link>
                         </Button>
                       </div>
                     </div>
@@ -401,8 +410,10 @@ export default function ParticipantDashboard() {
               </div>
               
               <div className="flex justify-center p-6 pt-2">
-                <Button variant="outline" className="w-full max-w-sm border-violet-200 text-violet-700 hover:bg-violet-50 hover:text-violet-800">
-                  Explore More Hackathons
+                <Button variant="outline" className="w-full max-w-sm border-violet-200 text-violet-700 hover:bg-violet-50 hover:text-violet-800" asChild>
+                  <Link href="/dashboard/marketplace">
+                    Explore More Hackathons
+                  </Link>
                 </Button>
               </div>
             </CardContent>
@@ -578,8 +589,10 @@ export default function ParticipantDashboard() {
                   ))}
                 </div>
                 
-                <Button className="w-full mt-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700">
-                  Explore AI Tools
+                <Button className="w-full mt-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700" asChild>
+                  <Link href="/marketplace">
+                    Explore AI Tools
+                  </Link>
                 </Button>
               </CardContent>
             </Card>

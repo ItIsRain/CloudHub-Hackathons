@@ -286,6 +286,10 @@ img.progressive-load.loaded {
 /* Optimize animations with will-change */
 .animate-float {
   will-change: transform;
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-slow {
   animation: float 10s ease-in-out infinite;
 }
 

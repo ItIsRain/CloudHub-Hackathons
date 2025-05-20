@@ -20,19 +20,19 @@ export default function DashboardLayoutClient({ children }: { children: React.Re
   return (
     <UserRoleProvider>
       <SidebarProvider defaultOpen={true} open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <div className="relative w-full h-screen overflow-hidden bg-slate-50">
+        <div className="relative w-full min-h-screen bg-white">
           {/* Simplified background without animations */}
           <div className="absolute top-0 right-0 w-1/3 h-1/3 bg-gradient-to-br from-violet-100/10 to-indigo-100/10 rounded-full -z-10"></div>
           <div className="absolute bottom-0 left-0 w-1/4 h-1/4 bg-gradient-to-tr from-indigo-100/10 to-violet-100/10 rounded-full -z-10"></div>
           
-          <div className="flex w-full h-screen">
+          <div className="flex w-full min-h-screen">
             <DashboardSidebar />
             <div className="flex flex-col flex-1 relative">
               <DashboardHeader />
-              <main className="flex-1 w-full h-full overflow-auto">
+              <main className="flex-1 w-full bg-white">
                 {mounted && (
-                  <div className="h-full">
-                    <div className="h-full rounded-xl bg-white/80 shadow-sm border border-slate-100 p-4">
+                  <div className="min-h-full">
+                    <div className="min-h-full rounded-xl">
                       {children}
                     </div>
                   </div>

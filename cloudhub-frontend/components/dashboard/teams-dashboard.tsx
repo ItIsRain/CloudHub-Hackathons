@@ -312,7 +312,7 @@ export default function TeamsDashboard() {
   });
   
   return (
-    <div className="space-y-8 pb-10 px-4">
+    <div className="space-y-8 pb-10 px-6 mt-6">
       {/* Header Section */}
       <section className="relative overflow-hidden rounded-2xl shadow-lg">
         {/* Gradient background with animated elements */}
@@ -338,7 +338,7 @@ export default function TeamsDashboard() {
                 <span className="font-medium tracking-wide">Team Management</span>
               </div>
               
-              <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight">
+              <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 tracking-tight">
                 My <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-violet-200">Teams</span>
               </h1>
               

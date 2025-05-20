@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { 
   Calendar, Trophy, Users, Clock, Globe, CalendarDays, 
-  MapPin, Code, Rocket, Bell, GitPullRequest, PlusCircle, Sparkles
+  MapPin, Code, Rocket, Bell, GitPullRequest, PlusCircle, Sparkles, ExternalLink, Star
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -154,19 +154,86 @@ export default function MyHackathons() {
   };
 
   return (
-    <div className="space-y-8 px-4 py-2 max-w-[1600px] mx-auto">
-      {/* Header section */}
-      <div className="relative">
-        <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-blue-200/40 to-violet-200/40 rounded-full blur-2xl -z-10 transform -translate-x-1/2 -translate-y-1/2"></div>
-        <div className="absolute bottom-0 right-0 w-24 h-24 bg-gradient-to-tr from-emerald-200/30 to-blue-200/30 rounded-full blur-xl -z-10 transform translate-x-1/3 translate-y-1/2"></div>
+    <div className="space-y-8 px-6 mt-6 pb-10">
+      {/* Hero Section */}
+      <section className="relative rounded-2xl overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
+        <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
         
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">My Hackathons</h1>
-            <p className="text-slate-500">Track your registered hackathons and team progress</p>
+        {/* Animated background elements */}
+        <div className="absolute top-0 right-0 w-1/3 h-4/5 bg-gradient-to-b from-white/10 to-transparent rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/4"></div>
+        <div className="absolute bottom-0 left-0 w-2/3 h-1/2 bg-gradient-to-t from-blue-400/10 to-transparent rounded-full blur-3xl"></div>
+        <div className="absolute top-1/3 right-1/4 w-24 h-24 bg-white/5 rounded-full blur-xl"></div>
+        
+        {/* Floating elements */}
+        <div className="absolute top-20 left-[10%] w-12 h-12 rounded-lg bg-gradient-to-tr from-blue-500/30 to-transparent backdrop-blur-sm border border-white/10 animate-float-slow"></div>
+        <div className="absolute bottom-16 right-[15%] w-16 h-16 rounded-lg bg-gradient-to-br from-indigo-500/20 to-transparent backdrop-blur-sm border border-white/10 animate-float"></div>
+        <div className="absolute top-1/2 left-[30%] w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/20 to-transparent backdrop-blur-sm border border-white/10 animate-float-slow"></div>
+        
+        <div className="relative p-8 sm:p-10 md:p-12">
+          <div className="grid gap-8 md:grid-cols-2 items-center">
+            <div className="max-w-xl">
+              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-xl px-4 py-1.5 rounded-full mb-5 text-white text-sm border border-white/20 shadow-xl">
+                <Trophy className="h-4 w-4 text-blue-200" />
+                <span className="font-medium tracking-wide">Hackathon Management</span>
+              </div>
+              
+              <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 tracking-tight">
+                My <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-violet-200">Hackathons</span>
+              </h1>
+              
+              <p className="text-white/90 text-lg mb-8 max-w-lg font-light">
+                Track your registered hackathons, manage your team progress, and stay updated on upcoming deadlines.
+              </p>
+              
+              <div className="flex flex-wrap gap-4">
+                <Button className="bg-white text-indigo-700 hover:bg-white/90 shadow-lg transition-all group px-5 py-2 h-auto text-sm font-medium rounded-xl border border-white/50">
+                  <ExternalLink className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+                  <span>Discover Hackathons</span>
+                </Button>
+              </div>
+            </div>
+            
+            <div className="hidden md:flex justify-end">
+              <div className="bg-white/10 backdrop-blur-xl rounded-xl border border-white/20 p-5 w-full max-w-xs shadow-xl">
+                <h3 className="font-medium mb-4 flex items-center text-white">
+                  <Star className="h-4 w-4 mr-2 text-amber-300" />
+                  <span className="text-base">Hackathon Stats</span>
+                </h3>
+                <div className="space-y-5">
+                  <div>
+                    <div className="flex justify-between text-sm mb-1.5">
+                      <span className="text-white/80">Active Hackathons</span>
+                      <span className="text-white font-medium">{registeredHackathons.filter(h => h.status === "Active").length}</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-blue-400 to-blue-500 rounded-full" style={{ width: `${(registeredHackathons.filter(h => h.status === "Active").length / registeredHackathons.length) * 100}%` }}></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-sm mb-1.5">
+                      <span className="text-white/80">Upcoming Hackathons</span>
+                      <span className="text-white font-medium">{registeredHackathons.filter(h => h.status === "Upcoming").length}</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full" style={{ width: `${(registeredHackathons.filter(h => h.status === "Upcoming").length / registeredHackathons.length) * 100}%` }}></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-sm mb-1.5">
+                      <span className="text-white/80">Next Deadline</span>
+                      <span className="text-white font-medium">{formatDate(registeredHackathons[0]?.nextDeadline)}</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full" style={{ width: `${Math.min(100, 100 - (getDaysUntil(registeredHackathons[0]?.nextDeadline) / 14) * 100)}%` }}></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {hasRegistered ? (
         <>

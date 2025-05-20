@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Search, Filter, ArrowUpDown, MapPin, Calendar, Users, Trophy, Clock, Globe, CalendarDays } from "lucide-react"
+import { Search, Filter, ArrowUpDown, MapPin, Calendar, Users, Trophy, Clock, Globe, CalendarDays, PlusCircle, Sparkles } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -237,8 +237,125 @@ export default function HackathonMarketplace() {
   }) || hackathons.find(h => h.featured) || hackathons[0];
 
   return (
-    <div className="space-y-8 px-4 py-2 max-w-[1600px] mx-auto">
-      {/* Header section */}
+    <div className="space-y-8 px-6 mt-6 mx-auto">
+      {/* Hero Section */}
+      <section className="relative rounded-2xl overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
+        <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
+        
+        {/* Animated background elements */}
+        <div className="absolute top-0 right-0 w-1/3 h-4/5 bg-gradient-to-b from-white/10 to-transparent rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/4"></div>
+        <div className="absolute bottom-0 left-0 w-2/3 h-1/2 bg-gradient-to-t from-blue-400/10 to-transparent rounded-full blur-3xl"></div>
+        <div className="absolute top-1/3 right-1/4 w-24 h-24 bg-white/5 rounded-full blur-xl"></div>
+        
+        {/* Floating elements */}
+        <div className="absolute top-20 left-[10%] w-12 h-12 rounded-lg bg-gradient-to-tr from-blue-500/30 to-transparent backdrop-blur-sm border border-white/10 animate-float-slow"></div>
+        <div className="absolute bottom-16 right-[15%] w-16 h-16 rounded-lg bg-gradient-to-br from-indigo-500/20 to-transparent backdrop-blur-sm border border-white/10 animate-float"></div>
+        <div className="absolute top-1/2 left-[30%] w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/20 to-transparent backdrop-blur-sm border border-white/10 animate-float-slow"></div>
+        
+        <div className="relative p-8 sm:p-10 md:p-12">
+          <div className="grid gap-8 md:grid-cols-2 items-center">
+            <div className="max-w-xl">
+              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-xl px-4 py-1.5 rounded-full mb-5 text-white text-sm border border-white/20 shadow-xl">
+                <Globe className="h-4 w-4 text-blue-200" />
+                <span className="font-medium tracking-wide">Global Hackathons</span>
+              </div>
+              
+              <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 tracking-tight">
+                Hackathon <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-violet-200">Marketplace</span>
+              </h1>
+              
+              <p className="text-white/90 text-lg mb-8 max-w-lg font-light">
+                Discover and join the latest hackathons from around the world, build innovative solutions, and connect with fellow developers.
+              </p>
+              
+              <div className="flex flex-wrap gap-4">
+                <Button className="bg-white text-indigo-700 hover:bg-white/90 shadow-lg transition-all group px-5 py-2 h-auto text-sm font-medium rounded-xl border border-white/50">
+                  <PlusCircle className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+                  <span>Create Hackathon</span>
+                </Button>
+                <Button variant="outline" className="bg-white/10 text-white border-white/30 hover:bg-white/20 hover:border-white/40 shadow-lg transition-all group px-5 py-2 h-auto text-sm font-medium rounded-xl">
+                  <Users className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+                  <span>Find Teammates</span>
+                </Button>
+              </div>
+            </div>
+            
+            <div className="hidden md:flex justify-end">
+              <div className="bg-white/10 backdrop-blur-xl rounded-xl border border-white/20 p-0 w-full max-w-sm shadow-xl overflow-hidden">
+                <div className="p-4 bg-gradient-to-r from-indigo-500/30 to-violet-500/30 border-b border-white/10">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-medium text-white flex items-center">
+                      <Sparkles className="h-4 w-4 mr-2 text-amber-300" />
+                      <span>Featured Hackathon</span>
+                    </h3>
+                    <Badge className={`${getStatusColor(featuredHackathon)} text-xs`}>
+                      {getStatusText(featuredHackathon)}
+                    </Badge>
+                  </div>
+                </div>
+                
+                <div className="p-5">
+                  <div className="flex gap-4 items-center mb-4">
+                    <div className="h-14 w-14 rounded-lg bg-white/20 flex items-center justify-center p-1 backdrop-blur-sm">
+                      <img 
+                        src={featuredHackathon.organizerLogo} 
+                        alt={featuredHackathon.organizer}
+                        className="max-w-full max-h-full object-contain"
+                      />
+                    </div>
+                    <div>
+                      <h4 className="text-base font-medium text-white">{featuredHackathon.title}</h4>
+                      <p className="text-blue-200 text-xs">{featuredHackathon.organizer}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 text-white/80 text-sm">
+                      <Calendar className="h-4 w-4 text-blue-300" />
+                      <span>{new Date(featuredHackathon.startDate).toLocaleDateString()} - {new Date(featuredHackathon.endDate).toLocaleDateString()}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-3 text-white/80 text-sm">
+                      <MapPin className="h-4 w-4 text-blue-300" />
+                      <span>{featuredHackathon.location}{featuredHackathon.venue ? ` · ${featuredHackathon.venue}` : ''}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-3 text-white/80 text-sm">
+                      <Trophy className="h-4 w-4 text-blue-300" />
+                      <span>Prize Pool: {featuredHackathon.prizePool}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-3 text-white/80 text-sm">
+                      <Users className="h-4 w-4 text-blue-300" />
+                      <div className="flex-1">
+                        <div className="flex justify-between mb-1">
+                          <span>Participants</span>
+                          <span className="text-white font-medium">{featuredHackathon.participants}/{featuredHackathon.maxParticipants}</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full" 
+                            style={{ width: `${(featuredHackathon.participants / featuredHackathon.maxParticipants) * 100}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-5">
+                    <Button className="w-full bg-white text-indigo-700 hover:bg-white/90 shadow-md transition-all font-medium">
+                      View Details
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Search and filter section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Hackathon Marketplace</h1>
@@ -248,88 +365,6 @@ export default function HackathonMarketplace() {
           Create Hackathon
         </Button>
       </div>
-
-      {/* Featured Hackathon */}
-      {featuredHackathon && (
-        <Card className="border-slate-200 bg-gradient-to-r from-slate-50/80 to-violet-50/80 overflow-hidden relative">
-          <CardContent className="p-0">
-            <div className="grid md:grid-cols-2 gap-0">
-              <div className="p-6 md:p-8 space-y-4 flex flex-col justify-between">
-                <div>
-                  <Badge className={`mb-4 ${getStatusColor(featuredHackathon)}`}>
-                    {getStatusText(featuredHackathon)}
-                  </Badge>
-                  <h2 className="text-2xl font-bold mb-2">{featuredHackathon.title}</h2>
-                  <p className="text-slate-600 mb-4">{featuredHackathon.description}</p>
-                  
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    {featuredHackathon.categories.map((tag, index) => (
-                      <Badge key={index} variant="outline" className="bg-white/60 text-slate-700 hover:bg-white/90 border-slate-200">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-y-3 pt-4 text-sm">
-                  <div className="flex items-center gap-1.5 text-slate-700">
-                    <Trophy className="h-4 w-4 text-[#2684ff]" />
-                    <span className="font-semibold">{featuredHackathon.prizePool} prize pool</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-slate-700">
-                    <Users className="h-4 w-4 text-[#2684ff]" />
-                    <span>
-                      <span className="font-semibold">{featuredHackathon.participants}</span>/{featuredHackathon.maxParticipants} participants
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-slate-700">
-                    <CalendarDays className="h-4 w-4 text-[#2684ff]" />
-                    <span>
-                      <span className="font-semibold">
-                        {new Date(featuredHackathon.startDate).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </span>
-                      {" "}-{" "}
-                      {new Date(featuredHackathon.endDate).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-slate-700">
-                    <Globe className="h-4 w-4 text-[#2684ff]" />
-                    <span>{featuredHackathon.location}</span>
-                  </div>
-                </div>
-                
-                <div className="flex gap-3 pt-6">
-                  <Button className="bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700">
-                    Join Now
-                  </Button>
-                  <Button variant="outline" className="border-slate-200 text-slate-800 hover:bg-white/80">
-                    Learn More
-                  </Button>
-                </div>
-              </div>
-              
-              <div 
-                className="h-full min-h-[240px] md:min-h-[unset] bg-cover bg-center relative"
-                style={{ backgroundImage: `url(${featuredHackathon.image})` }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-t from-[#2684ff]/40 to-[#2684ff]/10"></div>
-                <div className="absolute bottom-4 right-4">
-                  <Badge className="bg-white/90 text-[#2684ff] hover:bg-white border-0 shadow-sm">
-                    Featured Hackathon
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <div className="flex flex-col md:flex-row gap-8">
         {/* Filters Sidebar */}

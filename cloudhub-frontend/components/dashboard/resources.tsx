@@ -368,7 +368,7 @@ export default function Resources() {
   };
 
   return (
-    <div className="space-y-8 mb-10 px-6">
+    <div className="space-y-8 mb-10 px-6 mt-6">
       {/* Hero Section */}
       <section className="relative rounded-2xl overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
@@ -444,10 +444,10 @@ export default function Resources() {
 
       {/* Main Header with AI Tools & Notebooks Buttons */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-slate-200">
-            <div>
+        <div>
           <h1 className="text-2xl font-bold text-slate-800 mb-1">Resources</h1>
           <p className="text-slate-500">Access AI tools, notebooks, and learning resources</p>
-            </div>
+        </div>
         <div className="flex flex-col sm:flex-row gap-3">
                         <Button 
             onClick={() => setShowMarketplace(true)}
@@ -634,11 +634,6 @@ export default function Resources() {
           </Card>
         ))}
       </div>
-
-      {/* Documentation Section */}
-      <Card className="border-slate-200 bg-white shadow-md rounded-xl overflow-hidden">
-        {/* ... existing code ... */}
-      </Card>
 
       {/* AI Tools Marketplace Dialog */}
       <Dialog open={showMarketplace} onOpenChange={setShowMarketplace}>
