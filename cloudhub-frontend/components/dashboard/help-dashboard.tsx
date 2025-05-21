@@ -72,12 +72,12 @@ const helpArticles = [
 
 export default function HelpDashboard() {
   return (
-    <div className="flex flex-col h-full min-h-0 space-y-6 px-6 pt-6 pb-6 overflow-auto">
+    <div className="flex flex-col h-full min-h-0 space-y-6 px-6 pb-6 overflow-auto">
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-grid-slate-200/60 [mask-image:linear-gradient(to_bottom,white,transparent)] pointer-events-none opacity-40"></div>
       
       {/* Banner Card */}
-      <div className="relative rounded-2xl overflow-hidden shadow-xl z-10">
+      <div className="relative rounded-2xl overflow-hidden shadow-lg z-10">
         <div className="relative py-8 px-8 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600"></div>
           <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-20"></div>
@@ -128,7 +128,7 @@ export default function HelpDashboard() {
             <TabsContent value="articles" className="m-0 h-full">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 h-full">
                 {/* Quick Help Card */}
-                <Card className="border-none shadow-xl rounded-3xl overflow-hidden backdrop-blur-sm bg-white/80 col-span-1 md:col-span-2 lg:col-span-1 h-auto">
+                <Card className="border-none shadow-lg rounded-3xl overflow-hidden backdrop-blur-sm bg-white/80 col-span-1 md:col-span-2 lg:col-span-1 h-auto">
                   <CardHeader className="border-b border-slate-100 bg-white/60 px-8 py-6">
                     <CardTitle className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Quick Help</CardTitle>
                     <CardDescription className="text-slate-600 mt-1">Access resources and guides</CardDescription>
@@ -164,7 +164,7 @@ export default function HelpDashboard() {
                 </Card>
 
                 {/* Popular Articles */}
-                <Card className="border-none shadow-xl rounded-3xl overflow-hidden backdrop-blur-sm bg-white/80 col-span-1 md:col-span-2 h-auto">
+                <Card className="border-none shadow-lg rounded-3xl overflow-hidden backdrop-blur-sm bg-white/80 col-span-1 md:col-span-2 h-auto">
                   <CardHeader className="border-b border-slate-100 bg-white/60 px-8 py-6">
                     <CardTitle className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Popular Articles</CardTitle>
                     <CardDescription className="text-slate-600 mt-1">Most viewed help articles</CardDescription>
@@ -198,7 +198,7 @@ export default function HelpDashboard() {
 
             {/* Tickets Tab */}
             <TabsContent value="tickets" className="m-0 h-full">
-              <Card className="border-none shadow-xl rounded-3xl overflow-hidden backdrop-blur-sm bg-white/80 h-auto">
+              <Card className="border-none shadow-lg rounded-3xl overflow-hidden backdrop-blur-sm bg-white/80 h-auto">
                 <CardHeader className="border-b border-slate-100 bg-white/60 px-8 py-6">
                   <div className="flex items-center justify-between">
                     <div>
