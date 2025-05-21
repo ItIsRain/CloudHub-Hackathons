@@ -98,7 +98,7 @@ export default function DashboardSidebar() {
   // Secondary navigation items
   const secondaryNavItems: NavItem[] = [
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
-    { name: "Help & Support", href: "/dashboard/support", icon: HelpCircle },
+    { name: "Help & Support", href: "/dashboard/help", icon: HelpCircle },
   ]
 
   return (
