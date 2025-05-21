@@ -17,7 +17,8 @@ import {
   MessageSquare,
   Sparkles,
   Link as LinkIcon,
-  Users
+  Users,
+  X
 } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
@@ -33,6 +34,16 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { useWindowSize } from "@/hooks/use-window-size"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 
 interface Message {
   id: string
@@ -189,6 +200,8 @@ export default function Messages() {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [newMessage, setNewMessage] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
+  const [showNewConversationDialog, setShowNewConversationDialog] = useState(false)
+  const [newConversationName, setNewConversationName] = useState("")
   const { width } = useWindowSize()
   const isMobile = width ? width < 768 : false
   const [showConversation, setShowConversation] = useState(!isMobile)
@@ -237,6 +250,18 @@ export default function Messages() {
   // Handle back button on mobile
   const handleBackToList = () => {
     setShowConversation(false)
+  }
+
+  const handleCreateNewConversation = () => {
+    if (!newConversationName.trim()) return
+
+    // We would normally send this to an API
+    // For now, we'll just log it
+    console.log("New conversation created:", newConversationName)
+    
+    // Clear the input and close the dialog
+    setNewConversationName("")
+    setShowNewConversationDialog(false)
   }
 
   return (
@@ -382,6 +407,7 @@ export default function Messages() {
             <Button 
               className="w-full flex items-center gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-700 hover:via-indigo-700 hover:to-violet-700 text-white border-0 shadow-sm" 
               size="sm"
+              onClick={() => setShowNewConversationDialog(true)}
             >
               <PlusCircle className="h-4 w-4" />
               New conversation
@@ -552,6 +578,7 @@ export default function Messages() {
               </p>
               <Button 
                 className="flex items-center gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-700 hover:via-indigo-700 hover:to-violet-700 text-white shadow-sm px-6 py-2"
+                onClick={() => setShowNewConversationDialog(true)}
               >
                 <PlusCircle className="h-4 w-4" />
                 New conversation
@@ -560,6 +587,42 @@ export default function Messages() {
           )}
         </div>
       </div>
+
+      {/* New Conversation Dialog */}
+      <Dialog open={showNewConversationDialog} onOpenChange={setShowNewConversationDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl">New Conversation</DialogTitle>
+            <DialogDescription>
+              Start a new conversation with a team member or group.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="conversation-name">Conversation Name</Label>
+              <Input
+                id="conversation-name"
+                value={newConversationName}
+                onChange={(e) => setNewConversationName(e.target.value)}
+                placeholder="Enter conversation name"
+                className="w-full"
+              />
+            </div>
+            <p className="text-xs text-slate-500">
+              This will be the name of your new conversation. You can change it later.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-700 hover:via-indigo-700 hover:to-violet-700 text-white border-0"
+              onClick={handleCreateNewConversation}
+              disabled={!newConversationName.trim()}
+            >
+              Create Conversation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 

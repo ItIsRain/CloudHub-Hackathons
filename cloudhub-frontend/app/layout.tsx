@@ -14,6 +14,11 @@ export const metadata: Metadata = {
   description: 'CloudHub is a community marketplace for creating and joining hackathons with all the tools, mentorship, and infrastructure needed for success. Launch or participate in hackathons with escrow services and AI tools.',
   generator: 'CloudHub',
   metadataBase: new URL('https://hub.lynq.ae'),
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
+  },
   keywords: ['hackathon platform', 'hackathon marketplace', 'community hackathons', 'mentorship', 'tech hackathons', 'hackathon tools', 'coding competitions', 'AI tools'],
   openGraph: {
     title: 'CloudHub',
