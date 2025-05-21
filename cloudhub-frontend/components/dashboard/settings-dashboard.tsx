@@ -49,7 +49,7 @@ import {
 
 export default function SettingsDashboard() {
   return (
-    <div className="space-y-6 px-6">
+    <div className="space-y-6 px-6 pb-6">
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-grid-slate-200/60 [mask-image:linear-gradient(to_bottom,white,transparent)] pointer-events-none opacity-40"></div>
       
@@ -216,6 +216,290 @@ export default function SettingsDashboard() {
             {/* Tab content with all the settings panels */}
             {/* This includes the remaining content from the original settings page */}
             {/* Tab content will go here */}
+            
+            {/* Personal Info Tab */}
+            <TabsContent value="personal" className="space-y-6">
+              <Card className="border-none shadow-lg rounded-3xl overflow-hidden backdrop-blur-sm bg-white/80">
+                <CardHeader className="border-b border-slate-100 bg-white/60 px-8 py-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Personal Information</CardTitle>
+                      <CardDescription className="text-slate-600 mt-1">Update your personal details</CardDescription>
+                    </div>
+                    <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm hover:shadow-md transition-all duration-200">
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Changes
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="px-8 py-6 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName">First Name</Label>
+                      <Input id="firstName" defaultValue="John" className="bg-white border-slate-200" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName">Last Name</Label>
+                      <Input id="lastName" defaultValue="Doe" className="bg-white border-slate-200" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input id="email" type="email" defaultValue="john.doe@example.com" className="bg-white border-slate-200" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Phone</Label>
+                      <Input id="phone" type="tel" defaultValue="+1 (555) 123-4567" className="bg-white border-slate-200" />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="address">Address</Label>
+                      <Input id="address" defaultValue="123 Tech Street" className="bg-white border-slate-200" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="city">City</Label>
+                      <Input id="city" defaultValue="San Francisco" className="bg-white border-slate-200" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="state">State</Label>
+                      <Input id="state" defaultValue="CA" className="bg-white border-slate-200" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="zipCode">Zip Code</Label>
+                      <Input id="zipCode" defaultValue="94105" className="bg-white border-slate-200" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="country">Country</Label>
+                      <Select defaultValue="us">
+                        <SelectTrigger className="bg-white border-slate-200">
+                          <SelectValue placeholder="Select country" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="us">United States</SelectItem>
+                          <SelectItem value="ca">Canada</SelectItem>
+                          <SelectItem value="uk">United Kingdom</SelectItem>
+                          <SelectItem value="au">Australia</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="bio">Biography</Label>
+                    <Textarea 
+                      id="bio" 
+                      className="resize-none bg-white border-slate-200 min-h-[120px]" 
+                      defaultValue="Full stack developer with 5+ years of experience specializing in React, Node.js, and cloud architecture. Passionate about building scalable web applications and mentoring junior developers."
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            {/* Skills Tab */}
+            <TabsContent value="skills" className="space-y-6">
+              <Card className="border-none shadow-lg rounded-3xl overflow-hidden backdrop-blur-sm bg-white/80">
+                <CardHeader className="border-b border-slate-100 bg-white/60 px-8 py-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Skills & Expertise</CardTitle>
+                      <CardDescription className="text-slate-600 mt-1">Add your skills and professional expertise</CardDescription>
+                    </div>
+                    <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm hover:shadow-md transition-all duration-200">
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Changes
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="px-8 py-6 space-y-6">
+                  <div className="space-y-4">
+                    <Label className="text-sm font-medium text-slate-700">Technical Skills</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {["React", "TypeScript", "Node.js", "Next.js", "GraphQL", "MongoDB", "AWS", "Docker", "CI/CD", "REST API"].map((skill, index) => (
+                        <Badge key={index} className="px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors rounded-lg flex items-center gap-1.5">
+                          {skill}
+                          <X className="h-3 w-3 cursor-pointer hover:text-blue-900" />
+                        </Badge>
+                      ))}
+                      <Button size="sm" variant="outline" className="rounded-lg h-8 gap-1 text-sm border-dashed border-slate-300 hover:border-blue-300 hover:text-blue-600 text-slate-500">
+                        <Plus className="h-3.5 w-3.5" />
+                        Add Skill
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <Label className="text-sm font-medium text-slate-700">Professional Certifications</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {["AWS Solutions Architect", "Google Cloud Professional", "Microsoft Azure Developer"].map((cert, index) => (
+                        <Badge key={index} className="px-3 py-1.5 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors rounded-lg flex items-center gap-1.5">
+                          {cert}
+                          <X className="h-3 w-3 cursor-pointer hover:text-indigo-900" />
+                        </Badge>
+                      ))}
+                      <Button size="sm" variant="outline" className="rounded-lg h-8 gap-1 text-sm border-dashed border-slate-300 hover:border-blue-300 hover:text-blue-600 text-slate-500">
+                        <Plus className="h-3.5 w-3.5" />
+                        Add Certification
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <Label className="text-sm font-medium text-slate-700">Languages</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {["English (Native)", "Spanish (Intermediate)", "French (Basic)"].map((lang, index) => (
+                        <Badge key={index} className="px-3 py-1.5 bg-violet-100 text-violet-700 hover:bg-violet-200 transition-colors rounded-lg flex items-center gap-1.5">
+                          {lang}
+                          <X className="h-3 w-3 cursor-pointer hover:text-violet-900" />
+                        </Badge>
+                      ))}
+                      <Button size="sm" variant="outline" className="rounded-lg h-8 gap-1 text-sm border-dashed border-slate-300 hover:border-blue-300 hover:text-blue-600 text-slate-500">
+                        <Plus className="h-3.5 w-3.5" />
+                        Add Language
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <Label htmlFor="experience" className="text-sm font-medium text-slate-700">Work Experience</Label>
+                    <div className="space-y-4">
+                      <div className="p-4 border border-slate-200 rounded-xl bg-white">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-medium text-slate-900">Senior Developer</h4>
+                            <p className="text-sm text-slate-500">Tech Corp Inc. • Full-time</p>
+                            <div className="flex items-center text-xs text-slate-500 mt-1.5">
+                              <Calendar className="h-3.5 w-3.5 mr-1" />
+                              Jan 2020 - Present • 3 years, 5 months
+                            </div>
+                          </div>
+                          <Button size="sm" variant="ghost" className="text-slate-500 hover:text-blue-600 p-2 h-8 w-8">
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <Button size="sm" variant="outline" className="w-full rounded-xl h-10 gap-1.5 text-sm border-dashed border-slate-300 hover:border-blue-300 hover:text-blue-600 text-slate-500">
+                        <Plus className="h-4 w-4" />
+                        Add Work Experience
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <Label htmlFor="education" className="text-sm font-medium text-slate-700">Education</Label>
+                    <div className="space-y-4">
+                      <div className="p-4 border border-slate-200 rounded-xl bg-white">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-medium text-slate-900">MSc Computer Science</h4>
+                            <p className="text-sm text-slate-500">University of Technology</p>
+                            <div className="flex items-center text-xs text-slate-500 mt-1.5">
+                              <Calendar className="h-3.5 w-3.5 mr-1" />
+                              2016 - 2018
+                            </div>
+                          </div>
+                          <Button size="sm" variant="ghost" className="text-slate-500 hover:text-blue-600 p-2 h-8 w-8">
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <Button size="sm" variant="outline" className="w-full rounded-xl h-10 gap-1.5 text-sm border-dashed border-slate-300 hover:border-blue-300 hover:text-blue-600 text-slate-500">
+                        <Plus className="h-4 w-4" />
+                        Add Education
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            {/* Social Links Tab */}
+            <TabsContent value="social" className="space-y-6">
+              <Card className="border-none shadow-lg rounded-3xl overflow-hidden backdrop-blur-sm bg-white/80">
+                <CardHeader className="border-b border-slate-100 bg-white/60 px-8 py-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Social Profiles</CardTitle>
+                      <CardDescription className="text-slate-600 mt-1">Connect your social media accounts</CardDescription>
+                    </div>
+                    <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm hover:shadow-md transition-all duration-200">
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Changes
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="px-8 py-6 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-4 w-4 text-slate-600" />
+                        <Label htmlFor="website">Website</Label>
+                      </div>
+                      <Input id="website" defaultValue="https://johndoe.dev" className="bg-white border-slate-200" />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Github className="h-4 w-4 text-slate-600" />
+                        <Label htmlFor="github">GitHub</Label>
+                      </div>
+                      <Input id="github" defaultValue="github.com/johndoe" className="bg-white border-slate-200" />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Linkedin className="h-4 w-4 text-slate-600" />
+                        <Label htmlFor="linkedin">LinkedIn</Label>
+                      </div>
+                      <Input id="linkedin" defaultValue="linkedin.com/in/johndoe" className="bg-white border-slate-200" />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Twitter className="h-4 w-4 text-slate-600" />
+                        <Label htmlFor="twitter">Twitter</Label>
+                      </div>
+                      <Input id="twitter" defaultValue="twitter.com/johndoe" className="bg-white border-slate-200" />
+                    </div>
+                  </div>
+                  
+                  <div className="pt-2">
+                    <Button variant="outline" className="rounded-lg h-10 gap-1.5 text-sm border-dashed border-slate-300 hover:border-blue-300 hover:text-blue-600 text-slate-500">
+                      <Plus className="h-4 w-4" />
+                      Add More Social Profiles
+                    </Button>
+                  </div>
+                  
+                  <Separator className="my-4" />
+                  
+                  <div className="space-y-4">
+                    <h3 className="font-medium text-slate-900">Profile Visibility</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <div className="text-sm font-medium">Public profile</div>
+                          <div className="text-xs text-slate-500">Make your profile visible to everyone</div>
+                        </div>
+                        <Switch defaultChecked />
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <div className="text-sm font-medium">Show email address</div>
+                          <div className="text-xs text-slate-500">Allow others to see your email</div>
+                        </div>
+                        <Switch />
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <div className="text-sm font-medium">Show phone number</div>
+                          <div className="text-xs text-slate-500">Allow others to see your phone number</div>
+                        </div>
+                        <Switch />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
           </div>
         </Tabs>
       </div>
