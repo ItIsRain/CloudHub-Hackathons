@@ -135,28 +135,30 @@ export default function MessagesDashboard() {
                     New Chat
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-xl rounded-2xl">
-                  <div className="relative py-6 px-6 overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600">
+                <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-xl rounded-2xl bg-white animate-in fade-in-0 zoom-in-95">
+                  <div className="relative py-8 px-6 overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600">
                     <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-20"></div>
+                    <div className="absolute bottom-0 left-0 w-full h-2/3 bg-gradient-to-t from-blue-400/10 to-transparent rounded-full blur-3xl"></div>
+                    <div className="absolute top-10 right-[20%] w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-500/30 to-transparent backdrop-blur-md border border-white/20 animate-float-slow"></div>
                     <DialogHeader className="relative z-10">
                       <DialogTitle className="text-2xl font-bold text-white flex items-center">
                         <MessageCircle className="h-5 w-5 mr-2" />
                         New Conversation
                       </DialogTitle>
-                      <DialogDescription className="text-blue-100">
+                      <DialogDescription className="text-blue-100 mt-2">
                         Start a direct message or create a group chat
                       </DialogDescription>
                     </DialogHeader>
                   </div>
                   
                   <Tabs defaultValue="direct" className="w-full">
-                    <div className="px-6 pt-4">
-                      <TabsList className="w-full grid grid-cols-2 bg-slate-100">
-                        <TabsTrigger value="direct" className="data-[state=active]:bg-white rounded-lg data-[state=active]:shadow-sm">
+                    <div className="px-6 pt-6">
+                      <TabsList className="w-full grid grid-cols-2 bg-slate-100/70 p-1 rounded-xl">
+                        <TabsTrigger value="direct" className="data-[state=active]:bg-white rounded-lg data-[state=active]:shadow-sm transition-all duration-200">
                           <User className="h-4 w-4 mr-2" />
                           Direct Message
                         </TabsTrigger>
-                        <TabsTrigger value="group" className="data-[state=active]:bg-white rounded-lg data-[state=active]:shadow-sm">
+                        <TabsTrigger value="group" className="data-[state=active]:bg-white rounded-lg data-[state=active]:shadow-sm transition-all duration-200">
                           <Users className="h-4 w-4 mr-2" />
                           Group Chat
                         </TabsTrigger>
@@ -169,21 +171,21 @@ export default function MessagesDashboard() {
                           <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                           <Input 
                             placeholder="Search for people..." 
-                            className="pl-10 bg-slate-50 border-slate-200" 
+                            className="pl-10 bg-slate-50 border-slate-200 rounded-xl transition-all focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                           />
                         </div>
                       </div>
                       
-                      <TabsContent value="direct" className="mt-0">
-                        <div className="space-y-4 max-h-[240px] overflow-y-auto mb-6">
-                          <div className="text-xs font-medium text-slate-500 mb-2">SUGGESTED PEOPLE</div>
+                      <TabsContent value="direct" className="mt-0 space-y-4">
+                        <div className="space-y-4 max-h-[240px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-slate-100 mb-6">
+                          <div className="text-xs font-medium text-slate-500 mb-2 uppercase tracking-wider">Suggested People</div>
                           
                           {["Jordan Wilson", "Alex Chen", "Taylor Moore"].map((name, i) => (
                             <div 
                               key={i} 
-                              className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 cursor-pointer"
+                              className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-blue-50/50 cursor-pointer transition-colors duration-200 border border-transparent hover:border-blue-100"
                               onClick={() => handlePersonSelect(name)}
                             >
                               <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
@@ -198,10 +200,10 @@ export default function MessagesDashboard() {
                               <Button 
                                 size="sm" 
                                 variant="outline" 
-                                className={`rounded-full h-8 w-8 p-0 ${
+                                className={`rounded-full h-8 w-8 p-0 transition-all duration-200 ${
                                   selectedPeople.includes(name) 
                                     ? "bg-blue-500 border-blue-500 text-white hover:bg-blue-600 hover:border-blue-600" 
-                                    : ""
+                                    : "hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200"
                                 }`}
                               >
                                 {selectedPeople.includes(name) ? (
@@ -215,7 +217,7 @@ export default function MessagesDashboard() {
                         </div>
                       </TabsContent>
                       
-                      <TabsContent value="group" className="mt-0">
+                      <TabsContent value="group" className="mt-0 space-y-4">
                         <div className="mb-4">
                           <Label htmlFor="group-name" className="text-sm font-medium text-slate-700 mb-1.5 block">
                             Group Name
@@ -223,19 +225,19 @@ export default function MessagesDashboard() {
                           <Input
                             id="group-name"
                             placeholder="Enter group name..."
-                            className="bg-slate-50 border-slate-200"
+                            className="bg-slate-50 border-slate-200 rounded-xl transition-all focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                             value={groupName}
                             onChange={(e) => setGroupName(e.target.value)}
                           />
                         </div>
                         
-                        <div className="space-y-4 max-h-[200px] overflow-y-auto mb-6">
-                          <div className="text-xs font-medium text-slate-500 mb-2">SELECT MEMBERS</div>
+                        <div className="space-y-4 max-h-[200px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-slate-100 mb-6">
+                          <div className="text-xs font-medium text-slate-500 mb-2 uppercase tracking-wider">Select Members</div>
                           
                           {["Jordan Wilson", "Alex Chen", "Taylor Moore", "Jamie Smith", "Pat Johnson"].map((name, i) => (
                             <div 
                               key={i} 
-                              className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 cursor-pointer"
+                              className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-blue-50/50 cursor-pointer transition-colors duration-200 border border-transparent hover:border-blue-100"
                               onClick={() => handlePersonSelect(name)}
                             >
                               <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
@@ -250,10 +252,10 @@ export default function MessagesDashboard() {
                               <Button 
                                 size="sm" 
                                 variant="outline" 
-                                className={`rounded-full h-8 w-8 p-0 ${
+                                className={`rounded-full h-8 w-8 p-0 transition-all duration-200 ${
                                   selectedPeople.includes(name) 
                                     ? "bg-blue-500 border-blue-500 text-white hover:bg-blue-600 hover:border-blue-600" 
-                                    : ""
+                                    : "hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200"
                                 }`}
                               >
                                 {selectedPeople.includes(name) ? (
@@ -267,16 +269,16 @@ export default function MessagesDashboard() {
                         </div>
                         
                         {selectedPeople.length > 0 && (
-                          <div className="mb-6">
-                            <Label className="text-xs font-medium text-slate-500 mb-2 block">
-                              SELECTED MEMBERS ({selectedPeople.length})
+                          <div className="mb-6 bg-blue-50/50 p-3 rounded-xl border border-blue-100">
+                            <Label className="text-xs font-medium text-blue-700 mb-2 block uppercase tracking-wider">
+                              Selected Members ({selectedPeople.length})
                             </Label>
                             <div className="flex flex-wrap gap-2">
                               {selectedPeople.map((name, i) => (
-                                <Badge key={i} className="bg-blue-500 hover:bg-blue-600 px-2 py-1 flex items-center gap-1">
+                                <Badge key={i} className="bg-blue-500 hover:bg-blue-600 px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition-colors duration-200">
                                   {name}
                                   <X 
-                                    className="h-3 w-3 cursor-pointer ml-1" 
+                                    className="h-3 w-3 cursor-pointer ml-1 hover:text-blue-200 transition-colors" 
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handlePersonSelect(name);
@@ -290,10 +292,10 @@ export default function MessagesDashboard() {
                       </TabsContent>
                     </div>
                     
-                    <DialogFooter className="p-6 pt-0 flex gap-2 sm:gap-0">
+                    <DialogFooter className="p-6 pt-0 flex gap-3 border-t border-slate-100 mt-3">
                       <Button
                         variant="outline"
-                        className="flex-1 border-slate-200"
+                        className="flex-1 border-slate-200 rounded-xl hover:bg-slate-50 transition-all duration-200"
                         onClick={() => {
                           setIsDialogOpen(false);
                           setSelectedPeople([]);
@@ -303,9 +305,10 @@ export default function MessagesDashboard() {
                         Cancel
                       </Button>
                       <Button 
-                        className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                        className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all duration-200 rounded-xl"
                         disabled={selectedPeople.length === 0}
                       >
+                        <MessageCircle className="h-4 w-4 mr-2" />
                         Start Chat
                       </Button>
                     </DialogFooter>
