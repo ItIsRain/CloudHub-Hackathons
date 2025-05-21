@@ -240,11 +240,11 @@ export default function ParticipantDashboard() {
       {/* Tab content for hackathons and schedule */}
       <Tabs defaultValue="hackathons" className="w-full">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-          <div className="inline-flex rounded-full bg-slate-100 p-1.5">
+          <div className="inline-flex rounded-full bg-gradient-to-r from-slate-50 via-slate-50 to-slate-50 p-1.5 border border-slate-100 shadow-sm">
             <TabsList className="bg-transparent">
               <TabsTrigger 
                 value="hackathons" 
-                className="flex items-center gap-2 rounded-full px-3 py-1.5 data-[state=active]:bg-white data-[state=active]:text-slate-800 data-[state=active]:shadow-sm"
+                className="flex items-center gap-2 rounded-full px-4 py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-indigo-500 data-[state=active]:to-violet-500 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all duration-200"
               >
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500 text-white">
                   <Trophy className="h-3.5 w-3.5" />
@@ -253,7 +253,7 @@ export default function ParticipantDashboard() {
               </TabsTrigger>
               <TabsTrigger 
                 value="schedule" 
-                className="flex items-center gap-2 rounded-full px-3 py-1.5 data-[state=active]:bg-white data-[state=active]:text-slate-800 data-[state=active]:shadow-sm"
+                className="flex items-center gap-2 rounded-full px-4 py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-indigo-500 data-[state=active]:to-violet-500 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all duration-200"
               >
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-500 text-white">
                   <Calendar className="h-3.5 w-3.5" />

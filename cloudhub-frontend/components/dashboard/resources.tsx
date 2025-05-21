@@ -489,38 +489,38 @@ export default function Resources() {
           )}
         </div>
         <div className="min-w-[300px] bg-gradient-to-r from-slate-50/80 to-white rounded-lg border border-slate-200/80 shadow-sm h-10 overflow-hidden">
-        <Tabs 
-          value={selectedCategory} 
-          onValueChange={setSelectedCategory}
+          <Tabs 
+            value={selectedCategory} 
+            onValueChange={setSelectedCategory}
             className="w-full h-full"
           >
             <TabsList className="w-full bg-transparent grid grid-cols-4 h-full p-0">
               <TabsTrigger 
                 value="all" 
-                className="text-xs font-medium rounded-none text-slate-600 data-[state=active]:bg-white data-[state=active]:text-violet-700 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-violet-500 h-full hover:bg-white/60 hover:text-violet-600 transition-colors relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-violet-500/0 after:transition-opacity hover:after:bg-violet-500/40"
+                className="text-xs font-medium rounded-none text-slate-600 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-indigo-500 data-[state=active]:to-violet-500 data-[state=active]:text-white data-[state=active]:shadow-sm h-full hover:bg-white/60 hover:text-violet-600 transition-colors relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-violet-500/0 after:transition-opacity hover:after:bg-violet-500/40"
               >
                 All
               </TabsTrigger>
               <TabsTrigger 
                 value="notebooks" 
-                className="text-xs font-medium rounded-none text-slate-600 data-[state=active]:bg-white data-[state=active]:text-violet-700 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-violet-500 h-full hover:bg-white/60 hover:text-violet-600 transition-colors relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-violet-500/0 after:transition-opacity hover:after:bg-violet-500/40"
+                className="text-xs font-medium rounded-none text-slate-600 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-indigo-500 data-[state=active]:to-violet-500 data-[state=active]:text-white data-[state=active]:shadow-sm h-full hover:bg-white/60 hover:text-violet-600 transition-colors relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-violet-500/0 after:transition-opacity hover:after:bg-violet-500/40"
               >
                 Notebooks
               </TabsTrigger>
               <TabsTrigger 
                 value="tutorials" 
-                className="text-xs font-medium rounded-none text-slate-600 data-[state=active]:bg-white data-[state=active]:text-violet-700 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-violet-500 h-full hover:bg-white/60 hover:text-violet-600 transition-colors relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-violet-500/0 after:transition-opacity hover:after:bg-violet-500/40"
+                className="text-xs font-medium rounded-none text-slate-600 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-indigo-500 data-[state=active]:to-violet-500 data-[state=active]:text-white data-[state=active]:shadow-sm h-full hover:bg-white/60 hover:text-violet-600 transition-colors relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-violet-500/0 after:transition-opacity hover:after:bg-violet-500/40"
               >
                 Tutorials
               </TabsTrigger>
               <TabsTrigger 
                 value="resources" 
-                className="text-xs font-medium rounded-none text-slate-600 data-[state=active]:bg-white data-[state=active]:text-violet-700 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-violet-500 h-full hover:bg-white/60 hover:text-violet-600 transition-colors relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-violet-500/0 after:transition-opacity hover:after:bg-violet-500/40"
+                className="text-xs font-medium rounded-none text-slate-600 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-indigo-500 data-[state=active]:to-violet-500 data-[state=active]:text-white data-[state=active]:shadow-sm h-full hover:bg-white/60 hover:text-violet-600 transition-colors relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-violet-500/0 after:transition-opacity hover:after:bg-violet-500/40"
               >
                 Learning Resources
               </TabsTrigger>
-          </TabsList>
-        </Tabs>
+            </TabsList>
+          </Tabs>
         </div>
       </div>
 

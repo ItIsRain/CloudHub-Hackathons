@@ -239,11 +239,11 @@ export default function MyHackathons() {
         <>
           {/* Tabs navigation with modern design */}
           <Tabs defaultValue="active" className="w-full">
-            <div className="inline-flex rounded-full bg-slate-100/80 backdrop-blur-sm p-1.5 shadow-inner">
+            <div className="inline-flex rounded-full bg-gradient-to-r from-slate-50 via-slate-50 to-slate-50 p-1.5 border border-slate-100 shadow-sm">
               <TabsList className="bg-transparent">
                 <TabsTrigger 
                   value="active" 
-                  className="flex items-center gap-2 rounded-full px-4 py-2 data-[state=active]:bg-white data-[state=active]:text-slate-800 data-[state=active]:shadow transition-all duration-200"
+                  className="flex items-center gap-2 rounded-full px-4 py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-indigo-500 data-[state=active]:to-violet-500 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all duration-200"
                 >
                   <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-sm">
                     <Rocket className="h-3.5 w-3.5" />
@@ -252,7 +252,7 @@ export default function MyHackathons() {
                 </TabsTrigger>
                 <TabsTrigger 
                   value="past" 
-                  className="flex items-center gap-2 rounded-full px-4 py-2 data-[state=active]:bg-white data-[state=active]:text-slate-800 data-[state=active]:shadow transition-all duration-200"
+                  className="flex items-center gap-2 rounded-full px-4 py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-indigo-500 data-[state=active]:to-violet-500 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all duration-200"
                 >
                   <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-slate-400 to-slate-500 text-white shadow-sm">
                     <Trophy className="h-3.5 w-3.5" />

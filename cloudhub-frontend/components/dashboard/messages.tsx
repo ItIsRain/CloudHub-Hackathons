@@ -240,38 +240,42 @@ export default function Messages() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-white">
-      {/* Banner */}
-      <div className="relative py-6 px-6 mb-4 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
-        <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-20"></div>
-        <div className="absolute bottom-0 left-0 w-2/3 h-1/2 bg-gradient-to-t from-blue-400/10 to-transparent rounded-full blur-3xl"></div>
-        <div className="absolute top-10 right-[20%] w-12 h-12 rounded-lg bg-gradient-to-tr from-blue-500/30 to-transparent backdrop-blur-sm border border-white/10 animate-float-slow"></div>
-        <div className="absolute top-1/2 right-[40%] w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/20 to-transparent backdrop-blur-sm border border-white/10 animate-float-slow animate-delay-500"></div>
-        
-        <div className="relative z-10 flex flex-col">
-          <h1 className="text-2xl font-bold text-white md:text-3xl">
-            Messages <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-violet-200">Center</span>
-          </h1>
-          <p className="text-blue-100 mt-1 max-w-2xl">
-            Connect with your team members, mentors, and hackathon participants
-          </p>
+    <div className="flex flex-col h-full bg-slate-50/50 p-4 space-y-4">
+      {/* Banner Card */}
+      <div className="relative rounded-2xl overflow-hidden shadow-lg">
+        <div className="relative py-8 px-6 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600"></div>
+          <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-20"></div>
+          <div className="absolute bottom-0 left-0 w-2/3 h-1/2 bg-gradient-to-t from-blue-400/20 to-transparent rounded-full blur-3xl"></div>
+          <div className="absolute top-10 right-[20%] w-16 h-16 rounded-lg bg-gradient-to-tr from-blue-500/40 to-transparent backdrop-blur-sm border border-white/20 animate-float-slow"></div>
+          <div className="absolute top-1/2 right-[40%] w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500/30 to-transparent backdrop-blur-sm border border-white/20 animate-float-slow animate-delay-500"></div>
+          <div className="absolute bottom-10 left-[30%] w-14 h-14 rounded-lg bg-gradient-to-tl from-violet-500/30 to-transparent backdrop-blur-sm border border-white/20 animate-float-slow animate-delay-700"></div>
+          
+          <div className="relative z-10 flex flex-col">
+            <h1 className="text-3xl font-bold text-white md:text-4xl">
+              Messages <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-indigo-200 to-violet-200">Center</span>
+            </h1>
+            <p className="text-blue-100 mt-2 max-w-2xl text-lg">
+              Connect with your team members, mentors, and hackathon participants
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-1 h-[calc(100vh-16rem)]">
+      {/* Messages Card */}
+      <div className="flex flex-1 h-[calc(100vh-20rem)] bg-white rounded-2xl shadow-lg overflow-hidden">
         {/* Conversation List */}
         <div 
           className={`w-full md:w-1/3 border-r border-slate-100 flex flex-col overflow-hidden ${
             isMobile && showConversation ? "hidden" : "flex"
           }`}
         >
-          <div className="px-4 pb-2">
+          <div className="px-4 pb-2 pt-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 placeholder="Search messages..."
-                className="pl-9 bg-slate-50 border-slate-200"
+                className="pl-9 bg-slate-50 border-slate-200 focus-visible:ring-blue-500"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -280,22 +284,37 @@ export default function Messages() {
 
           <Tabs defaultValue="all" className="w-full">
             <div className="px-4 pt-2">
-              <TabsList className="w-full bg-slate-50 p-1">
-                <TabsTrigger value="all" className="flex-1 text-xs">All</TabsTrigger>
-                <TabsTrigger value="unread" className="flex-1 text-xs">Unread</TabsTrigger>
-                <TabsTrigger value="teams" className="flex-1 text-xs">Teams</TabsTrigger>
+              <TabsList className="w-full bg-gradient-to-r from-slate-50 via-slate-50 to-slate-50 p-1.5 rounded-xl border border-slate-100 shadow-sm">
+                <TabsTrigger 
+                  value="all" 
+                  className="flex-1 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-indigo-500 data-[state=active]:to-violet-500 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg transition-all duration-200"
+                >
+                  All
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="unread" 
+                  className="flex-1 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-indigo-500 data-[state=active]:to-violet-500 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg transition-all duration-200"
+                >
+                  Unread
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="teams" 
+                  className="flex-1 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-indigo-500 data-[state=active]:to-violet-500 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg transition-all duration-200"
+                >
+                  Teams
+                </TabsTrigger>
               </TabsList>
             </div>
             
             <TabsContent value="all" className="mt-0 flex-1 overflow-hidden">
-              <ScrollArea className="h-[calc(100vh-23rem)]">
+              <ScrollArea className="h-[calc(100vh-27rem)]">
                 <div className="p-2 space-y-1">
                   {filteredConversations.map((conversation) => (
                     <div
                       key={conversation.id}
                       className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 ${
                         selectedConversation?.id === conversation.id
-                          ? "bg-blue-50 shadow-sm border-blue-100"
+                          ? "bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm border border-blue-100"
                           : "hover:bg-slate-50 hover:shadow-sm"
                       }`}
                       onClick={() => handleSelectConversation(conversation)}
@@ -333,11 +352,11 @@ export default function Messages() {
             </TabsContent>
             
             <TabsContent value="unread" className="mt-0 flex-1 overflow-hidden">
-              <ScrollArea className="h-[calc(100vh-23rem)]">
+              <ScrollArea className="h-[calc(100vh-27rem)]">
                 <div className="flex items-center justify-center h-full min-h-[300px]">
                   <div className="text-center p-6">
-                    <div className="w-16 h-16 mx-auto rounded-full bg-slate-100 flex items-center justify-center mb-4">
-                      <MessageSquare className="h-8 w-8 text-slate-400" />
+                    <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center mb-4 shadow-inner">
+                      <MessageSquare className="h-10 w-10 text-blue-500" />
                     </div>
                     <p className="text-slate-500 text-sm">No unread messages</p>
                   </div>
@@ -346,11 +365,11 @@ export default function Messages() {
             </TabsContent>
             
             <TabsContent value="teams" className="mt-0 flex-1 overflow-hidden">
-              <ScrollArea className="h-[calc(100vh-23rem)]">
+              <ScrollArea className="h-[calc(100vh-27rem)]">
                 <div className="flex items-center justify-center h-full min-h-[300px]">
                   <div className="text-center p-6">
-                    <div className="w-16 h-16 mx-auto rounded-full bg-slate-100 flex items-center justify-center mb-4">
-                      <Users className="h-8 w-8 text-slate-400" />
+                    <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center mb-4 shadow-inner">
+                      <Users className="h-10 w-10 text-blue-500" />
                     </div>
                     <p className="text-slate-500 text-sm">No team messages</p>
                   </div>
@@ -361,7 +380,7 @@ export default function Messages() {
 
           <div className="mt-auto p-4 border-t border-slate-100">
             <Button 
-              className="w-full flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-0 shadow-sm" 
+              className="w-full flex items-center gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-700 hover:via-indigo-700 hover:to-violet-700 text-white border-0 shadow-sm" 
               size="sm"
             >
               <PlusCircle className="h-4 w-4" />
@@ -454,7 +473,7 @@ export default function Messages() {
                       <div
                         className={`max-w-[75%] rounded-2xl p-3.5 shadow-sm ${
                           message.isMe
-                            ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white"
+                            ? "bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 text-white"
                             : "bg-white text-slate-900 border border-slate-100"
                         }`}
                       >
@@ -512,7 +531,7 @@ export default function Messages() {
                     <SmileIcon className="h-4 w-4" />
                   </Button>
                   <Button
-                    className="flex-shrink-0 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white border-0"
+                    className="flex-shrink-0 bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 hover:from-blue-600 hover:via-indigo-600 hover:to-violet-600 text-white border-0"
                     size="icon"
                     onClick={handleSendMessage}
                     disabled={!newMessage.trim()}
@@ -524,15 +543,15 @@ export default function Messages() {
             </>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center p-6 bg-slate-50/50">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-r from-blue-100 to-indigo-100 flex items-center justify-center mb-4 shadow-inner">
-                <MessageSquare className="h-10 w-10 text-blue-500" />
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center mb-6 shadow-inner">
+                <MessageSquare className="h-12 w-12 text-blue-500" />
               </div>
-              <h3 className="text-xl font-medium text-slate-900 mb-2">Your messages</h3>
-              <p className="text-slate-500 mb-6 max-w-md">
+              <h3 className="text-2xl font-medium text-slate-900 mb-3">Your messages</h3>
+              <p className="text-slate-500 mb-8 max-w-md text-lg">
                 Select a conversation to start messaging or create a new one to connect with teammates
               </p>
               <Button 
-                className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm"
+                className="flex items-center gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-700 hover:via-indigo-700 hover:to-violet-700 text-white shadow-sm px-6 py-2"
               >
                 <PlusCircle className="h-4 w-4" />
                 New conversation

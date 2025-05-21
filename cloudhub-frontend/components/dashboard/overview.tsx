@@ -110,10 +110,25 @@ export default function DashboardOverview() {
 
       <Tabs defaultValue="overview" className="space-y-4">
         <div className="flex items-center justify-between">
-          <TabsList className="bg-slate-50">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-white data-[state=active]:text-blue-600">Overview</TabsTrigger>
-            <TabsTrigger value="analytics" className="data-[state=active]:bg-white data-[state=active]:text-blue-600">Analytics</TabsTrigger>
-            <TabsTrigger value="reports" className="data-[state=active]:bg-white data-[state=active]:text-blue-600">Reports</TabsTrigger>
+          <TabsList className="w-full bg-gradient-to-r from-slate-50 via-slate-50 to-slate-50 p-1.5 rounded-xl border border-slate-100 shadow-sm">
+            <TabsTrigger 
+              value="overview" 
+              className="flex-1 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-indigo-500 data-[state=active]:to-violet-500 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg transition-all duration-200"
+            >
+              Overview
+            </TabsTrigger>
+            <TabsTrigger 
+              value="analytics" 
+              className="flex-1 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-indigo-500 data-[state=active]:to-violet-500 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg transition-all duration-200"
+            >
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger 
+              value="reports" 
+              className="flex-1 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-indigo-500 data-[state=active]:to-violet-500 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg transition-all duration-200"
+            >
+              Reports
+            </TabsTrigger>
           </TabsList>
         </div>
 

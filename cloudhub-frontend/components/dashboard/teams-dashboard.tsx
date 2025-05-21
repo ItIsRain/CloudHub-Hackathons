@@ -398,11 +398,11 @@ export default function TeamsDashboard() {
       {/* Teams Tabs */}
       <Tabs defaultValue="myTeams" className="w-full">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-          <div className="inline-flex rounded-full bg-slate-100 p-1.5">
+          <div className="inline-flex rounded-full bg-gradient-to-r from-slate-50 via-slate-50 to-slate-50 p-1.5 border border-slate-100 shadow-sm">
             <TabsList className="bg-transparent">
               <TabsTrigger 
                 value="myTeams" 
-                className="flex items-center gap-2 rounded-full px-4 py-2 data-[state=active]:bg-white data-[state=active]:text-slate-800 data-[state=active]:shadow-sm transition-all"
+                className="flex items-center gap-2 rounded-full px-4 py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-indigo-500 data-[state=active]:to-violet-500 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all duration-200"
               >
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-white">
                   <Users className="h-3.5 w-3.5" />
@@ -411,7 +411,7 @@ export default function TeamsDashboard() {
               </TabsTrigger>
               <TabsTrigger 
                 value="findTeams" 
-                className="flex items-center gap-2 rounded-full px-4 py-2 data-[state=active]:bg-white data-[state=active]:text-slate-800 data-[state=active]:shadow-sm transition-all"
+                className="flex items-center gap-2 rounded-full px-4 py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-indigo-500 data-[state=active]:to-violet-500 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all duration-200"
               >
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-500 text-white">
                   <UserPlus className="h-3.5 w-3.5" />
