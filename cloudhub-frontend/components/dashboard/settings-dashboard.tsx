@@ -98,9 +98,8 @@ export default function SettingsDashboard() {
           <CardContent className="pt-10 px-8 pb-8">
             <div className="flex flex-col md:flex-row md:items-start gap-12">
               <div className="flex flex-col items-center space-y-5">
-                <div className="relative group">
-                  <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 blur-xl opacity-40 group-hover:opacity-70 transition-all duration-300"></div>
-                  <Avatar className="h-40 w-40 border-4 border-white shadow-2xl transition-all duration-300 group-hover:scale-105 relative">
+                <div className="relative">
+                  <Avatar className="h-40 w-40 border-4 border-white shadow-lg relative">
                     <AvatarImage src="/placeholder-avatar.jpg" alt="Profile" className="object-cover" />
                     <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-6xl">
                       JD
