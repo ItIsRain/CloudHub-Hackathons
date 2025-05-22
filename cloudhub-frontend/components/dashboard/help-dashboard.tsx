@@ -218,7 +218,15 @@ const ticketMessages: { [key: string]: MessageType[] } = {
       avatar: "/avatars/support-03.png",
       content: "Thank you for confirming. I've identified the issue with our email delivery system. Our team is working on a fix. I'll update you soon.",
       timestamp: "2024-03-14T14:30:00Z",
-    }
+    },
+    {
+      id: 5,
+      sender: "user",
+      name: "John Doe",
+      avatar: "/avatars/user-01.png",
+      content: "I've sent invitations to test@example.com and dev@example.org. Both are valid email addresses.",
+      timestamp: "2024-03-13T11:00:00Z",
+    },
   ],
   "TICK-004": [
     {
@@ -558,130 +566,130 @@ export default function HelpDashboard() {
     if (!selectedTicket) return null;
     
     return (
-      <div className="grid grid-cols-1 md:grid-cols-3 h-[80vh]">
+      <div className="grid grid-cols-1 md:grid-cols-3 max-h-[70vh]">
         {/* Left Side - Ticket Details */}
-        <div className="md:col-span-1 border-r border-slate-200 p-0 bg-slate-50/50">
-          <div className="h-full flex flex-col">
-            <div className="p-6 border-b border-slate-200 bg-white">
-              <div className="flex items-center justify-between mb-4">
-                <Badge className="px-2.5 py-0.5 text-xs font-medium bg-slate-100 text-slate-800 rounded-md">
-                  Ticket #{selectedTicket.id}
-                </Badge>
-                <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 text-slate-500">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </div>
-              <h2 className="text-xl font-semibold text-slate-900 mb-2">{selectedTicket.title}</h2>
-              <p className="text-sm text-slate-600">{selectedTicket.description}</p>
+        <div className="md:col-span-1 border-r border-slate-200 p-0 bg-slate-50/50 flex flex-col max-h-[70vh]">
+          <div className="p-5 border-b border-slate-200 bg-white flex-shrink-0">
+            <div className="flex items-center justify-between mb-3">
+              <Badge className="px-2.5 py-0.5 text-xs font-medium bg-slate-100 text-slate-800 rounded-md">
+                Ticket #{selectedTicket.id}
+              </Badge>
+              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 text-slate-500">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
             </div>
-            
-            <ScrollArea className="flex-1 p-6">
-              <div className="space-y-6">
-                {/* Status */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-medium text-slate-900 flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 text-slate-600" />
-                    Status
-                  </h3>
-                  <div>
-                    {(() => {
-                      const statusProps = getStatusProperties(selectedTicket.status);
-                      return (
-                        <Badge className={`${statusProps.color} text-white flex items-center gap-1.5 px-2.5 py-1 rounded-md`}>
-                          {statusProps.icon}
-                          {selectedTicket.status.charAt(0).toUpperCase() + selectedTicket.status.slice(1).replace('-', ' ')}
-                        </Badge>
-                      );
-                    })()}
-                  </div>
+            <h2 className="text-lg font-semibold text-slate-900 mb-2">{selectedTicket.title}</h2>
+            <p className="text-sm text-slate-600 line-clamp-2">{selectedTicket.description}</p>
+          </div>
+          
+          <ScrollArea className="flex-1 p-5 overflow-auto">
+            <div className="space-y-4">
+              {/* Status */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-slate-900 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-slate-600" />
+                  Status
+                </h3>
+                <div>
+                  {(() => {
+                    const statusProps = getStatusProperties(selectedTicket.status);
+                    return (
+                      <Badge className={`${statusProps.color} text-white flex items-center gap-1.5 px-2.5 py-1 rounded-md`}>
+                        {statusProps.icon}
+                        {selectedTicket.status.charAt(0).toUpperCase() + selectedTicket.status.slice(1).replace('-', ' ')}
+                      </Badge>
+                    );
+                  })()}
                 </div>
-                
-                {/* Priority */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-medium text-slate-900 flex items-center gap-2">
-                    <Tag className="h-4 w-4 text-slate-600" />
-                    Priority
-                  </h3>
-                  <div>
-                    <Badge variant="outline" className={`border-slate-200 bg-slate-50 px-2.5 py-1 rounded-md ${
-                      selectedTicket.priority === 'high' 
-                        ? 'text-red-600' 
-                        : selectedTicket.priority === 'medium' 
-                        ? 'text-amber-600' 
-                        : 'text-blue-600'
-                    }`}>
-                      {selectedTicket.priority.charAt(0).toUpperCase() + selectedTicket.priority.slice(1)} Priority
-                    </Badge>
-                  </div>
+              </div>
+              
+              {/* Priority */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-slate-900 flex items-center gap-2">
+                  <Tag className="h-4 w-4 text-slate-600" />
+                  Priority
+                </h3>
+                <div>
+                  <Badge variant="outline" className={`border-slate-200 bg-slate-50 px-2.5 py-1 rounded-md ${
+                    selectedTicket.priority === 'high' 
+                      ? 'text-red-600' 
+                      : selectedTicket.priority === 'medium' 
+                      ? 'text-amber-600' 
+                      : 'text-blue-600'
+                  }`}>
+                    {selectedTicket.priority.charAt(0).toUpperCase() + selectedTicket.priority.slice(1)} Priority
+                  </Badge>
                 </div>
-                
-                {/* Category */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-medium text-slate-900 flex items-center gap-2">
-                    <AlignLeft className="h-4 w-4 text-slate-600" />
-                    Category
-                  </h3>
-                  <div>
-                    <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-700 px-2.5 py-1 rounded-md">
-                      {selectedTicket.category}
-                    </Badge>
-                  </div>
+              </div>
+              
+              {/* Category */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-slate-900 flex items-center gap-2">
+                  <AlignLeft className="h-4 w-4 text-slate-600" />
+                  Category
+                </h3>
+                <div>
+                  <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-700 px-2.5 py-1 rounded-md">
+                    {selectedTicket.category}
+                  </Badge>
                 </div>
-                
-                {/* Date Information */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-medium text-slate-900 flex items-center gap-2">
-                    <CalendarClock className="h-4 w-4 text-slate-600" />
-                    Date Information
-                  </h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-500">Created:</span>
-                      <span className="text-slate-900">{formatDate(selectedTicket.createdAt)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-500">Last Updated:</span>
-                      <span className="text-slate-900">{formatDate(selectedTicket.lastUpdated)}</span>
-                    </div>
+              </div>
+              
+              {/* Date Information */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-slate-900 flex items-center gap-2">
+                  <CalendarClock className="h-4 w-4 text-slate-600" />
+                  Date Information
+                </h3>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500">Created:</span>
+                    <span className="text-slate-900">{formatDate(selectedTicket.createdAt)}</span>
                   </div>
-                </div>
-                
-                {/* Actions */}
-                <div className="pt-4">
-                  <div className="space-y-2">
-                    <Button 
-                      className="w-full justify-start gap-2 rounded-xl text-sm font-medium" 
-                      variant="outline"
-                    >
-                      <CheckCircle2 className="h-4 w-4" />
-                      Mark as Resolved
-                    </Button>
-                    <Button 
-                      className="w-full justify-start gap-2 rounded-xl text-sm font-medium" 
-                      variant="outline"
-                    >
-                      <User className="h-4 w-4" />
-                      Assign Support Agent
-                    </Button>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500">Last Updated:</span>
+                    <span className="text-slate-900">{formatDate(selectedTicket.lastUpdated)}</span>
                   </div>
                 </div>
               </div>
-            </ScrollArea>
-          </div>
+              
+              {/* Actions */}
+              <div className="pt-3">
+                <div className="space-y-2">
+                  <Button 
+                    className="w-full justify-start gap-2 rounded-xl text-sm font-medium" 
+                    variant="outline"
+                    disabled={selectedTicket.status === 'resolved'}
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    Mark as Resolved
+                  </Button>
+                  <Button 
+                    className="w-full justify-start gap-2 rounded-xl text-sm font-medium" 
+                    variant="outline"
+                    disabled={selectedTicket.status === 'resolved'}
+                  >
+                    <User className="h-4 w-4" />
+                    Assign Support Agent
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </ScrollArea>
         </div>
         
         {/* Right Side - Chat Messages */}
-        <div className="md:col-span-2 flex flex-col h-full">
-          <div className="p-6 border-b border-slate-200 bg-white">
+        <div className="md:col-span-2 flex flex-col max-h-[70vh]">
+          <div className="p-4 border-b border-slate-200 bg-white flex-shrink-0">
             <h2 className="text-lg font-semibold text-slate-900">Conversation</h2>
-            <p className="text-sm text-slate-500">
+            <p className="text-xs text-slate-500">
               Ticket opened on {formatDate(selectedTicket.createdAt)}
             </p>
           </div>
           
           {/* Messages Area */}
-          <ScrollArea className="flex-1 p-6">
-            <div className="space-y-6">
+          <ScrollArea className="flex-1 p-4 overflow-y-auto">
+            <div className="space-y-4">
               {currentMessages.map((message: MessageType) => (
                 <MessageItem key={message.id} message={message} />
               ))}
@@ -689,21 +697,29 @@ export default function HelpDashboard() {
           </ScrollArea>
           
           {/* Message Input */}
-          <div className="p-4 border-t border-slate-200 bg-white">
-            <div className="flex gap-4">
-              <Textarea 
-                placeholder="Type your message here..." 
-                className="flex-1 resize-none rounded-xl border-slate-200 min-h-[80px]"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-              />
-              <Button 
-                onClick={handleSendMessage}
-                className="h-10 w-10 rounded-full flex items-center justify-center bg-blue-600 text-white"
-              >
-                <Send className="h-5 w-5" />
-              </Button>
-            </div>
+          <div className="p-3 border-t border-slate-200 bg-white flex-shrink-0">
+            {selectedTicket.status !== 'resolved' ? (
+              <div className="flex gap-3">
+                <Textarea 
+                  placeholder="Type your message here..." 
+                  className="flex-1 resize-none rounded-xl border-slate-200 min-h-[60px] max-h-[120px] text-sm"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                />
+                <Button 
+                  onClick={handleSendMessage}
+                  className="h-10 w-10 rounded-full flex items-center justify-center bg-blue-600 text-white self-end"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <p className="text-sm text-slate-500 text-center">
+                  This ticket is resolved. No further messages can be sent.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -722,16 +738,16 @@ export default function HelpDashboard() {
           
           <div className="relative z-10 flex md:flex-row flex-col md:items-center md:justify-between max-w-full">
             <div className="flex flex-col">
-              <div className="inline-flex items-center space-x-2 mb-6 px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 w-fit">
-                <LifeBuoy className="h-3.5 w-3.5 text-blue-100" />
-                <span className="text-xs font-medium text-blue-50">Support Center</span>
-              </div>
-              <h1 className="text-3xl md:text-5xl font-bold text-white">
+            <div className="inline-flex items-center space-x-2 mb-6 px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 w-fit">
+              <LifeBuoy className="h-3.5 w-3.5 text-blue-100" />
+              <span className="text-xs font-medium text-blue-50">Support Center</span>
+            </div>
+            <h1 className="text-3xl md:text-5xl font-bold text-white">
                 Help <span className="text-blue-200">& Support</span>
-              </h1>
+            </h1>
               <p className="text-blue-100 mt-2 max-w-2xl text-sm md:text-base mb-6 md:mb-0">
-                Find answers, manage your support tickets, and get assistance with CloudHub
-              </p>
+              Find answers, manage your support tickets, and get assistance with CloudHub
+            </p>
             </div>
           </div>
         </div>
@@ -803,7 +819,7 @@ export default function HelpDashboard() {
                     <div className="flex items-center justify-between">
                       <div>
                         <CardTitle className="text-xl font-semibold text-blue-600">Popular Articles</CardTitle>
-                        <CardDescription className="text-slate-600 mt-1">Most viewed help articles</CardDescription>
+                    <CardDescription className="text-slate-600 mt-1">Most viewed help articles</CardDescription>
                       </div>
                       <Button variant="outline" className="rounded-xl border-slate-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 gap-1.5 text-sm hidden md:flex">
                         <Book className="h-4 w-4" />
@@ -873,8 +889,8 @@ export default function HelpDashboard() {
                       </Button>
                       <Button variant="outline" className="flex-1 border-slate-200 hover:bg-slate-50 hover:text-blue-600 hover:border-blue-200 gap-1.5 text-sm rounded-xl">
                         View All Tickets
-                      </Button>
-                    </div>
+                    </Button>
+                  </div>
                   </CardContent>
                 </Card>
 
@@ -882,10 +898,10 @@ export default function HelpDashboard() {
                 <Card className="border-none shadow-md rounded-3xl overflow-hidden bg-white/80 w-full h-auto">
                   <CardHeader className="border-b border-slate-100 bg-white px-8 py-6">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                      <div>
+                          <div>
                         <CardTitle className="text-xl font-semibold text-blue-600">Your Support Tickets</CardTitle>
                         <CardDescription className="text-slate-600 mt-1">View and manage your support requests</CardDescription>
-                      </div>
+                            </div>
                       <div className="flex flex-col sm:flex-row gap-3">
                         <div className="relative">
                           <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
@@ -896,18 +912,18 @@ export default function HelpDashboard() {
                         </div>
                         <Button variant="outline" size="icon" className="rounded-xl border-slate-200 hover:bg-slate-50 hover:text-blue-600 hover:border-blue-200">
                           <Filter className="h-4 w-4" />
-                        </Button>
+                          </Button>
+                        </div>
                       </div>
-                    </div>
                   </CardHeader>
                   <CardContent className="pt-6 px-6 pb-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       {tickets.map((ticket, index) => (
                         <TicketCard key={index} ticket={ticket} openTicketDialog={openTicketDialog} />
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
               </div>
             </TabsContent>
           </div>
@@ -917,6 +933,7 @@ export default function HelpDashboard() {
       {/* Ticket Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-5xl p-0 overflow-hidden rounded-2xl border-none bg-white shadow-xl">
+          <DialogTitle className="sr-only">Ticket Details</DialogTitle>
           {dialogContent}
         </DialogContent>
       </Dialog>
