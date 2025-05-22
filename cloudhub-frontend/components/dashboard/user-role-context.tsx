@@ -13,7 +13,7 @@ interface UserRoleContextType {
 const UserRoleContext = createContext<UserRoleContextType | undefined>(undefined)
 
 // In a real application, this would be fetched from a backend API after authentication
-const MOCK_USER_ROLE: UserRole = "participant"
+const MOCK_USER_ROLE: UserRole = "organizer"
 
 export function UserRoleProvider({ children }: { children: ReactNode }) {
   const [userRole, setUserRole] = useState<UserRole>(MOCK_USER_ROLE)

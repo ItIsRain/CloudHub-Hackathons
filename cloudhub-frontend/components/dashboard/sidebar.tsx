@@ -86,11 +86,11 @@ export default function DashboardSidebar() {
   // Organizer navigation items
   const organizerNavItems: NavItem[] = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "My Hackathons", href: "/dashboard/my-hackathons", icon: Sparkles },
-    { name: "Participants", href: "/dashboard/participants", icon: Users },
-    { name: "Judging", href: "/dashboard/judging", icon: Award },
-    { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
-    { name: "Announcements", href: "/dashboard/announcements", icon: Megaphone },
+    { name: "My Hackathons", href: "/dashboard/organizer/my-hackathons", icon: Sparkles },
+    { name: "Participants", href: "/dashboard/organizer/participants", icon: Users },
+    { name: "Judging", href: "/dashboard/organizer/judging", icon: Award },
+    { name: "Analytics", href: "/dashboard/organizer/analytics", icon: BarChart3 },
+    { name: "Announcements", href: "/dashboard/organizer/announcements", icon: Megaphone },
   ]
 
   const mainNavItems = isOrganizer ? organizerNavItems : participantNavItems
