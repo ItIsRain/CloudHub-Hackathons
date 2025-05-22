@@ -733,7 +733,7 @@ export default function HelpDashboard() {
       
       {/* Banner Card - Simplified gradients and removed animations */}
       <div className="relative rounded-2xl overflow-hidden shadow-md z-10">
-        <div className="relative py-8 px-8 overflow-hidden">
+        <div className="relative py-9 px-8 pb-14 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-violet-600"></div>
           
           <div className="relative z-10 flex md:flex-row flex-col md:items-center md:justify-between max-w-full">
