@@ -125,7 +125,7 @@ const helpArticles = [
 ];
 
 // Mock ticket message data
-const ticketMessages = {
+const ticketMessages: { [key: string]: MessageType[] } = {
   "TICK-001": [
     {
       id: 1,
@@ -240,8 +240,58 @@ const ticketMessages = {
   ]
 };
 
+// Define interfaces for component props
+interface TicketType {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  category: string;
+  createdAt: string;
+  lastUpdated: string;
+  description: string;
+}
+
+interface MessageType {
+  id: number;
+  sender: string;
+  name: string;
+  avatar: string;
+  content: string;
+  timestamp: string;
+}
+
+interface ArticleType {
+  id: number;
+  title: string;
+  category: string;
+  description: string;
+  icon: React.FC<any>;
+}
+
+interface TicketCardProps {
+  ticket: TicketType;
+  openTicketDialog: (ticket: TicketType) => void;
+}
+
+interface ArticleCardProps {
+  article: ArticleType;
+}
+
+interface StatCardProps {
+  icon: React.ReactNode;
+  count: number;
+  title: string;
+  color: string;
+  percentage: number;
+}
+
+interface MessageItemProps {
+  message: MessageType;
+}
+
 // Function to get status icon and color - move outside of component to prevent recreation on each render
-function getStatusProperties(status) {
+function getStatusProperties(status: string) {
   switch(status) {
     case 'open':
       return { 
@@ -282,7 +332,7 @@ function getStatusProperties(status) {
 }
 
 // Function to format date nicely - move outside of component to prevent recreation on each render
-function formatDate(dateString) {
+function formatDate(dateString: string) {
   const date = new Date(dateString);
   return new Intl.DateTimeFormat('en-US', { 
     month: 'short', 
@@ -293,7 +343,7 @@ function formatDate(dateString) {
 }
 
 // Simplified Ticket Card with optimized rendering
-const TicketCard = memo(({ ticket, openTicketDialog }) => {
+const TicketCard = memo(({ ticket, openTicketDialog }: TicketCardProps) => {
   const statusProps = getStatusProperties(ticket.status);
   
   return (
@@ -360,7 +410,7 @@ const TicketCard = memo(({ ticket, openTicketDialog }) => {
 TicketCard.displayName = "TicketCard";
 
 // Simplified ArticleCard
-const ArticleCard = memo(({ article }) => {
+const ArticleCard = memo(({ article }: ArticleCardProps) => {
   return (
     <div className="flex items-start gap-4 p-5 rounded-xl hover:bg-blue-50/50 border border-transparent hover:border-blue-100 cursor-pointer">
       <div className="p-3 rounded-xl bg-blue-50 text-blue-600">
@@ -382,7 +432,7 @@ const ArticleCard = memo(({ article }) => {
 ArticleCard.displayName = "ArticleCard";
 
 // Simplified StatCard
-const StatCard = memo(({ icon, count, title, color, percentage }) => {
+const StatCard = memo(({ icon, count, title, color, percentage }: StatCardProps) => {
   return (
     <div className={`p-4 rounded-xl bg-${color}-50 border border-${color}-100 hover:shadow-sm`}>
       <div className="flex items-center justify-between">
@@ -404,14 +454,14 @@ const StatCard = memo(({ icon, count, title, color, percentage }) => {
 StatCard.displayName = "StatCard";
 
 // Simplified MessageItem
-const MessageItem = memo(({ message }) => {
+const MessageItem = memo(({ message }: MessageItemProps) => {
   return (
     <div className={`flex gap-4 ${message.sender === 'agent' ? 'justify-start' : 'justify-end'}`}>
       {message.sender === 'agent' && (
         <Avatar className="h-10 w-10 border border-white">
           <AvatarImage src={message.avatar} alt={message.name} />
           <AvatarFallback className="bg-blue-500 text-white">
-            {message.name.split(' ').map(n => n[0]).join('')}
+            {message.name.split(' ').map((n: string) => n[0]).join('')}
           </AvatarFallback>
         </Avatar>
       )}
@@ -437,7 +487,7 @@ const MessageItem = memo(({ message }) => {
         <Avatar className="h-10 w-10 border border-white">
           <AvatarImage src={message.avatar} alt={message.name} />
           <AvatarFallback className="bg-indigo-500 text-white">
-            {message.name.split(' ').map(n => n[0]).join('')}
+            {message.name.split(' ').map((n: string) => n[0]).join('')}
           </AvatarFallback>
         </Avatar>
       )}
@@ -448,12 +498,12 @@ MessageItem.displayName = "MessageItem";
 
 // Main component
 export default function HelpDashboard() {
-  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [selectedTicket, setSelectedTicket] = useState<TicketType | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [activeTab, setActiveTab] = useState("articles");
 
-  const openTicketDialog = useCallback((ticket) => {
+  const openTicketDialog = useCallback((ticket: TicketType) => {
     setSelectedTicket(ticket);
     setIsDialogOpen(true);
   }, []);
@@ -494,7 +544,7 @@ export default function HelpDashboard() {
     };
   }, []);
 
-  const handleTabChange = useCallback((value) => {
+  const handleTabChange = useCallback((value: string) => {
     setActiveTab(value);
   }, []);
 
@@ -632,7 +682,7 @@ export default function HelpDashboard() {
           {/* Messages Area */}
           <ScrollArea className="flex-1 p-6">
             <div className="space-y-6">
-              {currentMessages.map((message) => (
+              {currentMessages.map((message: MessageType) => (
                 <MessageItem key={message.id} message={message} />
               ))}
             </div>
