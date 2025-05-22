@@ -56,7 +56,104 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox"
-import { useState } from "react"
+import { useState, useCallback, memo, useMemo } from "react"
+
+// Add export configuration
+export const config = {
+  runtime: 'edge',
+  unstable_skipMiddlewareUrlNormalize: true,
+};
+
+// Add TypeScript interfaces for our component props
+interface ProfileInfoCardProps {
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+}
+
+interface SkillBadgeProps {
+  skill: string;
+  onRemove?: (skill: string) => void;
+}
+
+interface LanguageItemProps {
+  language: string;
+  level: string;
+  onRemove?: (language: string) => void;
+}
+
+interface CertificationProps {
+  name: string;
+  issuer: string;
+  date: string;
+}
+
+interface LanguageProps {
+  language: string;
+  level: string;
+}
+
+// Profile Info Card - memoized component
+const ProfileInfoCard = memo(({ label, value, icon }: ProfileInfoCardProps) => {
+  return (
+    <div className="flex items-center gap-4 text-slate-600 p-3 rounded-xl hover:bg-blue-50/50">
+      <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600">
+        {icon}
+      </div>
+      <div className="space-y-0.5">
+        <p className="text-xs text-slate-500 font-medium">{label}</p>
+        <span className="text-sm font-medium">{value}</span>
+      </div>
+    </div>
+  );
+});
+ProfileInfoCard.displayName = "ProfileInfoCard";
+
+// Skill Badge - memoized component
+const SkillBadge = memo(({ skill, onRemove }: SkillBadgeProps) => {
+  return (
+    <Badge className="flex items-center gap-1.5 bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100 transition-colors px-3 py-1.5 rounded-lg">
+      {skill}
+      {onRemove && (
+        <button 
+          onClick={() => onRemove(skill)} 
+          className="ml-1 rounded-full bg-blue-100 p-0.5 hover:bg-blue-200"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      )}
+    </Badge>
+  );
+});
+SkillBadge.displayName = "SkillBadge";
+
+// Language Item - memoized component
+const LanguageItem = memo(({ language, level, onRemove }: LanguageItemProps) => {
+  return (
+    <div className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-white">
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+          <Globe2 className="h-4 w-4" />
+        </div>
+        <div>
+          <h4 className="font-medium text-slate-900">{language}</h4>
+          <p className="text-xs text-slate-500">{level}</p>
+        </div>
+      </div>
+      {onRemove && (
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-8 w-8 rounded-full text-slate-400 hover:text-red-500 hover:bg-red-50 ml-4"
+          onClick={() => onRemove(language)}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      )}
+    </div>
+  );
+});
+LanguageItem.displayName = "LanguageItem";
 
 export default function SettingsDashboard() {
   const [isSkillDialogOpen, setIsSkillDialogOpen] = useState(false)
@@ -69,31 +166,224 @@ export default function SettingsDashboard() {
   const [newLanguage, setNewLanguage] = useState("")
   const [newLanguageLevel, setNewLanguageLevel] = useState("Intermediate")
   const [currentlyWorking, setCurrentlyWorking] = useState(false)
+  const [activeTab, setActiveTab] = useState("personal")
   
+  // Memoized handlers
+  const handleTabChange = useCallback((value: string) => {
+    setActiveTab(value);
+  }, []);
+  
+  const handleAddSkill = useCallback(() => {
+    if (newSkill.trim()) {
+      // Would add the skill to the list in a real implementation
+      setNewSkill("");
+      setIsSkillDialogOpen(false);
+    }
+  }, [newSkill]);
+  
+  const handleAddCertification = useCallback(() => {
+    if (newCertification.trim()) {
+      // Would add the certification to the list in a real implementation
+      setNewCertification("");
+      setIsCertificationDialogOpen(false);
+    }
+  }, [newCertification]);
+  
+  const handleAddLanguage = useCallback(() => {
+    if (newLanguage.trim()) {
+      // Would add the language to the list in a real implementation
+      setNewLanguage("");
+      setIsLanguageDialogOpen(false);
+    }
+  }, [newLanguage, newLanguageLevel]);
+  
+  const toggleSkillDialog = useCallback((isOpen: boolean) => {
+    setIsSkillDialogOpen(isOpen);
+    if (!isOpen) setNewSkill("");
+  }, []);
+  
+  const toggleCertificationDialog = useCallback((isOpen: boolean) => {
+    setIsCertificationDialogOpen(isOpen);
+    if (!isOpen) setNewCertification("");
+  }, []);
+  
+  const toggleLanguageDialog = useCallback((isOpen: boolean) => {
+    setIsLanguageDialogOpen(isOpen);
+    if (!isOpen) {
+      setNewLanguage("");
+      setNewLanguageLevel("Intermediate");
+    }
+  }, []);
+  
+  const toggleExperienceDialog = useCallback((isOpen: boolean) => {
+    setIsExperienceDialogOpen(isOpen);
+    if (!isOpen) setCurrentlyWorking(false);
+  }, []);
+  
+  const toggleEducationDialog = useCallback((isOpen: boolean) => {
+    setIsEducationDialogOpen(isOpen);
+  }, []);
+  
+  // Mock data - memoized to prevent recreation on each render
+  const profileInfo = useMemo(() => [
+    { label: "Email", value: "john.doe@example.com", icon: <Mail className="h-5 w-5" /> },
+    { label: "Phone", value: "+1 (555) 123-4567", icon: <Phone className="h-5 w-5" /> },
+    { label: "Location", value: "San Francisco, CA", icon: <MapPin className="h-5 w-5" /> },
+    { label: "Company", value: "Tech Corp Inc.", icon: <Building2 className="h-5 w-5" /> },
+    { label: "Experience", value: "5+ years experience", icon: <Briefcase className="h-5 w-5" /> },
+    { label: "Website", value: "johndoe.dev", icon: <Globe className="h-5 w-5" /> }
+  ], []);
+  
+  const skills = useMemo(() => [
+    "React", "JavaScript", "TypeScript", "Node.js", "Next.js", "TailwindCSS", "GraphQL", "AWS"
+  ], []);
+  
+  const languages = useMemo(() => [
+    { language: "English", level: "Native" },
+    { language: "Spanish", level: "Intermediate" },
+    { language: "French", level: "Basic" }
+  ], []);
+  
+  const certifications = useMemo(() => [
+    { name: "AWS Certified Solutions Architect", issuer: "Amazon Web Services", date: "2022" },
+    { name: "Professional Scrum Master I", issuer: "Scrum.org", date: "2021" },
+    { name: "Google Cloud Professional Developer", issuer: "Google", date: "2020" }
+  ], []);
+  
+  // Memoize dialog content to prevent re-rendering
+  const skillDialogContent = useMemo(() => (
+    <>
+      <DialogHeader>
+        <DialogTitle>Add New Skill</DialogTitle>
+        <DialogDescription>Add a new technical or professional skill to your profile.</DialogDescription>
+      </DialogHeader>
+      <div className="mt-4 mb-6">
+        <Label htmlFor="skillName" className="text-sm font-medium text-slate-700">Skill Name</Label>
+        <Input 
+          id="skillName" 
+          value={newSkill} 
+          onChange={(e) => setNewSkill(e.target.value)} 
+          placeholder="e.g. React, Project Management, JavaScript..." 
+          className="mt-1.5 bg-white border-slate-200"
+        />
+      </div>
+      <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
+        <Button 
+          type="button" 
+          variant="outline"
+          className="flex-1 border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+          onClick={() => toggleSkillDialog(false)}
+        >
+          Cancel
+        </Button>
+        <Button 
+          type="button" 
+          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white shadow-sm rounded-xl"
+          disabled={!newSkill.trim()}
+          onClick={handleAddSkill}
+        >
+          Add Skill
+        </Button>
+      </DialogFooter>
+    </>
+  ), [newSkill, handleAddSkill, toggleSkillDialog]);
+
+  const certificationDialogContent = useMemo(() => (
+    <>
+      <DialogHeader>
+        <DialogTitle>Add New Certification</DialogTitle>
+        <DialogDescription>Add details about your professional certifications.</DialogDescription>
+      </DialogHeader>
+      <div className="mt-4 mb-6 space-y-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="certName" className="text-sm font-medium text-slate-700">Certification Name</Label>
+          <Input 
+            id="certName" 
+            value={newCertification} 
+            onChange={(e) => setNewCertification(e.target.value)} 
+            placeholder="e.g. AWS Certified Solutions Architect" 
+            className="bg-white border-slate-200"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="certIssuer" className="text-sm font-medium text-slate-700">Issuing Organization</Label>
+          <Input 
+            id="certIssuer" 
+            placeholder="e.g. Amazon Web Services" 
+            className="bg-white border-slate-200"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="certDate" className="text-sm font-medium text-slate-700">Issued Date</Label>
+          <Input 
+            id="certDate" 
+            type="month" 
+            className="bg-white border-slate-200"
+          />
+        </div>
+      </div>
+      <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
+        <Button 
+          type="button" 
+          variant="outline"
+          className="flex-1 border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+          onClick={() => toggleCertificationDialog(false)}
+        >
+          Cancel
+        </Button>
+        <Button 
+          type="button" 
+          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white shadow-sm rounded-xl"
+          disabled={!newCertification.trim()}
+          onClick={handleAddCertification}
+        >
+          Add Certification
+        </Button>
+      </DialogFooter>
+    </>
+  ), [newCertification, handleAddCertification, toggleCertificationDialog]);
+
+  // Memoize long lists to prevent re-rendering
+  const countriesList = useMemo(() => {
+    const countries = [
+      { value: "us", label: "United States" },
+      { value: "gb", label: "United Kingdom" },
+      { value: "ca", label: "Canada" },
+      { value: "au", label: "Australia" },
+      { value: "de", label: "Germany" },
+      { value: "fr", label: "France" },
+      { value: "jp", label: "Japan" },
+      { value: "in", label: "India" },
+      { value: "cn", label: "China" },
+      { value: "br", label: "Brazil" }
+    ];
+    
+    return (
+      <>
+        {countries.map(country => (
+          <SelectItem key={country.value} value={country.value}>{country.label}</SelectItem>
+        ))}
+      </>
+    );
+  }, []);
+
   return (
     <div className="space-y-6 px-6 pb-6">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 bg-grid-slate-200/60 [mask-image:linear-gradient(to_bottom,white,transparent)] pointer-events-none opacity-40"></div>
+      {/* Background Pattern - Simplified */}
+      <div className="absolute inset-0 bg-grid-slate-200/40 pointer-events-none"></div>
       
-      {/* Banner Card */}
-      <div className="relative rounded-2xl overflow-hidden shadow-xl z-10">
+      {/* Banner Card - Simplified */}
+      <div className="relative rounded-2xl overflow-hidden shadow-md z-10">
         <div className="relative py-8 px-8 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600"></div>
-          <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-20"></div>
-          
-          {/* Floating glass elements */}
-          <div className="absolute bottom-0 left-0 w-full h-2/3 bg-gradient-to-t from-blue-400/10 to-transparent rounded-full blur-3xl"></div>
-          <div className="absolute top-10 right-[20%] w-12 h-12 rounded-lg bg-gradient-to-tr from-blue-500/30 to-transparent backdrop-blur-md border border-white/20 animate-float-slow"></div>
-          <div className="absolute top-1/2 right-[40%] w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500/20 to-transparent backdrop-blur-md border border-white/20 animate-float-slow animate-delay-500"></div>
-          <div className="absolute bottom-10 left-[30%] w-12 h-12 rounded-lg bg-gradient-to-tl from-violet-500/20 to-transparent backdrop-blur-md border border-white/20 animate-float-slow animate-delay-700"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-violet-600"></div>
           
           <div className="relative z-10 flex flex-col max-w-3xl">
-            <div className="inline-flex items-center space-x-2 mb-6 px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 w-fit">
+            <div className="inline-flex items-center space-x-2 mb-6 px-3 py-1 rounded-full bg-white/10 border border-white/20 w-fit">
               <Sparkles className="h-3.5 w-3.5 text-blue-100" />
               <span className="text-xs font-medium text-blue-50">Personal Dashboard</span>
             </div>
             <h1 className="text-3xl md:text-5xl font-bold text-white">
-              Settings <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-indigo-200 to-violet-200">& Preferences</span>
+              Settings <span className="text-blue-200">& Preferences</span>
             </h1>
             <p className="text-blue-100 mt-2 max-w-2xl text-sm md:text-base mb-6">
               Customize your profile, manage your skills, and update your personal information
@@ -103,12 +393,12 @@ export default function SettingsDashboard() {
       </div>
 
       <div className="flex flex-col space-y-8 z-10">
-        {/* Profile Card */}
-        <Card className="border-none shadow-xl rounded-3xl overflow-hidden backdrop-blur-sm bg-white/80">
-          <CardHeader className="border-b border-slate-100 bg-white/60 px-8 py-6">
+        {/* Profile Card - Simplified */}
+        <Card className="border-none shadow-md rounded-3xl overflow-hidden bg-white/80">
+          <CardHeader className="border-b border-slate-100 bg-white px-8 py-6">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-2xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Profile</CardTitle>
+                <CardTitle className="text-2xl font-semibold text-blue-600">Profile</CardTitle>
                 <CardDescription className="text-slate-600 mt-1">Your personal information and photo</CardDescription>
               </div>
             </div>
@@ -117,112 +407,57 @@ export default function SettingsDashboard() {
             <div className="flex flex-col md:flex-row md:items-start gap-12">
               <div className="flex flex-col items-center space-y-5">
                 <div className="relative">
-                  <Avatar className="h-40 w-40 border-4 border-white shadow-lg relative">
+                  <Avatar className="h-40 w-40 border-4 border-white shadow-md relative">
                     <AvatarImage src="/placeholder-avatar.jpg" alt="Profile" className="object-cover" />
-                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-6xl">
+                    <AvatarFallback className="bg-blue-500 text-white text-6xl">
                       JD
                     </AvatarFallback>
                   </Avatar>
                   <Button
                     size="icon"
-                    className="absolute bottom-1 right-1 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110 bg-white backdrop-blur-sm border-2 border-white size-10"
+                    className="absolute bottom-1 right-1 rounded-full shadow-md border-2 border-white size-10 bg-white"
                   >
                     <Camera className="h-4 w-4 text-blue-600" />
                   </Button>
                 </div>
                 <div className="text-center space-y-2.5">
-                  <h3 className="text-2xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">John Doe</h3>
+                  <h3 className="text-2xl font-semibold text-blue-600">John Doe</h3>
                   <p className="text-sm text-slate-600">Full Stack Developer</p>
-                  <Badge className="mt-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-4 py-1 rounded-full shadow-sm">
+                  <Badge className="mt-2 bg-blue-500 text-white px-4 py-1 rounded-full shadow-sm">
                     Pro Member
                   </Badge>
                 </div>
               </div>
 
               <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 md:mt-0">
-                <div className="space-y-5">
-                  <div className="flex items-center gap-4 text-slate-600 hover:text-blue-600 transition-all group p-3 rounded-xl hover:bg-blue-50/50">
-                    <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-100 transition-colors">
-                      <Mail className="h-5 w-5" />
-                    </div>
-                    <div className="space-y-0.5">
-                      <p className="text-xs text-slate-500 font-medium">Email</p>
-                      <span className="text-sm font-medium">john.doe@example.com</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4 text-slate-600 hover:text-blue-600 transition-all group p-3 rounded-xl hover:bg-blue-50/50">
-                    <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-100 transition-colors">
-                      <Phone className="h-5 w-5" />
-                    </div>
-                    <div className="space-y-0.5">
-                      <p className="text-xs text-slate-500 font-medium">Phone</p>
-                      <span className="text-sm font-medium">+1 (555) 123-4567</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4 text-slate-600 hover:text-blue-600 transition-all group p-3 rounded-xl hover:bg-blue-50/50">
-                    <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-100 transition-colors">
-                      <MapPin className="h-5 w-5" />
-                    </div>
-                    <div className="space-y-0.5">
-                      <p className="text-xs text-slate-500 font-medium">Location</p>
-                      <span className="text-sm font-medium">San Francisco, CA</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-5">
-                  <div className="flex items-center gap-4 text-slate-600 hover:text-blue-600 transition-all group p-3 rounded-xl hover:bg-blue-50/50">
-                    <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-100 transition-colors">
-                      <Building2 className="h-5 w-5" />
-                    </div>
-                    <div className="space-y-0.5">
-                      <p className="text-xs text-slate-500 font-medium">Company</p>
-                      <span className="text-sm font-medium">Tech Corp Inc.</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4 text-slate-600 hover:text-blue-600 transition-all group p-3 rounded-xl hover:bg-blue-50/50">
-                    <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-100 transition-colors">
-                      <Briefcase className="h-5 w-5" />
-                    </div>
-                    <div className="space-y-0.5">
-                      <p className="text-xs text-slate-500 font-medium">Experience</p>
-                      <span className="text-sm font-medium">5+ years experience</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4 text-slate-600 hover:text-blue-600 transition-all group p-3 rounded-xl hover:bg-blue-50/50">
-                    <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-100 transition-colors">
-                      <Globe className="h-5 w-5" />
-                    </div>
-                    <div className="space-y-0.5">
-                      <p className="text-xs text-slate-500 font-medium">Website</p>
-                      <span className="text-sm font-medium">johndoe.dev</span>
-                    </div>
-                  </div>
-                </div>
+                {profileInfo.map((info, index) => (
+                  <ProfileInfoCard key={index} label={info.label} value={info.value} icon={info.icon} />
+                ))}
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Main Settings */}
-        <Tabs defaultValue="personal" className="w-full">
-          <TabsList className="w-full bg-white/80 backdrop-blur-sm p-1.5 rounded-2xl border border-slate-200/70 shadow-lg mb-6">
+        {/* Main Settings - Simplified */}
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+          <TabsList className="w-full bg-white/80 p-1.5 rounded-2xl border border-slate-200/70 shadow-md mb-6">
             <TabsTrigger 
               value="personal" 
-              className="flex items-center gap-2 flex-1 text-sm font-medium py-3 px-4 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-indigo-500 data-[state=active]:to-violet-500 data-[state=active]:text-white data-[state=active]:shadow-md rounded-xl transition-all duration-200"
+              className="flex items-center gap-2 flex-1 text-sm font-medium py-3 px-4 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-xl transition-colors"
             >
               <UserCog className="h-4 w-4" />
               Personal Info
             </TabsTrigger>
             <TabsTrigger 
               value="skills" 
-              className="flex items-center gap-2 flex-1 text-sm font-medium py-3 px-4 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-indigo-500 data-[state=active]:to-violet-500 data-[state=active]:text-white data-[state=active]:shadow-md rounded-xl transition-all duration-200"
+              className="flex items-center gap-2 flex-1 text-sm font-medium py-3 px-4 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-xl transition-colors"
             >
               <Award className="h-4 w-4" />
               Skills
             </TabsTrigger>
             <TabsTrigger 
               value="social" 
-              className="flex items-center gap-2 flex-1 text-sm font-medium py-3 px-4 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-indigo-500 data-[state=active]:to-violet-500 data-[state=active]:text-white data-[state=active]:shadow-md rounded-xl transition-all duration-200"
+              className="flex items-center gap-2 flex-1 text-sm font-medium py-3 px-4 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-xl transition-colors"
             >
               <Globe2 className="h-4 w-4" />
               Social Links
@@ -230,20 +465,16 @@ export default function SettingsDashboard() {
           </TabsList>
 
           <div>
-            {/* Tab content with all the settings panels */}
-            {/* This includes the remaining content from the original settings page */}
-            {/* Tab content will go here */}
-            
             {/* Personal Info Tab */}
             <TabsContent value="personal" className="space-y-6">
-              <Card className="border-none shadow-lg rounded-3xl overflow-hidden backdrop-blur-sm bg-white/80">
-                <CardHeader className="border-b border-slate-100 bg-white/60 px-8 py-6">
+              <Card className="border-none shadow-md rounded-3xl overflow-hidden bg-white/80">
+                <CardHeader className="border-b border-slate-100 bg-white px-8 py-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Personal Information</CardTitle>
+                      <CardTitle className="text-xl font-semibold text-blue-600">Personal Information</CardTitle>
                       <CardDescription className="text-slate-600 mt-1">Update your personal details</CardDescription>
                     </div>
-                    <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm hover:shadow-md transition-all duration-200">
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
                       <Save className="h-4 w-4 mr-2" />
                       Save Changes
                     </Button>
@@ -290,198 +521,7 @@ export default function SettingsDashboard() {
                           <SelectValue placeholder="Select country" />
                         </SelectTrigger>
                         <SelectContent className="max-h-[280px]">
-                          <SelectItem value="af">Afghanistan</SelectItem>
-                          <SelectItem value="al">Albania</SelectItem>
-                          <SelectItem value="dz">Algeria</SelectItem>
-                          <SelectItem value="ad">Andorra</SelectItem>
-                          <SelectItem value="ao">Angola</SelectItem>
-                          <SelectItem value="ag">Antigua and Barbuda</SelectItem>
-                          <SelectItem value="ar">Argentina</SelectItem>
-                          <SelectItem value="am">Armenia</SelectItem>
-                          <SelectItem value="au">Australia</SelectItem>
-                          <SelectItem value="at">Austria</SelectItem>
-                          <SelectItem value="az">Azerbaijan</SelectItem>
-                          <SelectItem value="bs">Bahamas</SelectItem>
-                          <SelectItem value="bh">Bahrain</SelectItem>
-                          <SelectItem value="bd">Bangladesh</SelectItem>
-                          <SelectItem value="bb">Barbados</SelectItem>
-                          <SelectItem value="by">Belarus</SelectItem>
-                          <SelectItem value="be">Belgium</SelectItem>
-                          <SelectItem value="bz">Belize</SelectItem>
-                          <SelectItem value="bj">Benin</SelectItem>
-                          <SelectItem value="bt">Bhutan</SelectItem>
-                          <SelectItem value="bo">Bolivia</SelectItem>
-                          <SelectItem value="ba">Bosnia and Herzegovina</SelectItem>
-                          <SelectItem value="bw">Botswana</SelectItem>
-                          <SelectItem value="br">Brazil</SelectItem>
-                          <SelectItem value="bn">Brunei</SelectItem>
-                          <SelectItem value="bg">Bulgaria</SelectItem>
-                          <SelectItem value="bf">Burkina Faso</SelectItem>
-                          <SelectItem value="bi">Burundi</SelectItem>
-                          <SelectItem value="cv">Cabo Verde</SelectItem>
-                          <SelectItem value="kh">Cambodia</SelectItem>
-                          <SelectItem value="cm">Cameroon</SelectItem>
-                          <SelectItem value="ca">Canada</SelectItem>
-                          <SelectItem value="cf">Central African Republic</SelectItem>
-                          <SelectItem value="td">Chad</SelectItem>
-                          <SelectItem value="cl">Chile</SelectItem>
-                          <SelectItem value="cn">China</SelectItem>
-                          <SelectItem value="co">Colombia</SelectItem>
-                          <SelectItem value="km">Comoros</SelectItem>
-                          <SelectItem value="cg">Congo</SelectItem>
-                          <SelectItem value="cr">Costa Rica</SelectItem>
-                          <SelectItem value="hr">Croatia</SelectItem>
-                          <SelectItem value="cu">Cuba</SelectItem>
-                          <SelectItem value="cy">Cyprus</SelectItem>
-                          <SelectItem value="cz">Czech Republic</SelectItem>
-                          <SelectItem value="dk">Denmark</SelectItem>
-                          <SelectItem value="dj">Djibouti</SelectItem>
-                          <SelectItem value="dm">Dominica</SelectItem>
-                          <SelectItem value="do">Dominican Republic</SelectItem>
-                          <SelectItem value="ec">Ecuador</SelectItem>
-                          <SelectItem value="eg">Egypt</SelectItem>
-                          <SelectItem value="sv">El Salvador</SelectItem>
-                          <SelectItem value="gq">Equatorial Guinea</SelectItem>
-                          <SelectItem value="er">Eritrea</SelectItem>
-                          <SelectItem value="ee">Estonia</SelectItem>
-                          <SelectItem value="et">Ethiopia</SelectItem>
-                          <SelectItem value="fj">Fiji</SelectItem>
-                          <SelectItem value="fi">Finland</SelectItem>
-                          <SelectItem value="fr">France</SelectItem>
-                          <SelectItem value="ga">Gabon</SelectItem>
-                          <SelectItem value="gm">Gambia</SelectItem>
-                          <SelectItem value="ge">Georgia</SelectItem>
-                          <SelectItem value="de">Germany</SelectItem>
-                          <SelectItem value="gh">Ghana</SelectItem>
-                          <SelectItem value="gr">Greece</SelectItem>
-                          <SelectItem value="gd">Grenada</SelectItem>
-                          <SelectItem value="gt">Guatemala</SelectItem>
-                          <SelectItem value="gn">Guinea</SelectItem>
-                          <SelectItem value="gw">Guinea-Bissau</SelectItem>
-                          <SelectItem value="gy">Guyana</SelectItem>
-                          <SelectItem value="ht">Haiti</SelectItem>
-                          <SelectItem value="hn">Honduras</SelectItem>
-                          <SelectItem value="hu">Hungary</SelectItem>
-                          <SelectItem value="is">Iceland</SelectItem>
-                          <SelectItem value="in">India</SelectItem>
-                          <SelectItem value="id">Indonesia</SelectItem>
-                          <SelectItem value="ir">Iran</SelectItem>
-                          <SelectItem value="iq">Iraq</SelectItem>
-                          <SelectItem value="ie">Ireland</SelectItem>
-                          <SelectItem value="il">Israel</SelectItem>
-                          <SelectItem value="it">Italy</SelectItem>
-                          <SelectItem value="jm">Jamaica</SelectItem>
-                          <SelectItem value="jp">Japan</SelectItem>
-                          <SelectItem value="jo">Jordan</SelectItem>
-                          <SelectItem value="kz">Kazakhstan</SelectItem>
-                          <SelectItem value="ke">Kenya</SelectItem>
-                          <SelectItem value="ki">Kiribati</SelectItem>
-                          <SelectItem value="kp">North Korea</SelectItem>
-                          <SelectItem value="kr">South Korea</SelectItem>
-                          <SelectItem value="kw">Kuwait</SelectItem>
-                          <SelectItem value="kg">Kyrgyzstan</SelectItem>
-                          <SelectItem value="la">Laos</SelectItem>
-                          <SelectItem value="lv">Latvia</SelectItem>
-                          <SelectItem value="lb">Lebanon</SelectItem>
-                          <SelectItem value="ls">Lesotho</SelectItem>
-                          <SelectItem value="lr">Liberia</SelectItem>
-                          <SelectItem value="ly">Libya</SelectItem>
-                          <SelectItem value="li">Liechtenstein</SelectItem>
-                          <SelectItem value="lt">Lithuania</SelectItem>
-                          <SelectItem value="lu">Luxembourg</SelectItem>
-                          <SelectItem value="mg">Madagascar</SelectItem>
-                          <SelectItem value="mw">Malawi</SelectItem>
-                          <SelectItem value="my">Malaysia</SelectItem>
-                          <SelectItem value="mv">Maldives</SelectItem>
-                          <SelectItem value="ml">Mali</SelectItem>
-                          <SelectItem value="mt">Malta</SelectItem>
-                          <SelectItem value="mh">Marshall Islands</SelectItem>
-                          <SelectItem value="mr">Mauritania</SelectItem>
-                          <SelectItem value="mu">Mauritius</SelectItem>
-                          <SelectItem value="mx">Mexico</SelectItem>
-                          <SelectItem value="fm">Micronesia</SelectItem>
-                          <SelectItem value="md">Moldova</SelectItem>
-                          <SelectItem value="mc">Monaco</SelectItem>
-                          <SelectItem value="mn">Mongolia</SelectItem>
-                          <SelectItem value="me">Montenegro</SelectItem>
-                          <SelectItem value="ma">Morocco</SelectItem>
-                          <SelectItem value="mz">Mozambique</SelectItem>
-                          <SelectItem value="mm">Myanmar</SelectItem>
-                          <SelectItem value="na">Namibia</SelectItem>
-                          <SelectItem value="nr">Nauru</SelectItem>
-                          <SelectItem value="np">Nepal</SelectItem>
-                          <SelectItem value="nl">Netherlands</SelectItem>
-                          <SelectItem value="nz">New Zealand</SelectItem>
-                          <SelectItem value="ni">Nicaragua</SelectItem>
-                          <SelectItem value="ne">Niger</SelectItem>
-                          <SelectItem value="ng">Nigeria</SelectItem>
-                          <SelectItem value="no">Norway</SelectItem>
-                          <SelectItem value="om">Oman</SelectItem>
-                          <SelectItem value="pk">Pakistan</SelectItem>
-                          <SelectItem value="pw">Palau</SelectItem>
-                          <SelectItem value="pa">Panama</SelectItem>
-                          <SelectItem value="pg">Papua New Guinea</SelectItem>
-                          <SelectItem value="py">Paraguay</SelectItem>
-                          <SelectItem value="pe">Peru</SelectItem>
-                          <SelectItem value="ph">Philippines</SelectItem>
-                          <SelectItem value="pl">Poland</SelectItem>
-                          <SelectItem value="pt">Portugal</SelectItem>
-                          <SelectItem value="qa">Qatar</SelectItem>
-                          <SelectItem value="ro">Romania</SelectItem>
-                          <SelectItem value="ru">Russia</SelectItem>
-                          <SelectItem value="rw">Rwanda</SelectItem>
-                          <SelectItem value="kn">Saint Kitts and Nevis</SelectItem>
-                          <SelectItem value="lc">Saint Lucia</SelectItem>
-                          <SelectItem value="vc">Saint Vincent and the Grenadines</SelectItem>
-                          <SelectItem value="ws">Samoa</SelectItem>
-                          <SelectItem value="sm">San Marino</SelectItem>
-                          <SelectItem value="st">Sao Tome and Principe</SelectItem>
-                          <SelectItem value="sa">Saudi Arabia</SelectItem>
-                          <SelectItem value="sn">Senegal</SelectItem>
-                          <SelectItem value="rs">Serbia</SelectItem>
-                          <SelectItem value="sc">Seychelles</SelectItem>
-                          <SelectItem value="sl">Sierra Leone</SelectItem>
-                          <SelectItem value="sg">Singapore</SelectItem>
-                          <SelectItem value="sk">Slovakia</SelectItem>
-                          <SelectItem value="si">Slovenia</SelectItem>
-                          <SelectItem value="sb">Solomon Islands</SelectItem>
-                          <SelectItem value="so">Somalia</SelectItem>
-                          <SelectItem value="za">South Africa</SelectItem>
-                          <SelectItem value="ss">South Sudan</SelectItem>
-                          <SelectItem value="es">Spain</SelectItem>
-                          <SelectItem value="lk">Sri Lanka</SelectItem>
-                          <SelectItem value="sd">Sudan</SelectItem>
-                          <SelectItem value="sr">Suriname</SelectItem>
-                          <SelectItem value="sz">Swaziland</SelectItem>
-                          <SelectItem value="se">Sweden</SelectItem>
-                          <SelectItem value="ch">Switzerland</SelectItem>
-                          <SelectItem value="sy">Syria</SelectItem>
-                          <SelectItem value="tw">Taiwan</SelectItem>
-                          <SelectItem value="tj">Tajikistan</SelectItem>
-                          <SelectItem value="tz">Tanzania</SelectItem>
-                          <SelectItem value="th">Thailand</SelectItem>
-                          <SelectItem value="tl">Timor-Leste</SelectItem>
-                          <SelectItem value="tg">Togo</SelectItem>
-                          <SelectItem value="to">Tonga</SelectItem>
-                          <SelectItem value="tt">Trinidad and Tobago</SelectItem>
-                          <SelectItem value="tn">Tunisia</SelectItem>
-                          <SelectItem value="tr">Turkey</SelectItem>
-                          <SelectItem value="tm">Turkmenistan</SelectItem>
-                          <SelectItem value="tv">Tuvalu</SelectItem>
-                          <SelectItem value="ug">Uganda</SelectItem>
-                          <SelectItem value="ua">Ukraine</SelectItem>
-                          <SelectItem value="ae">United Arab Emirates</SelectItem>
-                          <SelectItem value="gb">United Kingdom</SelectItem>
-                          <SelectItem value="us">United States</SelectItem>
-                          <SelectItem value="uy">Uruguay</SelectItem>
-                          <SelectItem value="uz">Uzbekistan</SelectItem>
-                          <SelectItem value="vu">Vanuatu</SelectItem>
-                          <SelectItem value="va">Vatican City</SelectItem>
-                          <SelectItem value="ve">Venezuela</SelectItem>
-                          <SelectItem value="vn">Vietnam</SelectItem>
-                          <SelectItem value="ye">Yemen</SelectItem>
-                          <SelectItem value="zm">Zambia</SelectItem>
-                          <SelectItem value="zw">Zimbabwe</SelectItem>
+                          {countriesList}
                         </SelectContent>
                       </Select>
                     </div>
@@ -517,13 +557,12 @@ export default function SettingsDashboard() {
                   <div className="space-y-4">
                     <Label className="text-sm font-medium text-slate-700">Technical Skills</Label>
                     <div className="flex flex-wrap gap-2">
-                      {["React", "TypeScript", "Node.js", "Next.js", "GraphQL", "MongoDB", "AWS", "Docker", "CI/CD", "REST API"].map((skill, index) => (
-                        <Badge key={index} className="px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors rounded-lg flex items-center gap-1.5">
-                          {skill}
-                          <X className="h-3 w-3 cursor-pointer hover:text-blue-900" />
-                        </Badge>
+                      {skills.map((skill, index) => (
+                        <SkillBadge key={index} skill={skill} onRemove={(removedSkill) => {
+                          // Implement the logic to remove the skill
+                        }} />
                       ))}
-                      <Dialog open={isSkillDialogOpen} onOpenChange={setIsSkillDialogOpen}>
+                      <Dialog open={isSkillDialogOpen} onOpenChange={toggleSkillDialog}>
                         <DialogTrigger asChild>
                           <Button size="sm" variant="outline" className="rounded-lg h-8 gap-1 text-sm border-dashed border-slate-300 hover:border-blue-300 hover:text-blue-600 text-slate-500">
                             <Plus className="h-3.5 w-3.5" />
@@ -531,49 +570,7 @@ export default function SettingsDashboard() {
                           </Button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden border-none shadow-xl rounded-2xl bg-white animate-in fade-in-0 zoom-in-95">
-                          <div className="relative py-4 px-6 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600">
-                            <DialogTitle className="text-xl font-bold text-white flex items-center">
-                              <Award className="h-5 w-5 mr-2" />
-                              Add New Skill
-                            </DialogTitle>
-                            <DialogDescription className="text-blue-100 mt-1">
-                              Add a new technical skill to your profile
-                            </DialogDescription>
-                          </div>
-                          <div className="p-6">
-                            <div className="space-y-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="skill">Skill Name</Label>
-                                <Input 
-                                  id="skill" 
-                                  placeholder="e.g. React, Python, Adobe XD" 
-                                  className="bg-white border-slate-200"
-                                  value={newSkill}
-                                  onChange={(e) => setNewSkill(e.target.value)}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          <DialogFooter className="p-6 pt-0 flex gap-3 border-t border-slate-100 mt-3">
-                            <Button
-                              variant="outline"
-                              className="flex-1 border-slate-200 rounded-xl hover:bg-slate-50 transition-all duration-200"
-                              onClick={() => setIsSkillDialogOpen(false)}
-                            >
-                              Cancel
-                            </Button>
-                            <Button 
-                              className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all duration-200 rounded-xl"
-                              disabled={!newSkill.trim()}
-                              onClick={() => {
-                                // Add skill logic would go here
-                                setNewSkill("");
-                                setIsSkillDialogOpen(false);
-                              }}
-                            >
-                              Add Skill
-                            </Button>
-                          </DialogFooter>
+                          {skillDialogContent}
                         </DialogContent>
                       </Dialog>
                     </div>
@@ -582,13 +579,13 @@ export default function SettingsDashboard() {
                   <div className="space-y-4">
                     <Label className="text-sm font-medium text-slate-700">Professional Certifications</Label>
                     <div className="flex flex-wrap gap-2">
-                      {["AWS Solutions Architect", "Google Cloud Professional", "Microsoft Azure Developer"].map((cert, index) => (
+                      {certifications.map((cert, index) => (
                         <Badge key={index} className="px-3 py-1.5 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors rounded-lg flex items-center gap-1.5">
-                          {cert}
+                          {cert.name}
                           <X className="h-3 w-3 cursor-pointer hover:text-indigo-900" />
                         </Badge>
                       ))}
-                      <Dialog open={isCertificationDialogOpen} onOpenChange={setIsCertificationDialogOpen}>
+                      <Dialog open={isCertificationDialogOpen} onOpenChange={toggleCertificationDialog}>
                         <DialogTrigger asChild>
                           <Button size="sm" variant="outline" className="rounded-lg h-8 gap-1 text-sm border-dashed border-slate-300 hover:border-blue-300 hover:text-blue-600 text-slate-500">
                             <Plus className="h-3.5 w-3.5" />
@@ -596,73 +593,7 @@ export default function SettingsDashboard() {
                           </Button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden border-none shadow-xl rounded-2xl bg-white animate-in fade-in-0 zoom-in-95">
-                          <div className="relative py-4 px-6 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600">
-                            <DialogTitle className="text-xl font-bold text-white flex items-center">
-                              <Award className="h-5 w-5 mr-2" />
-                              Add New Certification
-                            </DialogTitle>
-                            <DialogDescription className="text-blue-100 mt-1">
-                              Add a professional certification to your profile
-                            </DialogDescription>
-                          </div>
-                          <div className="p-6">
-                            <div className="space-y-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="certification">Certification Name</Label>
-                                <Input 
-                                  id="certification" 
-                                  placeholder="e.g. AWS Solutions Architect" 
-                                  className="bg-white border-slate-200"
-                                  value={newCertification}
-                                  onChange={(e) => setNewCertification(e.target.value)}
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="cert-date">Issue Date</Label>
-                                <Input 
-                                  id="cert-date" 
-                                  type="date"
-                                  className="bg-white border-slate-200"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="cert-expiry">Expiration Date (Optional)</Label>
-                                <Input 
-                                  id="cert-expiry" 
-                                  type="date"
-                                  className="bg-white border-slate-200"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="cert-issuer">Issuing Organization</Label>
-                                <Input 
-                                  id="cert-issuer" 
-                                  placeholder="e.g. Amazon Web Services"
-                                  className="bg-white border-slate-200"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          <DialogFooter className="p-6 pt-0 flex gap-3 border-t border-slate-100 mt-3">
-                            <Button
-                              variant="outline"
-                              className="flex-1 border-slate-200 rounded-xl hover:bg-slate-50 transition-all duration-200"
-                              onClick={() => setIsCertificationDialogOpen(false)}
-                            >
-                              Cancel
-                            </Button>
-                            <Button 
-                              className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all duration-200 rounded-xl"
-                              disabled={!newCertification.trim()}
-                              onClick={() => {
-                                // Add certification logic would go here
-                                setNewCertification("");
-                                setIsCertificationDialogOpen(false);
-                              }}
-                            >
-                              Add Certification
-                            </Button>
-                          </DialogFooter>
+                          {certificationDialogContent}
                         </DialogContent>
                       </Dialog>
                     </div>
@@ -671,17 +602,25 @@ export default function SettingsDashboard() {
                   <div className="space-y-4">
                     <Label className="text-sm font-medium text-slate-700">Languages</Label>
                     <div className="flex flex-wrap gap-2">
-                      {["English (Native)", "Spanish (Intermediate)", "French (Basic)"].map((lang, index) => (
-                        <Badge key={index} className="px-3 py-1.5 bg-violet-100 text-violet-700 hover:bg-violet-200 transition-colors rounded-lg flex items-center gap-1.5">
-                          {lang}
-                          <X className="h-3 w-3 cursor-pointer hover:text-violet-900" />
-                        </Badge>
+                      {languages.map((lang, index) => (
+                        <LanguageItem key={index} language={lang.language} level={lang.level} onRemove={(removedLang) => {
+                          // Implement the logic to remove the language
+                        }} />
                       ))}
-                      <Dialog open={isLanguageDialogOpen} onOpenChange={setIsLanguageDialogOpen}>
+                      <Dialog open={isLanguageDialogOpen} onOpenChange={toggleLanguageDialog}>
                         <DialogTrigger asChild>
-                          <Button size="sm" variant="outline" className="rounded-lg h-8 gap-1 text-sm border-dashed border-slate-300 hover:border-blue-300 hover:text-blue-600 text-slate-500">
-                            <Plus className="h-3.5 w-3.5" />
-                            Add Language
+                          <Button 
+                            className="flex items-center justify-between p-3 rounded-xl border border-slate-200 border-dashed bg-white/60 hover:bg-blue-50/50 hover:border-blue-300 text-slate-500 hover:text-blue-600 h-auto w-[224px]"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+                                <Plus className="h-4 w-4" />
+                              </div>
+                              <div className="text-left">
+                                <h4 className="font-medium text-slate-900">Add Language</h4>
+                                <p className="text-xs text-slate-500">Add a new language</p>
+                              </div>
+                            </div>
                           </Button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden border-none shadow-xl rounded-2xl bg-white animate-in fade-in-0 zoom-in-95">
@@ -730,19 +669,14 @@ export default function SettingsDashboard() {
                             <Button
                               variant="outline"
                               className="flex-1 border-slate-200 rounded-xl hover:bg-slate-50 transition-all duration-200"
-                              onClick={() => setIsLanguageDialogOpen(false)}
+                              onClick={() => toggleLanguageDialog(false)}
                             >
                               Cancel
                             </Button>
                             <Button 
                               className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all duration-200 rounded-xl"
                               disabled={!newLanguage.trim()}
-                              onClick={() => {
-                                // Add language logic would go here
-                                setNewLanguage("");
-                                setNewLanguageLevel("Intermediate");
-                                setIsLanguageDialogOpen(false);
-                              }}
+                              onClick={handleAddLanguage}
                             >
                               Add Language
                             </Button>
@@ -770,7 +704,7 @@ export default function SettingsDashboard() {
                           </Button>
                         </div>
                       </div>
-                      <Dialog open={isExperienceDialogOpen} onOpenChange={setIsExperienceDialogOpen}>
+                      <Dialog open={isExperienceDialogOpen} onOpenChange={toggleExperienceDialog}>
                         <DialogTrigger asChild>
                           <Button size="sm" variant="outline" className="w-full rounded-xl h-10 gap-1.5 text-sm border-dashed border-slate-300 hover:border-blue-300 hover:text-blue-600 text-slate-500">
                             <Plus className="h-4 w-4" />
@@ -871,7 +805,7 @@ export default function SettingsDashboard() {
                               className="flex-1 border-slate-200 rounded-xl hover:bg-slate-50 transition-all duration-200"
                               onClick={() => {
                                 setCurrentlyWorking(false);
-                                setIsExperienceDialogOpen(false);
+                                toggleExperienceDialog(false);
                               }}
                             >
                               Cancel
@@ -881,7 +815,7 @@ export default function SettingsDashboard() {
                               onClick={() => {
                                 // Add work experience logic would go here
                                 setCurrentlyWorking(false);
-                                setIsExperienceDialogOpen(false);
+                                toggleExperienceDialog(false);
                               }}
                             >
                               Add Experience
@@ -910,7 +844,7 @@ export default function SettingsDashboard() {
                           </Button>
                         </div>
                       </div>
-                      <Dialog open={isEducationDialogOpen} onOpenChange={setIsEducationDialogOpen}>
+                      <Dialog open={isEducationDialogOpen} onOpenChange={toggleEducationDialog}>
                         <DialogTrigger asChild>
                           <Button size="sm" variant="outline" className="w-full rounded-xl h-10 gap-1.5 text-sm border-dashed border-slate-300 hover:border-blue-300 hover:text-blue-600 text-slate-500">
                             <Plus className="h-4 w-4" />
@@ -987,7 +921,7 @@ export default function SettingsDashboard() {
                             <Button
                               variant="outline"
                               className="flex-1 border-slate-200 rounded-xl hover:bg-slate-50 transition-all duration-200"
-                              onClick={() => setIsEducationDialogOpen(false)}
+                              onClick={() => toggleEducationDialog(false)}
                             >
                               Cancel
                             </Button>
@@ -995,7 +929,7 @@ export default function SettingsDashboard() {
                               className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all duration-200 rounded-xl"
                               onClick={() => {
                                 // Add education logic would go here
-                                setIsEducationDialogOpen(false);
+                                toggleEducationDialog(false);
                               }}
                             >
                               Add Education
