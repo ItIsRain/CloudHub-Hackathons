@@ -89,10 +89,6 @@ export default function SettingsDashboard() {
                 <CardTitle className="text-2xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Profile</CardTitle>
                 <CardDescription className="text-slate-600 mt-1">Your personal information and photo</CardDescription>
               </div>
-              <Button variant="outline" className="border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900">
-                <UserCog className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
             </div>
           </CardHeader>
           <CardContent className="pt-10 px-8 pb-8">
