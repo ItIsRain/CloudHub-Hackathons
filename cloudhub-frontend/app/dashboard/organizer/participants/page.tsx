@@ -91,6 +91,7 @@ interface Participant {
   skills: string[];
   teamId: string;
   teamName: string;
+  judgingScore?: number;
 }
 
 interface DialogState {
@@ -704,6 +705,7 @@ export default function ParticipantsPage() {
       skills: ["React", "Python", "TensorFlow"],
       teamId: "team-1",
       teamName: "Neural Ninjas",
+      judgingScore: 95,
     },
     {
       id: "2",
@@ -718,6 +720,7 @@ export default function ParticipantsPage() {
       skills: ["UI/UX", "Figma", "JavaScript"],
       teamId: "team-1",
       teamName: "Neural Ninjas",
+      judgingScore: 82,
     },
     {
       id: "3",
@@ -732,6 +735,7 @@ export default function ParticipantsPage() {
       skills: ["Solidity", "Ethereum", "JavaScript"],
       teamId: "team-2",
       teamName: "Blockchain Builders",
+      judgingScore: 88,
     },
     {
       id: "4",
@@ -746,6 +750,7 @@ export default function ParticipantsPage() {
       skills: ["Python", "Deep Learning", "Cloud Computing"],
       teamId: "team-3",
       teamName: "Data Wizards",
+      judgingScore: 78,
     },
     {
       id: "5",
@@ -760,6 +765,7 @@ export default function ParticipantsPage() {
       skills: ["Swift", "Kotlin", "Flutter"],
       teamId: "team-4",
       teamName: "App Avengers",
+      judgingScore: 85,
     },
   ]
 
@@ -865,10 +871,10 @@ export default function ParticipantsPage() {
       
       const matchesStatus = filters.status === "all" || participant.status === filters.status;
       
-      const matchesHackathon = filters.hackathon === "all" || 
-        participant.hackathons.some(h => h.toLowerCase() === filters.hackathon.toLowerCase());
+      const matchesHackathons = filters.selectedHackathons.length === 0 || 
+        participant.hackathons.some(h => filters.selectedHackathons.includes(h));
       
-      return matchesSearch && matchesStatus && matchesHackathon;
+      return matchesSearch && matchesStatus && matchesHackathons;
     });
   }, [filters, participants]);
 
@@ -1009,7 +1015,7 @@ export default function ParticipantsPage() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
           <Input 
             placeholder="Search participants..." 
-            className="pl-9 bg-white border-slate-200 shadow-sm focus:border-blue-300 focus:ring-blue-200"
+            className="pl-9 bg-white border-slate-200 shadow-sm focus:border-blue-300 focus:ring-blue-200 h-10"
             value={filters.search}
             onChange={handleSearchChange}
           />
@@ -1018,7 +1024,7 @@ export default function ParticipantsPage() {
           <PopoverTrigger asChild>
             <Button 
               variant="outline" 
-              className="w-full sm:w-[250px] justify-start bg-white border-slate-200 shadow-sm focus:border-blue-300 focus:ring-blue-200"
+              className="w-full sm:w-[250px] justify-start bg-white border-slate-200 shadow-sm focus:border-blue-300 focus:ring-blue-200 h-10 px-3"
             >
               <Trophy className="h-4 w-4 text-slate-500 mr-2" />
               {filters.selectedHackathons.length === 0 && (
@@ -1064,7 +1070,7 @@ export default function ParticipantsPage() {
           </PopoverContent>
         </Popover>
         <Select value={filters.status} onValueChange={handleStatusFilter}>
-          <SelectTrigger className="w-full sm:w-[180px] bg-white border-slate-200 shadow-sm focus:border-blue-300 focus:ring-blue-200">
+          <SelectTrigger className="w-full sm:w-[180px] bg-white border-slate-200 shadow-sm focus:border-blue-300 focus:ring-blue-200 h-10">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-slate-500" />
               <SelectValue placeholder="Filter by status" />
@@ -1308,7 +1314,8 @@ export default function ParticipantsPage() {
           <CardContent className="p-6">
             <div className="space-y-4 flex flex-col h-full">
               {participants
-                .sort((a, b) => b.submissions - a.submissions)
+                .filter(p => p.judgingScore !== undefined)
+                .sort((a, b) => (b.judgingScore || 0) - (a.judgingScore || 0))
                 .slice(0, 3)
                 .map((participant, idx) => (
                   <div key={participant.id} className="bg-gradient-to-r from-slate-50 to-indigo-50 rounded-xl p-4 border border-indigo-100 flex items-center gap-4 shadow-sm hover:shadow-md transition-all duration-200 flex-1">
@@ -1338,9 +1345,9 @@ export default function ParticipantsPage() {
                         <div className="flex flex-col items-end">
                           <div className="bg-gradient-to-r from-indigo-100 to-indigo-200 text-indigo-800 rounded-full px-2.5 py-0.5 text-sm font-medium flex items-center gap-1.5">
                             <Trophy className="h-3 w-3" />
-                            <span>{participant.submissions}</span>
+                            <span>{participant.judgingScore}/100</span>
                           </div>
-                          <span className="text-xs text-slate-500 mt-0.5">submissions</span>
+                          <span className="text-xs text-slate-500 mt-1 mr-1">judging score</span>
                         </div>
                       </div>
                       <div className="mt-3 flex flex-wrap gap-1.5">
@@ -1350,16 +1357,15 @@ export default function ParticipantsPage() {
                           </span>
                         ))}
                       </div>
-                      {/* Additional content to make cards taller */}
                       <div className="mt-3 pt-2 border-t border-indigo-100">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-slate-600">Performance</span>
-                          <span className="text-xs font-medium text-indigo-700">{90 - idx * 10}%</span>
+                          <span className="text-xs text-slate-600">Score Breakdown</span>
+                          <span className="text-xs font-medium text-indigo-700">{participant.judgingScore}%</span>
                         </div>
                         <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-1">
                           <div 
                             className="bg-gradient-to-r from-indigo-500 to-indigo-600 h-full rounded-full" 
-                            style={{ width: `${90 - idx * 10}%` }}
+                            style={{ width: `${participant.judgingScore}%` }}
                           ></div>
                         </div>
                       </div>
