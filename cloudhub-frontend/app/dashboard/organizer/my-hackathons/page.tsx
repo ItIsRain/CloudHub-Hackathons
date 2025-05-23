@@ -9,8 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { DatePickerWithRange } from "@/components/ui/date-range-picker"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
 import { 
   CalendarDays, 
   ChevronRight, 
@@ -34,10 +35,38 @@ import {
   Calendar,
   LayoutDashboard,
   List,
-  Award
+  Award,
+  Upload,
+  Image as ImageIcon,
+  Info,
+  AlertTriangle
 } from "lucide-react"
 import Link from "next/link"
 import { Progress } from "@/components/ui/progress"
+import { useToast } from "@/components/ui/use-toast"
+import { addDays } from "date-fns"
+import { DateRange } from "react-day-picker"
+import { Textarea } from "@/components/ui/textarea"
+
+// Define interfaces for the criteria and challenges
+interface Criterion {
+  id: string;
+  name: string;
+  weight: number;
+  description: string;
+}
+
+interface Challenge {
+  id: string;
+  title: string;
+  description: string;
+}
+
+interface Prize {
+  id: string;
+  place: string;
+  amount: string;
+}
 
 export default function OrganizerMyHackathonsPage() {
   const [isCreateHackathonOpen, setIsCreateHackathonOpen] = useState(false)
@@ -47,6 +76,279 @@ export default function OrganizerMyHackathonsPage() {
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null)
   const [selectedMaxParticipants, setSelectedMaxParticipants] = useState(50)
   const [isProcessingPayment, setIsProcessingPayment] = useState(false)
+  const [hackathonName, setHackathonName] = useState("");
+  const [description, setDescription] = useState("");
+  const [coverImage, setCoverImage] = useState<File | null>(null);
+  const [logoImage, setLogoImage] = useState<File | null>(null);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: new Date(),
+    to: addDays(new Date(), 30),
+  });
+  const [registrationDeadline, setRegistrationDeadline] = useState<Date | undefined>(
+    addDays(new Date(), 14)
+  );
+  const [prizePool, setPrizePool] = useState("1000");
+  // State for tiered prizes
+  const [hasTieredPrizes, setHasTieredPrizes] = useState(false);
+  const [prizeSplitOption, setPrizeSplitOption] = useState<string>("none");
+  const [prizes, setPrizes] = useState<Prize[]>([
+    { id: '1', place: '1st Place', amount: '500' },
+    { id: '2', place: '2nd Place', amount: '300' },
+    { id: '3', place: '3rd Place', amount: '200' }
+  ]);
+  const [participationPrize, setParticipationPrize] = useState("Certificate of Participation");
+  
+  // State for judging criteria weights
+  const [criteriaWeights, setCriteriaWeights] = useState<Criterion[]>([
+    { id: '1', name: 'Innovation', weight: 25, description: 'How original and innovative is the solution?' },
+    { id: '2', name: 'Technical Complexity', weight: 25, description: 'How technically challenging was the implementation?' },
+    { id: '3', name: 'User Experience', weight: 25, description: 'How intuitive and user-friendly is the solution?' },
+    { id: '4', name: 'Impact & Practicality', weight: 25, description: 'How impactful and practical is the solution for real-world use?' },
+  ]);
+  
+  // State for challenges
+  const [challenges, setChallenges] = useState<Challenge[]>([
+    { 
+      id: '1', 
+      title: 'AI-Powered Healthcare Solutions', 
+      description: 'Develop innovative AI solutions that address healthcare challenges like early disease detection, remote patient monitoring, or medical image analysis.' 
+    },
+    { 
+      id: '2', 
+      title: 'Sustainable Smart Cities', 
+      description: 'Create applications that improve urban sustainability through energy efficiency, waste management, transportation solutions, or environmental monitoring.' 
+    }
+  ]);
+  
+  // Calculate total weight of all criteria
+  const calculateTotalWeight = (): number => {
+    return criteriaWeights.reduce((total, criterion) => total + Number(criterion.weight), 0);
+  };
+  
+  // Update criterion weight
+  const handleWeightChange = (id: string, value: string): void => {
+    const numValue = Number(value);
+    const updatedWeights = criteriaWeights.map(criterion => {
+      if (criterion.id === id) {
+        return { ...criterion, weight: numValue };
+      }
+      return criterion;
+    });
+    setCriteriaWeights(updatedWeights);
+  };
+  
+  // Function to handle name changes
+  const handleNameChange = (id: string, newName: string) => {
+    setCriteriaWeights(criteriaWeights.map(c => 
+      c.id === id ? { ...c, name: newName } : c
+    ));
+  }
+  
+  // Function to handle description changes
+  const handleDescriptionChange = (id: string, newDescription: string) => {
+    setCriteriaWeights(criteriaWeights.map(c => 
+      c.id === id ? { ...c, description: newDescription } : c
+    ));
+  }
+  
+  // Function to add a new criterion
+  const handleAddCriterion = () => {
+    // Generate a new ID by converting to string the max ID + 1
+    const newId = String(Math.max(...criteriaWeights.map(c => Number(c.id))) + 1);
+    
+    // Calculate equal weights for all criteria including the new one
+    const newTotalItems = criteriaWeights.length + 1;
+    const equalWeight = Math.floor(100 / newTotalItems);
+    
+    // Handle remainder to ensure total is 100
+    const remainder = 100 - (equalWeight * newTotalItems);
+    
+    // Update all weights to be equal
+    const updatedWeights = criteriaWeights.map(c => ({
+      ...c,
+      weight: equalWeight + (remainder > 0 ? 1 : 0)
+    }));
+    
+    // Add the new criterion with equal weight
+    setCriteriaWeights([
+      ...updatedWeights,
+      {
+        id: newId,
+        name: "New Criterion",
+        weight: equalWeight,
+        description: "Description of the criterion"
+      }
+    ]);
+  }
+  
+  // Function to delete a criterion
+  const handleDeleteCriterion = (id: string) => {
+    // Only allow deletion if there is more than one criterion
+    if (criteriaWeights.length <= 1) return;
+    
+    // Remove the criterion
+    const filteredCriteria = criteriaWeights.filter(c => c.id !== id);
+    
+    // Recalculate weights to maintain total of 100
+    const equalWeight = Math.floor(100 / filteredCriteria.length);
+    const remainder = 100 - (equalWeight * filteredCriteria.length);
+    
+    // Update weights with equal distribution
+    const updatedWeights = filteredCriteria.map((c, index) => ({
+      ...c,
+      weight: equalWeight + (index < remainder ? 1 : 0)
+    }));
+    
+    setCriteriaWeights(updatedWeights);
+  }
+
+  // Function to handle challenge title changes
+  const handleChallengeTitle = (id: string, newTitle: string) => {
+    setChallenges(challenges.map(c => 
+      c.id === id ? { ...c, title: newTitle } : c
+    ))
+  }
+  
+  // Function to handle challenge description changes
+  const handleChallengeDescription = (id: string, newDescription: string) => {
+    setChallenges(challenges.map(c => 
+      c.id === id ? { ...c, description: newDescription } : c
+    ))
+  }
+  
+  // Function to add a new challenge
+  const handleAddChallenge = () => {
+    // Find the highest id to ensure unique ids
+    const maxId = Math.max(...challenges.map(c => Number(c.id)), 0)
+    
+    // Add a new challenge with default content
+    const newChallenge = {
+      id: String(maxId + 1),
+      title: "New Challenge",
+      description: "Describe the challenge here..."
+    }
+    
+    setChallenges([...challenges, newChallenge])
+  }
+  
+  // Function to delete a challenge
+  const handleDeleteChallenge = (id: string) => {
+    // Always keep at least one challenge
+    if (challenges.length <= 1) return;
+    
+    // Remove the challenge
+    setChallenges(challenges.filter(c => c.id !== id));
+  }
+  
+  // Function to handle prize place change
+  const handlePrizePlace = (id: string, newPlace: string) => {
+    setPrizes(prizes.map(p => 
+      p.id === id ? { ...p, place: newPlace } : p
+    ))
+  }
+  
+  // Function to handle prize amount change
+  const handlePrizeAmount = (id: string, newAmount: string) => {
+    setPrizes(prizes.map(p => 
+      p.id === id ? { ...p, amount: newAmount } : p
+    ))
+  }
+  
+  // Function to add a new prize tier
+  const handleAddPrize = () => {
+    // Find the highest id to ensure unique ids
+    const maxId = Math.max(...prizes.map(p => Number(p.id)), 0);
+    
+    // Add a new prize tier
+    const newPrize = {
+      id: String(maxId + 1),
+      place: `${maxId + 1}${getOrdinalSuffix(maxId + 1)} Place`,
+      amount: "100"
+    };
+    
+    setPrizes([...prizes, newPrize]);
+  }
+  
+  // Function to delete a prize tier
+  const handleDeletePrize = (id: string) => {
+    // Always keep at least one prize
+    if (prizes.length <= 1) return;
+    
+    // Remove the prize
+    setPrizes(prizes.filter(p => p.id !== id));
+  }
+  
+  // Function to handle prize split selection
+  const handlePrizeSplitChange = (option: string) => {
+    setPrizeSplitOption(option);
+    
+    // Update the tiered prizes state
+    if (option === "none") {
+      setHasTieredPrizes(false);
+    } else {
+      setHasTieredPrizes(true);
+      
+      const totalPrize = Number(prizePool) || 0;
+      
+      // Update prize distribution based on selected split
+      if (option === "standard") {
+        // 50-30-20 split
+        setPrizes([
+          { id: '1', place: '1st Place', amount: Math.round(totalPrize * 0.5).toString() },
+          { id: '2', place: '2nd Place', amount: Math.round(totalPrize * 0.3).toString() },
+          { id: '3', place: '3rd Place', amount: Math.round(totalPrize * 0.2).toString() }
+        ]);
+      } else if (option === "winner-focused") {
+        // 70-20-10 split (more for winner)
+        setPrizes([
+          { id: '1', place: '1st Place', amount: Math.round(totalPrize * 0.7).toString() },
+          { id: '2', place: '2nd Place', amount: Math.round(totalPrize * 0.2).toString() },
+          { id: '3', place: '3rd Place', amount: Math.round(totalPrize * 0.1).toString() }
+        ]);
+      } else if (option === "balanced") {
+        // 40-30-30 split (more balanced)
+        setPrizes([
+          { id: '1', place: '1st Place', amount: Math.round(totalPrize * 0.4).toString() },
+          { id: '2', place: '2nd Place', amount: Math.round(totalPrize * 0.3).toString() },
+          { id: '3', place: '3rd Place', amount: Math.round(totalPrize * 0.3).toString() }
+        ]);
+      } else if (option === "top5") {
+        // Top 5 winners
+        setPrizes([
+          { id: '1', place: '1st Place', amount: Math.round(totalPrize * 0.35).toString() },
+          { id: '2', place: '2nd Place', amount: Math.round(totalPrize * 0.25).toString() },
+          { id: '3', place: '3rd Place', amount: Math.round(totalPrize * 0.2).toString() },
+          { id: '4', place: '4th Place', amount: Math.round(totalPrize * 0.12).toString() },
+          { id: '5', place: '5th Place', amount: Math.round(totalPrize * 0.08).toString() }
+        ]);
+      } else if (option === "custom") {
+        // Keep current prizes or set default custom
+        if (prizes.length === 0) {
+          setPrizes([
+            { id: '1', place: '1st Place', amount: Math.round(totalPrize * 0.5).toString() },
+            { id: '2', place: '2nd Place', amount: Math.round(totalPrize * 0.3).toString() },
+            { id: '3', place: '3rd Place', amount: Math.round(totalPrize * 0.2).toString() }
+          ]);
+        }
+      }
+    }
+  };
+  
+  // Helper function to get ordinal suffix
+  const getOrdinalSuffix = (num: number): string => {
+    const j = num % 10;
+    const k = num % 100;
+    
+    if (j === 1 && k !== 11) {
+      return "st";
+    } else if (j === 2 && k !== 12) {
+      return "nd";
+    } else if (j === 3 && k !== 13) {
+      return "rd";
+    } else {
+      return "th";
+    }
+  }
 
   // Reset dialog state when dialog closes
   const handleDialogOpenChange = (open: boolean) => {
@@ -72,13 +374,103 @@ export default function OrganizerMyHackathonsPage() {
     setCreateStepIndex(prev => prev - 1);
   };
 
-  const handleCreateHackathon = () => {
+  const { toast } = useToast()
+
+  const handleCreateHackathon = async () => {
+    // Validate form
+    if (!hackathonName) {
+      toast({
+        title: "Missing information",
+        description: "Please provide a name for your hackathon",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!dateRange?.from || !dateRange?.to) {
+      toast({
+        title: "Missing information",
+        description: "Please select a date range for your hackathon",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!registrationDeadline) {
+      toast({
+        title: "Missing information",
+        description: "Please select a registration deadline",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (calculateTotalWeight() !== 100) {
+      toast({
+        title: "Invalid judging criteria",
+        description: "The total weight of all judging criteria must equal 100%",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Proceed to payment step
+    setCreateStepIndex(2);
     setIsProcessingPayment(true);
-    // Simulate payment processing
+
+    // Create hackathon object
+    const hackathonData = {
+      name: hackathonName,
+      description,
+      dateRange,
+      registrationDeadline,
+      maxParticipants: selectedMaxParticipants,
+      prizePool,
+      package: selectedPackage,
+      judgingCriteria: criteriaWeights,
+      // Add other form fields as needed
+    };
+
+    // TODO: Send hackathon data to API
+    console.log("Creating hackathon:", hackathonData);
+    
+    // Simulate API call with timeout
     setTimeout(() => {
       setIsProcessingPayment(false);
-      handleDialogOpenChange(false);
-    }, 2000);
+      
+      // Show success message (only visible if user hasn't closed the dialog)
+      setTimeout(() => {
+        // Close dialog and show success message
+        handleDialogOpenChange(false);
+        setCreateStepIndex(0);
+        
+        toast({
+          title: "Hackathon created!",
+          description: "Your hackathon has been created successfully",
+          variant: "default"
+        });
+        
+        // Reset form
+        setHackathonName("");
+        setDescription("");
+        setCoverImage(null);
+        setLogoImage(null);
+        setDateRange({
+          from: new Date(),
+          to: addDays(new Date(), 30),
+        });
+        setRegistrationDeadline(addDays(new Date(), 14));
+        setSelectedMaxParticipants(100);
+        setPrizePool("1000");
+        setSelectedPackage(null);
+        setCriteriaWeights([
+          { id: '1', name: 'Innovation', weight: 25, description: 'How original and innovative is the solution?' },
+          { id: '2', name: 'Technical Complexity', weight: 25, description: 'How technically challenging was the implementation?' },
+          { id: '3', name: 'User Experience', weight: 25, description: 'How intuitive and user-friendly is the solution?' },
+          { id: '4', name: 'Impact & Practicality', weight: 25, description: 'How impactful and practical is the solution for real-world use?' },
+        ]);
+      }, 2000);
+    }, 3000);
   };
 
   // Dummy data for hackathons
@@ -163,6 +555,9 @@ export default function OrganizerMyHackathonsPage() {
     
     return matchesSearch && matchesStatus
   })
+
+  // Add hackathonType state variable after the other useState declarations
+  const [hackathonType, setHackathonType] = useState("online");
 
   return (
     <div className="space-y-8 pb-10 px-6">
@@ -558,8 +953,8 @@ export default function OrganizerMyHackathonsPage() {
 
       {/* Create Hackathon Dialog */}
       <Dialog open={isCreateHackathonOpen} onOpenChange={handleDialogOpenChange}>
-        <DialogContent className="max-w-6xl">
-          <DialogHeader>
+        <DialogContent className={`w-full sm:max-w-[95vw] lg:max-w-[90vw] xl:max-w-[85vw] ${createStepIndex === 1 ? "max-h-[90vh] overflow-hidden flex flex-col" : ""}`}>
+          <DialogHeader className="flex-shrink-0 px-6">
             <DialogTitle>
               {createStepIndex === 0 ? "Select a Package" : 
                createStepIndex === 1 ? "Create New Hackathon" : 
@@ -574,7 +969,7 @@ export default function OrganizerMyHackathonsPage() {
 
           {/* Step 1: Package Selection */}
           {createStepIndex === 0 && (
-            <div className="py-2">
+            <div className="py-2 px-6">
               <div className="relative mb-6 overflow-hidden rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 p-5 text-center">
                 {/* Animated background elements */}
                 <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
@@ -886,166 +1281,653 @@ export default function OrganizerMyHackathonsPage() {
 
           {/* Step 2: Hackathon Information */}
           {createStepIndex === 1 && (
-            <div className="grid gap-6 py-4">
-              <div className="border-b border-slate-200 pb-4">
-                <div className="flex items-center gap-3 mb-4">
-                  {selectedPackage === "Starter" && (
-                    <div className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium border border-blue-200">
-                      Starter Plan
+            <div className="overflow-y-auto py-4 px-6 custom-scrollbar" style={{ 
+              maxHeight: 'calc(90vh - 240px)',
+              scrollbarWidth: 'thin',
+              scrollbarColor: '#e2e8f0 #f8fafc'
+            }}>
+              <div className="space-y-8 w-full">
+                {/* Top Row: Basic Information and Schedule & Capacity side by side */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Section 1: Basic Information */}
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow h-full">
+                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 px-6 py-4 border-b border-blue-200">
+                      <h3 className="text-base font-semibold text-slate-900 flex items-center">
+                        <span className="bg-blue-100 text-blue-800 w-6 h-6 rounded-full inline-flex items-center justify-center mr-2 text-xs shadow-sm border border-blue-200">1</span>
+                        Basic Information
+                      </h3>
                     </div>
-                  )}
-                  {selectedPackage === "Growth" && (
-                    <div className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm font-medium border border-indigo-200">
-                      Growth Plan
+                    <div className="p-6 space-y-5">
+                      {/* Hackathon Title */}
+                      <div className="grid gap-3">
+                        <Label htmlFor="title" className="font-medium text-sm">
+                          Hackathon Title <span className="text-red-500">*</span>
+                        </Label>
+                        <Input 
+                          id="title" 
+                          placeholder="Enter a title for your hackathon" 
+                          className="h-10 focus:border-blue-500 focus:ring-blue-500" 
+                          required 
+                          value={hackathonName}
+                          onChange={(e) => setHackathonName(e.target.value)}
+                        />
+                      </div>
+
+                      <div className="grid gap-3">
+                        <Label htmlFor="description" className="font-medium text-sm">
+                          Description <span className="text-red-500">*</span>
+                        </Label>
+                        <textarea 
+                          id="description" 
+                          rows={3} 
+                          className="min-h-[90px] rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                          placeholder="Describe your hackathon in detail including goals, themes, and what participants can expect"
+                          required
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                        />
+                      </div>
+
+                      {/* Schedule & Capacity */}
+                      <div className="space-y-4 pt-4 border-t border-slate-200">
+                        <div className="flex items-center">
+                          <Calendar className="h-4 w-4 mr-2 text-slate-600" />
+                          <h3 className="text-sm font-medium">Schedule & Capacity</h3>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Date Range Picker */}
+                          <div className="space-y-2">
+                            <Label htmlFor="date-range" className="text-sm font-medium">Hackathon Dates</Label>
+                            <div className="border border-slate-200 rounded-md p-3">
+                              {/* Placeholder for DatePickerWithRange */}
+                              <div className="flex items-center gap-2">
+                                <Input 
+                                  type="date" 
+                                  value={dateRange?.from ? dateRange.from.toISOString().substring(0, 10) : ''}
+                                  onChange={(e) => {
+                                    const from = e.target.value ? new Date(e.target.value) : undefined;
+                                    setDateRange({ from, to: dateRange?.to });
+                                  }}
+                                  className="h-9"
+                                />
+                                <span className="text-sm text-slate-500">to</span>
+                                <Input 
+                                  type="date" 
+                                  value={dateRange?.to ? dateRange.to.toISOString().substring(0, 10) : ''}
+                                  onChange={(e) => {
+                                    const to = e.target.value ? new Date(e.target.value) : undefined;
+                                    setDateRange({ from: dateRange?.from, to });
+                                  }}
+                                  className="h-9"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Registration Deadline */}
+                          <div className="space-y-2">
+                            <Label htmlFor="registration-deadline" className="text-sm font-medium">Registration Deadline</Label>
+                            <div className="border border-slate-200 rounded-md p-3">
+                              {/* Placeholder for DatePicker */}
+                              <Input 
+                                type="date" 
+                                value={registrationDeadline ? registrationDeadline.toISOString().substring(0, 10) : ''}
+                                onChange={(e) => {
+                                  const date = e.target.value ? new Date(e.target.value) : undefined;
+                                  setRegistrationDeadline(date);
+                                }}
+                                className="h-9 w-full"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Maximum Participants */}
+                          <div className="space-y-2">
+                            <Label htmlFor="max-participants" className="text-sm font-medium flex items-center justify-between">
+                              <span>Max Participants <span className="text-red-500">*</span></span>
+                              <span className="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full text-xs">
+                                Package Limit: {
+                                  selectedPackage === "Growth" ? "100" :
+                                  selectedPackage === "Scale" ? "250" : "50"
+                                }
+                              </span>
+                            </Label>
+                            <div className="flex items-center">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-10 w-10 rounded-r-none flex items-center justify-center border-indigo-200"
+                                onClick={() => setSelectedMaxParticipants(Math.max(10, selectedMaxParticipants - 10))}
+                                disabled={selectedMaxParticipants <= 10}
+                              >
+                                <span className="text-lg">-</span>
+                              </Button>
+                              <Input
+                                id="max-participants"
+                                type="number"
+                                className="h-10 rounded-none text-center focus:border-indigo-500 focus:ring-indigo-500 border-x-0"
+                                value={selectedMaxParticipants}
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value);
+                                  if (!isNaN(value)) {
+                                    // Find the selected package's limit
+                                    let limit = 50; // Default for Starter plan
+                                    if (selectedPackage === "Growth") limit = 100;
+                                    if (selectedPackage === "Scale") limit = 250;
+                                    
+                                    // Ensure the value doesn't exceed the package limit
+                                    setSelectedMaxParticipants(Math.min(limit, Math.max(10, value)));
+                                  }
+                                }}
+                                min="10"
+                                max={
+                                  selectedPackage === "Growth" ? "100" :
+                                  selectedPackage === "Scale" ? "250" : "50"
+                                }
+                                required
+                                style={{ appearance: 'textfield' }}
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-10 w-10 rounded-l-none flex items-center justify-center border-indigo-200"
+                                onClick={() => {
+                                  // Find the selected package's limit
+                                  let limit = 50; // Default for Starter plan
+                                  if (selectedPackage === "Growth") limit = 100;
+                                  if (selectedPackage === "Scale") limit = 250;
+                                  
+                                  setSelectedMaxParticipants(Math.min(limit, selectedMaxParticipants + 10));
+                                }}
+                                disabled={
+                                  (selectedPackage === "Starter" && selectedMaxParticipants >= 50) ||
+                                  (selectedPackage === "Growth" && selectedMaxParticipants >= 100) ||
+                                  (selectedPackage === "Scale" && selectedMaxParticipants >= 250)
+                                }
+                              >
+                                <span className="text-lg">+</span>
+                              </Button>
+                            </div>
+                            <p className="text-xs text-slate-500">Select the maximum number of participants</p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="hackathon-type" className="text-sm font-medium">
+                              Hackathon Type <span className="text-red-500">*</span>
+                            </Label>
+                            <Select 
+                              value={hackathonType} 
+                              onValueChange={setHackathonType}
+                            >
+                              <SelectTrigger id="hackathon-type" className="h-10">
+                                <SelectValue placeholder="Select hackathon type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="online">Online</SelectItem>
+                                <SelectItem value="onsite">On-site</SelectItem>
+                                <SelectItem value="hybrid">Hybrid</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-slate-500">Choose how participants will attend</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  )}
-                  {selectedPackage === "Scale" && (
-                    <div className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-medium border border-purple-200">
-                      Scale Plan
+                  </div>
+
+                  {/* Section 2: Schedule & Capacity */}
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow h-full">
+                    <div className="bg-gradient-to-r from-indigo-50 to-indigo-100 px-6 py-4 border-b border-indigo-200">
+                      <h3 className="text-base font-semibold text-slate-900 flex items-center">
+                        <span className="bg-indigo-100 text-indigo-800 w-6 h-6 rounded-full inline-flex items-center justify-center mr-2 text-xs shadow-sm border border-indigo-200">2</span>
+                        Schedule & Capacity
+                      </h3>
                     </div>
-                  )}
-                  <span className="text-sm text-slate-500">
-                    Maximum {selectedMaxParticipants} participants
-                  </span>
-                </div>
-              </div>
-              
-              <div className="grid gap-3">
-                <label htmlFor="title" className="text-sm font-medium">
-                  Hackathon Title <span className="text-red-500">*</span>
-                </label>
-                <Input id="title" placeholder="Enter a title for your hackathon" required />
-              </div>
+                    <div className="p-6 space-y-5">
+                      <div className="grid gap-3">
+                        <Label className="font-medium text-sm">
+                          Date Range <span className="text-red-500">*</span>
+                        </Label>
+                        <div className="border border-slate-200 rounded-md p-3">
+                          <div className="flex items-center gap-2">
+                            <Input 
+                              type="date" 
+                              className="h-9"
+                              placeholder="Start date"
+                            />
+                            <span className="text-sm text-slate-500">to</span>
+                            <Input 
+                              type="date" 
+                              className="h-9"
+                              placeholder="End date"
+                            />
+                          </div>
+                        </div>
+                        <p className="text-xs text-slate-500">Select start and end dates</p>
+                      </div>
 
-              <div className="grid gap-3">
-                <label htmlFor="description" className="text-sm font-medium">
-                  Description <span className="text-red-500">*</span>
-                </label>
-                <textarea 
-                  id="description" 
-                  rows={3} 
-                  className="min-h-[100px] rounded-md border border-slate-200 px-3 py-2 text-sm"
-                  placeholder="Describe your hackathon"
-                  required
-                />
-              </div>
+                      <div className="grid gap-3">
+                        <Label className="font-medium text-sm">
+                          Registration Deadline <span className="text-red-500">*</span>
+                        </Label>
+                        <div className="border border-slate-200 rounded-md p-3">
+                          <Input 
+                            type="date" 
+                            className="h-9 w-full"
+                            placeholder="Registration deadline"
+                          />
+                        </div>
+                        <p className="text-xs text-slate-500">Set registration deadline</p>
+                      </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="grid gap-3">
-                  <label className="text-sm font-medium">
-                    Date Range <span className="text-red-500">*</span>
-                  </label>
-                  <DatePickerWithRange />
-                </div>
-                <div className="grid gap-3">
-                  <label className="text-sm font-medium">
-                    Registration Deadline <span className="text-red-500">*</span>
-                  </label>
-                  <DatePickerWithRange />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="grid gap-3">
-                  <label htmlFor="maxParticipants" className="text-sm font-medium flex items-center justify-between">
-                    <span>Maximum Participants <span className="text-red-500">*</span></span>
-                    <span className="text-sm text-slate-500">Max: {selectedMaxParticipants}</span>
-                  </label>
-                  <Input 
-                    id="maxParticipants" 
-                    type="number" 
-                    placeholder={`Enter maximum number of participants (up to ${selectedMaxParticipants})`}
-                    min="1"
-                    max={selectedMaxParticipants.toString()}
-                    defaultValue={selectedMaxParticipants.toString()}
-                    required
-                  />
-                </div>
-                <div className="grid gap-3">
-                  <label htmlFor="prizePool" className="text-sm font-medium">
-                    Prize Pool <span className="text-red-500">*</span>
-                  </label>
-                  <Input id="prizePool" placeholder="Enter prize pool amount" required />
-                </div>
-              </div>
-
-              <div className="grid gap-3">
-                <label className="text-sm font-medium">Categories</label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {["AI/ML", "Blockchain", "Web Development", "Mobile", "IoT", "Cloud", "Sustainability", "FinTech"].map((category) => (
-                    <div key={category} className="flex items-center space-x-2">
-                      <Checkbox id={`category-${category}`} />
-                      <label
-                        htmlFor={`category-${category}`}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        {category}
-                      </label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="prize-split" className="text-sm font-medium block mb-2">Prize Distribution</Label>
+                          <Select 
+                            value={prizeSplitOption} 
+                            onValueChange={handlePrizeSplitChange}
+                          >
+                            <SelectTrigger id="prize-split" className="h-10">
+                              <SelectValue placeholder="Select prize distribution" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">No tiered prizes</SelectItem>
+                              <SelectItem value="standard">Standard (50/30/20)</SelectItem>
+                              <SelectItem value="winner-focused">Winner Focused (70/20/10)</SelectItem>
+                              <SelectItem value="balanced">Balanced (40/30/30)</SelectItem>
+                              <SelectItem value="top5">Top 5 Winners</SelectItem>
+                              <SelectItem value="custom">Custom Distribution</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-slate-500">Choose how to distribute the prize pool</p>
+                        </div>
+                          
+                        <div className="space-y-2">
+                          <Label htmlFor="prize-pool" className="text-sm font-medium block mb-2">Prize Pool (AED)</Label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">AED</span>
+                            <Input 
+                              id="prize-pool" 
+                              type="number" 
+                              className="pl-12 h-10" 
+                              placeholder="Enter prize amount"
+                              value={prizePool}
+                              onChange={(e) => {
+                                setPrizePool(e.target.value);
+                                // Update prize amounts if tiered prizes are enabled
+                                if (prizeSplitOption !== "none" && prizeSplitOption !== "custom") {
+                                  handlePrizeSplitChange(prizeSplitOption);
+                                }
+                              }}
+                              style={{ appearance: 'textfield' }}
+                            />
+                          </div>
+                          <p className="text-xs text-slate-500">Total prize pool amount</p>
+                        </div>
+                      </div>
+                      
+                      {hasTieredPrizes && (
+                        <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-4 space-y-4 mt-4">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-sm font-medium text-slate-800">Prize Distribution</Label>
+                            {prizeSplitOption === "custom" && (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-7 text-xs"
+                                onClick={handleAddPrize}
+                              >
+                                <PlusCircle className="h-3 w-3 mr-1.5" />
+                                Add Prize Tier
+                              </Button>
+                            )}
+                          </div>
+                          
+                          <div className="space-y-3">
+                            {prizes.map((prize) => (
+                              <div key={prize.id} className="grid grid-cols-12 gap-3 items-center bg-white rounded-md border border-slate-200 p-3">
+                                <div className="col-span-5">
+                                  <Label htmlFor={`prize-place-${prize.id}`} className="text-xs mb-1 block">Prize Place</Label>
+                                  <Input 
+                                    id={`prize-place-${prize.id}`}
+                                    value={prize.place}
+                                    onChange={(e) => handlePrizePlace(prize.id, e.target.value)}
+                                    className="h-9 text-sm"
+                                    readOnly={prizeSplitOption !== "custom"}
+                                  />
+                                </div>
+                                <div className="col-span-6 relative">
+                                  <Label htmlFor={`prize-amount-${prize.id}`} className="text-xs mb-1 block">Prize Amount</Label>
+                                  <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">AED</span>
+                                    <Input 
+                                      id={`prize-amount-${prize.id}`}
+                                      type="number"
+                                      value={prize.amount}
+                                      onChange={(e) => handlePrizeAmount(prize.id, e.target.value)}
+                                      className="h-9 text-sm pl-12"
+                                      readOnly={prizeSplitOption !== "custom"}
+                                      style={{ appearance: 'textfield' }}
+                                    />
+                                  </div>
+                                </div>
+                                <div className="col-span-1 flex items-end justify-end h-full pb-1">
+                                  {prizeSplitOption === "custom" && (
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="h-7 w-7 p-0 rounded-full text-slate-400 hover:text-red-600 hover:bg-red-50"
+                                      onClick={() => handleDeletePrize(prize.id)}
+                                      disabled={prizes.length <= 1}
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          <div className="pt-3 border-t border-slate-200 mt-2">
+                            <Label htmlFor="participation-prize" className="text-sm font-medium text-slate-800 mb-2 block">Participation Prize/Recognition</Label>
+                            <Input 
+                              id="participation-prize"
+                              value={participationPrize}
+                              onChange={(e) => setParticipationPrize(e.target.value)}
+                              className="h-9 text-sm"
+                              placeholder="e.g., Certificate, Credits, Swag, etc."
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  ))}
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox id="featured" />
-                <label
-                  htmlFor="featured"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Feature this hackathon on the homepage
-                </label>
+                {/* Section: Challenges & Rules */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                  <div className="bg-gradient-to-r from-emerald-50 to-teal-100 px-6 py-4 border-b border-emerald-200">
+                    <h3 className="text-base font-semibold text-slate-900 flex items-center">
+                      <span className="bg-emerald-100 text-emerald-800 w-6 h-6 rounded-full inline-flex items-center justify-center mr-2 text-xs shadow-sm border border-emerald-200">3</span>
+                      Challenges & Rules
+                    </h3>
+                  </div>
+                  <div className="p-6 space-y-6">
+                    {/* Challenges Section */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <Label className="font-medium text-sm">Hackathon Challenges</Label>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-8 px-3 text-xs bg-slate-50 border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
+                          onClick={handleAddChallenge}
+                        >
+                          <PlusCircle className="h-3.5 w-3.5 mr-1" />
+                          Add Challenge
+                        </Button>
+                      </div>
+                      
+                      {challenges.map((challenge) => (
+                        <div key={challenge.id} className="rounded-lg border border-slate-200 overflow-hidden hover:shadow-sm transition-all">
+                          <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="bg-blue-100 text-blue-800 w-5 h-5 rounded-full inline-flex items-center justify-center text-xs shadow-sm border border-blue-200">{challenge.id}</span>
+                                <h4 className="font-medium text-sm">{challenge.title}</h4>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-7 w-7 p-0 rounded-full text-slate-500 hover:text-blue-600 hover:bg-blue-50"
+                                >
+                                  <Edit className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-7 w-7 p-0 rounded-full text-slate-500 hover:text-red-600 hover:bg-red-50"
+                                  onClick={() => handleDeleteChallenge(challenge.id)}
+                                  disabled={challenges.length <= 1}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="p-4">
+                            <div className="space-y-3">
+                              <div>
+                                <Label htmlFor={`challenge-title-${challenge.id}`} className="text-xs font-medium text-slate-700 mb-1 block">Challenge Title</Label>
+                                <Input 
+                                  id={`challenge-title-${challenge.id}`} 
+                                  value={challenge.title}
+                                  onChange={(e) => handleChallengeTitle(challenge.id, e.target.value)}
+                                  className="h-9 text-sm"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor={`challenge-description-${challenge.id}`} className="text-xs font-medium text-slate-700 mb-1 block">Description</Label>
+                                <textarea 
+                                  id={`challenge-description-${challenge.id}`} 
+                                  rows={2}
+                                  className="min-h-[60px] w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                  value={challenge.description}
+                                  onChange={(e) => handleChallengeDescription(challenge.id, e.target.value)}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      <div className="pt-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full border-dashed border-slate-300 text-slate-500 hover:text-blue-700 hover:border-blue-300 hover:bg-blue-50"
+                          onClick={handleAddChallenge}
+                        >
+                          <PlusCircle className="h-3.5 w-3.5 mr-1.5" />
+                          Add Another Challenge
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Rules Section */}
+                    <div className="space-y-4 pt-4 border-t border-slate-200">
+                      <div className="flex items-center justify-between">
+                        <Label className="font-medium text-sm">Hackathon Rules</Label>
+                      </div>
+                      <div>
+                        <Label htmlFor="rules" className="text-xs font-medium text-slate-700 mb-2 block">
+                          Define the rules and guidelines for your hackathon
+                        </Label>
+                        <textarea 
+                          id="rules" 
+                          rows={5}
+                          className="min-h-[120px] w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                          placeholder="Enter rules, guidelines, judging criteria, and submission requirements for your hackathon..."
+                          defaultValue="1. Teams can consist of 1-4 members.
+2. All code must be written during the hackathon.
+3. You may use open-source libraries and frameworks.
+4. Projects will be judged on innovation, technical complexity, design, and impact.
+5. Each team must submit their code to GitHub and provide a 3-minute demo video."
+                        />
+                      </div>
+                    </div>
+
+                    {/* Judging Criteria */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Judging Criteria</Label>
+                        <Button 
+                          type="button"
+                          variant="outline" 
+                          size="sm" 
+                          className="h-7 text-xs"
+                          onClick={handleAddCriterion}
+                        >
+                          <PlusCircle className="h-3 w-3 mr-1.5" />
+                          Add Criterion
+                        </Button>
+                      </div>
+
+                      {/* Weight Warning */}
+                      <div className="p-2.5 rounded-md bg-amber-50 border border-amber-200">
+                        <div className="flex items-start gap-2">
+                          <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5" />
+                          <div className="text-xs text-amber-800">
+                            <p className="font-medium">Total Weight: {calculateTotalWeight()}%</p>
+                            {calculateTotalWeight() !== 100 && (
+                              <p className="mt-1">
+                                {calculateTotalWeight() > 100
+                                  ? "The total weight exceeds 100%. Please adjust the values."
+                                  : "The total weight is less than 100%. Please adjust the values."}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Criteria List */}
+                      <div className="space-y-3">
+                        {criteriaWeights.map((criterion) => (
+                          <div 
+                            key={criterion.id} 
+                            className="grid grid-cols-12 gap-3 items-start p-3 rounded-lg border border-slate-200"
+                          >
+                            <div className="col-span-7 space-y-1.5">
+                              <Input
+                                className="h-8 text-sm"
+                                placeholder="Criterion Name"
+                                value={criterion.name}
+                                onChange={(e) => handleNameChange(criterion.id, e.target.value)}
+                              />
+                              <Textarea
+                                className="min-h-[60px] text-sm"
+                                placeholder="Criterion Description"
+                                value={criterion.description}
+                                onChange={(e) => handleDescriptionChange(criterion.id, e.target.value)}
+                              />
+                            </div>
+                            <div className="col-span-4">
+                              <Label htmlFor={`weight-${criterion.id}`} className="text-xs mb-1 block">Weight (%)</Label>
+                              <Input
+                                id={`weight-${criterion.id}`}
+                                type="number"
+                                className="h-8 text-sm"
+                                min="0"
+                                max="100"
+                                value={criterion.weight}
+                                onChange={(e) => handleWeightChange(criterion.id, e.target.value)}
+                              />
+                            </div>
+                            <div className="col-span-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 rounded-full text-slate-400 hover:text-red-600 hover:bg-red-50"
+                                onClick={() => handleDeleteCriterion(criterion.id)}
+                                disabled={criteriaWeights.length <= 1}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Challenges */}
+                    <div className="space-y-3 pt-6 border-t border-slate-200 mt-6">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Hackathon Challenges</Label>
+                        <Button 
+                          type="button"
+                          variant="outline" 
+                          size="sm" 
+                          className="h-7 text-xs"
+                          onClick={handleAddChallenge}
+                        >
+                          <PlusCircle className="h-3 w-3 mr-1.5" />
+                          Add Challenge
+                        </Button>
+                      </div>
+
+                      <div className="space-y-3">
+                        {challenges.map((challenge) => (
+                          <div 
+                            key={challenge.id} 
+                            className="grid grid-cols-12 gap-3 items-start p-3 rounded-lg border border-slate-200"
+                          >
+                            <div className="col-span-11 space-y-1.5">
+                              <Input
+                                className="h-8 text-sm"
+                                placeholder="Challenge Title"
+                                value={challenge.title}
+                                onChange={(e) => handleChallengeTitle(challenge.id, e.target.value)}
+                              />
+                              <Textarea
+                                className="min-h-[60px] text-sm"
+                                placeholder="Challenge Description"
+                                value={challenge.description}
+                                onChange={(e) => handleChallengeDescription(challenge.id, e.target.value)}
+                              />
+                            </div>
+                            <div className="col-span-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 rounded-full text-slate-400 hover:text-red-600 hover:bg-red-50"
+                                onClick={() => handleDeleteChallenge(challenge.id)}
+                                disabled={challenges.length <= 1}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
           {/* Step 3: Payment Processing */}
           {createStepIndex === 2 && (
-            <div className="py-8">
-              <div className="max-w-md mx-auto">
-                <div className="text-center mb-6">
-                  {isProcessingPayment ? (
-                    <>
-                      <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-                      <h3 className="text-xl font-bold text-slate-900 mb-2">Processing Payment</h3>
-                      <p className="text-slate-600">Please wait while we process your payment...</p>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-green-500 mx-auto mb-4">
-                        <CheckCircle2 className="h-16 w-16 mx-auto" />
-                      </div>
-                      <h3 className="text-xl font-bold text-slate-900 mb-2">Payment Successful</h3>
-                      <p className="text-slate-600">Your hackathon has been created successfully!</p>
-                    </>
-                  )}
+            <div className="w-full flex justify-between">
+              {isProcessingPayment ? (
+                <div className="w-full text-center">
+                  <span className="text-sm text-slate-500">Please wait while we process your payment...</span>
                 </div>
-
-                {isProcessingPayment && (
-                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-sm font-medium text-slate-700">Package</span>
-                      <span className="text-sm text-slate-900">{selectedPackage} Plan</span>
-                    </div>
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-sm font-medium text-slate-700">Amount</span>
-                      <span className="text-sm text-slate-900">
-                        {selectedPackage === "Starter" ? "AED 2,500" : 
-                         selectedPackage === "Growth" ? "AED 7,500" : 
-                         "AED 20,000"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-slate-700">Payment Method</span>
-                      <span className="text-sm text-slate-900">Credit Card (****4242)</span>
-                    </div>
-                  </div>
-                )}
-              </div>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={() => handleDialogOpenChange(false)}>
+                    Close
+                  </Button>
+                  <Button 
+                    onClick={() => handleDialogOpenChange(false)} 
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    View Hackathon
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </>
+              )}
             </div>
           )}
 
-          <DialogFooter className="flex items-center justify-between">
-            {createStepIndex === 0 ? (
+          <DialogFooter className={createStepIndex === 1 ? "flex-shrink-0 mt-2 border-t pt-4 px-6" : "px-6"}>
+            {createStepIndex === 0 && (
               <>
                 <Button variant="outline" onClick={() => handleDialogOpenChange(false)}>
                   Cancel
@@ -1059,21 +1941,30 @@ export default function OrganizerMyHackathonsPage() {
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </>
-            ) : createStepIndex === 1 ? (
+            )}
+            {createStepIndex === 1 && (
               <>
                 <Button variant="outline" onClick={handlePreviousStep}>
                   <ChevronRight className="mr-2 h-4 w-4 rotate-180" />
                   Back
                 </Button>
                 <Button 
-                  onClick={handleNextStep} 
+                  onClick={handleCreateHackathon} 
                   className="bg-blue-600 hover:bg-blue-700"
+                  disabled={calculateTotalWeight() !== 100}
                 >
-                  Proceed to Payment
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  {calculateTotalWeight() !== 100 ? (
+                    <>Judging criteria must total 100%</>
+                  ) : (
+                    <>
+                      Proceed to Payment
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
                 </Button>
               </>
-            ) : (
+            )}
+            {createStepIndex === 2 && (
               <div className="w-full flex justify-between">
                 {isProcessingPayment ? (
                   <div className="w-full text-center">
@@ -1098,6 +1989,23 @@ export default function OrganizerMyHackathonsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f8fafc;
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #e2e8f0;
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #cbd5e1;
+        }
+      `}</style>
     </div>
   )
 } 
