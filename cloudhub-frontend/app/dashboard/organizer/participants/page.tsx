@@ -546,7 +546,7 @@ export default function ParticipantsPage() {
       {/* Stats and Insights Cards */}
       <div className="grid gap-6 grid-cols-1 md:grid-cols-3">
         {/* Participant Analytics Card */}
-        <Card className="border-slate-200 shadow-md overflow-hidden rounded-xl h-full">
+        <Card className="border-slate-200 shadow-md overflow-hidden rounded-xl h-full flex flex-col">
           <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-100 border-b border-indigo-200 p-5 flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
               <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-sm">
@@ -559,31 +559,38 @@ export default function ParticipantsPage() {
               <span className="text-xs font-medium">View Detailed</span>
             </Button>
           </CardHeader>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-gradient-to-br from-slate-50 to-blue-50 rounded-xl p-4 border border-blue-100 shadow-sm hover:shadow-md transition-all duration-200">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-medium text-slate-600">Total Participants</p>
-                  <div className="h-7 w-7 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-sm">
-                    <Users className="h-3.5 w-3.5 text-white" />
+          <CardContent className="p-6 flex-1">
+            <div className="grid grid-cols-2 gap-4 h-full">
+              {/* Total Participants */}
+              <div className="bg-gradient-to-br from-slate-50 to-blue-50 rounded-xl p-4 border border-blue-100 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-slate-600">Total Participants</p>
+                    <div className="h-7 w-7 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-sm">
+                      <Users className="h-3.5 w-3.5 text-white" />
+                    </div>
                   </div>
+                  <p className="text-2xl font-bold text-slate-900">{participants.length}</p>
                 </div>
-                <p className="text-2xl font-bold text-slate-900">{participants.length}</p>
                 <div className="mt-2 text-xs flex items-center text-emerald-600">
                   <span className="bg-emerald-100 text-emerald-700 rounded-md px-1.5 py-0.5 font-medium">+12%</span>
                   <span className="ml-1.5">from last period</span>
                 </div>
               </div>
-              <div className="bg-gradient-to-br from-slate-50 to-indigo-50 rounded-xl p-4 border border-indigo-100 shadow-sm hover:shadow-md transition-all duration-200">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-medium text-slate-600">Active Participants</p>
-                  <div className="h-7 w-7 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-sm">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-white" />
+
+              {/* Active Participants */}
+              <div className="bg-gradient-to-br from-slate-50 to-indigo-50 rounded-xl p-4 border border-indigo-100 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-slate-600">Active Participants</p>
+                    <div className="h-7 w-7 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-sm">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-white" />
+                    </div>
                   </div>
+                  <p className="text-2xl font-bold text-slate-900">
+                    {participants.filter(p => p.status === "active").length}
+                  </p>
                 </div>
-                <p className="text-2xl font-bold text-slate-900">
-                  {participants.filter(p => p.status === "active").length}
-                </p>
                 <div className="mt-2 flex items-center justify-between">
                   <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
                     <div 
@@ -596,56 +603,71 @@ export default function ParticipantsPage() {
                   </span>
                 </div>
               </div>
-              <div className="bg-gradient-to-br from-slate-50 to-indigo-50 rounded-xl p-4 border border-indigo-100 shadow-sm hover:shadow-md transition-all duration-200">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-medium text-slate-600">Total Teams</p>
-                  <div className="h-7 w-7 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center shadow-sm">
-                    <Users className="h-3.5 w-3.5 text-white" />
+
+              {/* Total Teams */}
+              <div className="bg-gradient-to-br from-slate-50 to-indigo-50 rounded-xl p-4 border border-indigo-100 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-slate-600">Total Teams</p>
+                    <div className="h-7 w-7 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center shadow-sm">
+                      <Users className="h-3.5 w-3.5 text-white" />
+                    </div>
                   </div>
+                  <p className="text-2xl font-bold text-slate-900">4</p>
                 </div>
-                <p className="text-2xl font-bold text-slate-900">4</p>
                 <div className="mt-2 text-xs flex items-center text-emerald-600">
                   <span className="bg-emerald-100 text-emerald-700 rounded-md px-1.5 py-0.5 font-medium">+2</span>
                   <span className="ml-1.5">new teams this week</span>
                 </div>
               </div>
-              <div className="bg-gradient-to-br from-slate-50 to-blue-50 rounded-xl p-4 border border-blue-100 shadow-sm hover:shadow-md transition-all duration-200">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-medium text-slate-600">Submissions</p>
-                  <div className="h-7 w-7 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center shadow-sm">
-                    <Trophy className="h-3.5 w-3.5 text-white" />
+
+              {/* Submissions */}
+              <div className="bg-gradient-to-br from-slate-50 to-blue-50 rounded-xl p-4 border border-blue-100 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-slate-600">Submissions</p>
+                    <div className="h-7 w-7 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center shadow-sm">
+                      <Trophy className="h-3.5 w-3.5 text-white" />
+                    </div>
                   </div>
+                  <p className="text-2xl font-bold text-slate-900">
+                    {participants.reduce((sum, p) => sum + p.submissions, 0)}
+                  </p>
                 </div>
-                <p className="text-2xl font-bold text-slate-900">
-                  {participants.reduce((sum, p) => sum + p.submissions, 0)}
-                </p>
                 <div className="mt-2 text-xs flex items-center text-blue-600">
                   <span className="bg-blue-100 text-blue-700 rounded-md px-1.5 py-0.5 font-medium">5</span>
                   <span className="ml-1.5">pending review</span>
                 </div>
               </div>
-              {/* New metrics */}
-              <div className="bg-gradient-to-br from-slate-50 to-purple-50 rounded-xl p-4 border border-purple-100 shadow-sm hover:shadow-md transition-all duration-200">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-medium text-slate-600">Avg. Team Size</p>
-                  <div className="h-7 w-7 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center shadow-sm">
-                    <User className="h-3.5 w-3.5 text-white" />
+
+              {/* Average Team Size */}
+              <div className="bg-gradient-to-br from-slate-50 to-purple-50 rounded-xl p-4 border border-purple-100 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-slate-600">Avg. Team Size</p>
+                    <div className="h-7 w-7 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center shadow-sm">
+                      <User className="h-3.5 w-3.5 text-white" />
+                    </div>
                   </div>
+                  <p className="text-2xl font-bold text-slate-900">3.2</p>
                 </div>
-                <p className="text-2xl font-bold text-slate-900">3.2</p>
                 <div className="mt-2 text-xs flex items-center text-purple-600">
                   <span className="bg-purple-100 text-purple-700 rounded-md px-1.5 py-0.5 font-medium">+0.4</span>
                   <span className="ml-1.5">vs previous hackathons</span>
                 </div>
               </div>
-              <div className="bg-gradient-to-br from-slate-50 to-blue-50 rounded-xl p-4 border border-blue-100 shadow-sm hover:shadow-md transition-all duration-200">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-medium text-slate-600">Engagement Rate</p>
-                  <div className="h-7 w-7 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-sm">
-                    <MessageCircle className="h-3.5 w-3.5 text-white" />
+
+              {/* Engagement Rate */}
+              <div className="bg-gradient-to-br from-slate-50 to-blue-50 rounded-xl p-4 border border-blue-100 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-slate-600">Engagement Rate</p>
+                    <div className="h-7 w-7 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-sm">
+                      <MessageCircle className="h-3.5 w-3.5 text-white" />
+                    </div>
                   </div>
+                  <p className="text-2xl font-bold text-slate-900">78%</p>
                 </div>
-                <p className="text-2xl font-bold text-slate-900">78%</p>
                 <div className="mt-2 flex items-center justify-between">
                   <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
                     <div 
@@ -739,7 +761,7 @@ export default function ParticipantsPage() {
         </Card>
 
         {/* Participant Alerts Card */}
-        <Card className="border-slate-200 shadow-md overflow-hidden rounded-xl h-full">
+        <Card className="border-slate-200 shadow-md overflow-hidden rounded-xl h-full flex flex-col">
           <CardHeader className="bg-gradient-to-r from-indigo-50 to-indigo-100 border-b border-indigo-200 p-5 flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
               <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-sm">
@@ -752,9 +774,10 @@ export default function ParticipantsPage() {
               <span className="text-xs font-medium">Manage Alerts</span>
             </Button>
           </CardHeader>
-          <CardContent className="p-6">
-            <div className="space-y-4">
-              <div className="bg-gradient-to-r from-red-50 to-red-100/50 rounded-xl p-4 border border-red-200 shadow-sm hover:shadow-md transition-all duration-200">
+          <CardContent className="p-6 flex-1">
+            <div className="space-y-4 flex flex-col h-full">
+              {/* Teams Incomplete Alert */}
+              <div className="bg-gradient-to-r from-red-50 to-red-100/50 rounded-xl p-4 border border-red-200 shadow-sm hover:shadow-md transition-all duration-200 flex-1 flex flex-col justify-between">
                 <div className="flex items-start gap-4">
                   <div className="h-10 w-10 rounded-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center flex-shrink-0 shadow-sm">
                     <XCircle className="h-5 w-5 text-white" />
@@ -773,7 +796,8 @@ export default function ParticipantsPage() {
                 </div>
               </div>
               
-              <div className="bg-gradient-to-r from-blue-50 to-blue-100/50 rounded-xl p-4 border border-blue-200 shadow-sm hover:shadow-md transition-all duration-200">
+              {/* Pending Reviews Alert */}
+              <div className="bg-gradient-to-r from-blue-50 to-blue-100/50 rounded-xl p-4 border border-blue-200 shadow-sm hover:shadow-md transition-all duration-200 flex-1 flex flex-col justify-between">
                 <div className="flex items-start gap-4">
                   <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
                     <BellRing className="h-5 w-5 text-white" />
@@ -794,7 +818,8 @@ export default function ParticipantsPage() {
                 </div>
               </div>
               
-              <div className="bg-gradient-to-r from-emerald-50 to-emerald-100/50 rounded-xl p-4 border border-emerald-200 shadow-sm hover:shadow-md transition-all duration-200">
+              {/* New Registrations Alert */}
+              <div className="bg-gradient-to-r from-emerald-50 to-emerald-100/50 rounded-xl p-4 border border-emerald-200 shadow-sm hover:shadow-md transition-all duration-200 flex-1 flex flex-col justify-between">
                 <div className="flex items-start gap-4">
                   <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-sm">
                     <CheckCircle2 className="h-5 w-5 text-white" />
