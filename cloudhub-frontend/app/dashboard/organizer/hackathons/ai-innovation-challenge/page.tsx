@@ -485,6 +485,8 @@ export default function AIHackathonManagement() {
   const [deleteFAQOpen, setDeleteFAQOpen] = useState(false);
   const [selectedFAQ, setSelectedFAQ] = useState<FAQ | null>(null);
 
+  const [addDocumentationOpen, setAddDocumentationOpen] = useState(false);
+
   // Member handlers
   const handleAddMember = () => setAddMemberOpen(true);
   const handleEditMember = (member: TeamMember) => {
@@ -562,27 +564,6 @@ export default function AIHackathonManagement() {
               <p className="text-white/90 text-lg mb-6 max-w-lg font-light">
                 Manage all aspects of the AI Innovation Challenge, from team coordination to resource distribution.
               </p>
-
-              <div className="flex items-center gap-3">
-                <Button 
-                  className="bg-white/10 backdrop-blur-md text-white border border-white/25 hover:bg-white/20 shadow-lg transition-all group px-5 py-2 h-auto text-sm font-medium rounded-xl"
-                >
-                  <Plus className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
-                  Add Team
-                </Button>
-                <Button 
-                  className="bg-white/10 backdrop-blur-md text-white border border-white/25 hover:bg-white/20 shadow-lg transition-all group px-5 py-2 h-auto text-sm font-medium rounded-xl"
-                >
-                  <MessageSquare className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
-                  Send Update
-                </Button>
-                <Button 
-                  className="bg-white/10 backdrop-blur-md text-white border border-white/25 hover:bg-white/20 shadow-lg transition-all group px-5 py-2 h-auto text-sm font-medium rounded-xl"
-                >
-                  <Settings className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
-                  Settings
-                </Button>
-              </div>
             </div>
 
             <div className="hidden md:grid grid-cols-2 gap-4">
@@ -2304,30 +2285,41 @@ export default function AIHackathonManagement() {
                             </DialogContent>
                           </Dialog>
 
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button className={quickActionButtonStyles}>
-                                <div className="flex items-center gap-3">
-                                  <Plus className="h-5 w-5 text-emerald-600" />
-                                  <div className="text-left">
-                                    <div className="font-medium">Create Documentation</div>
-                                    <div className="text-sm text-slate-600">Add new documentation</div>
-                                  </div>
+                          <Button 
+                            className={quickActionButtonStyles}
+                            onClick={() => setAddDocumentationOpen(true)}
+                          >
+                            <div className="flex items-center gap-3">
+                              <FileText className="h-5 w-5 text-emerald-600" />
+                              <div className="text-left">
+                                <div className="font-medium">Create Documentation</div>
+                                <div className="text-sm text-slate-600">Add new documentation</div>
+                              </div>
+                            </div>
+                            <ChevronRight className="h-5 w-5 ml-auto text-slate-400" />
+                          </Button>
+
+                          <Dialog open={addDocumentationOpen} onOpenChange={setAddDocumentationOpen}>
+                            <DialogContent className="sm:max-w-[600px] p-0 gap-0 max-h-[85vh] overflow-hidden flex flex-col">
+                              <DialogHeader className="bg-gradient-to-r from-slate-50 via-purple-50 to-blue-50 border-b border-slate-200 p-6 relative overflow-hidden flex-shrink-0">
+                                <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
+                                <div className="relative">
+                                  <DialogTitle className="text-xl font-semibold tracking-tight text-slate-900">
+                                    <div className="flex items-center">
+                                      <FileText className="h-5 w-5 mr-2 text-blue-600" />
+                                      Create Documentation
+                                    </div>
+                                  </DialogTitle>
+                                  <DialogDescription className="text-base text-slate-500 mt-2">
+                                    Add new documentation or resources for participants
+                                  </DialogDescription>
                                 </div>
-                                <ChevronRight className="h-5 w-5 ml-auto text-slate-400" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-[600px]">
-                              <DialogHeader>
-                                <DialogTitle className="text-xl font-semibold tracking-tight">Create Documentation</DialogTitle>
-                                <DialogDescription className="text-base text-slate-500">
-                                  Create new documentation for participants. You can either write content directly or upload a file.
-                                </DialogDescription>
                               </DialogHeader>
-                              <div className="space-y-6 py-6">
+
+                              <div className="p-6 space-y-6 overflow-y-auto">
                                 <div className="space-y-4">
                                   <div className="space-y-2">
-                                    <Label htmlFor="doc-title" className="text-sm font-medium">Title</Label>
+                                    <Label htmlFor="doc-title" className="text-sm font-medium text-slate-900">Title</Label>
                                     <Input 
                                       id="doc-title" 
                                       placeholder="Enter documentation title"
@@ -2336,9 +2328,43 @@ export default function AIHackathonManagement() {
                                   </div>
 
                                   <div className="space-y-2">
-                                    <Label className="text-sm font-medium">Documentation Type</Label>
-                                    <div className="flex items-center gap-4 p-3 rounded-lg bg-slate-50 border border-slate-200">
-                                      <div className="flex items-center gap-2">
+                                    <Label htmlFor="doc-description" className="text-sm font-medium text-slate-900">Description</Label>
+                                    <Textarea 
+                                      id="doc-description" 
+                                      placeholder="Provide a brief description of this documentation" 
+                                      className="min-h-[100px] w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow resize-y"
+                                    />
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="doc-type" className="text-sm font-medium text-slate-900">Type</Label>
+                                      <select 
+                                        id="doc-type" 
+                                        className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
+                                      >
+                                        <option value="guide">User Guide</option>
+                                        <option value="api">API Documentation</option>
+                                        <option value="tutorial">Tutorial</option>
+                                        <option value="reference">Reference</option>
+                                      </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="doc-access" className="text-sm font-medium text-slate-900">Access Level</Label>
+                                      <select 
+                                        id="doc-access" 
+                                        className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
+                                      >
+                                        <option value="public">Public</option>
+                                        <option value="private">Private</option>
+                                      </select>
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    <Label className="text-sm font-medium text-slate-900">Content Type</Label>
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div className="flex items-center gap-2 p-4 rounded-lg border border-slate-200 bg-white hover:border-blue-200 hover:bg-blue-50/50 cursor-pointer transition-all">
                                         <input 
                                           type="radio" 
                                           id="content-type" 
@@ -2354,9 +2380,12 @@ export default function AIHackathonManagement() {
                                             }
                                           }}
                                         />
-                                        <Label htmlFor="content-type" className="text-sm cursor-pointer">Write Content</Label>
+                                        <Label htmlFor="content-type" className="text-sm cursor-pointer flex items-center gap-2">
+                                          <FileText className="h-4 w-4 text-slate-500" />
+                                          Write Content
+                                        </Label>
                                       </div>
-                                      <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-2 p-4 rounded-lg border border-slate-200 bg-white hover:border-blue-200 hover:bg-blue-50/50 cursor-pointer transition-all">
                                         <input 
                                           type="radio" 
                                           id="file-type" 
@@ -2371,22 +2400,25 @@ export default function AIHackathonManagement() {
                                             }
                                           }}
                                         />
-                                        <Label htmlFor="file-type" className="text-sm cursor-pointer">Upload File</Label>
+                                        <Label htmlFor="file-type" className="text-sm cursor-pointer flex items-center gap-2">
+                                          <Upload className="h-4 w-4 text-slate-500" />
+                                          Upload File
+                                        </Label>
                                       </div>
                                     </div>
                                   </div>
 
-                                  <div className="space-y-2" id="content-section">
-                                    <Label htmlFor="doc-content" className="text-sm font-medium">Content</Label>
+                                  <div id="content-section" className="space-y-2">
+                                    <Label htmlFor="doc-content" className="text-sm font-medium text-slate-900">Content</Label>
                                     <Textarea 
                                       id="doc-content" 
-                                      placeholder="Enter documentation content" 
+                                      placeholder="Write your documentation content here..." 
                                       className="min-h-[200px] w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow resize-y"
                                     />
                                   </div>
 
-                                  <div className="space-y-2 hidden" id="file-section">
-                                    <Label htmlFor="doc-file" className="text-sm font-medium">File</Label>
+                                  <div id="file-section" className="hidden space-y-2">
+                                    <Label htmlFor="doc-file" className="text-sm font-medium text-slate-900">File Upload</Label>
                                     <div className="flex items-center justify-center w-full">
                                       <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-200 border-dashed rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
                                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -2394,48 +2426,53 @@ export default function AIHackathonManagement() {
                                           <p className="mb-2 text-sm text-slate-500">
                                             <span className="font-semibold">Click to upload</span> or drag and drop
                                           </p>
-                                          <p className="text-xs text-slate-500">PDF, MD, or DOC (MAX. 10MB)</p>
+                                          <p className="text-xs text-slate-500">PDF, DOC, DOCX up to 10MB</p>
                                         </div>
-                                        <input 
+                                        <Input 
                                           id="doc-file" 
                                           type="file" 
                                           className="hidden" 
-                                          accept=".pdf,.md,.doc,.docx"
+                                          accept=".pdf,.doc,.docx"
                                         />
                                       </label>
                                     </div>
                                   </div>
 
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                      <Label htmlFor="doc-category" className="text-sm font-medium">Category</Label>
-                                      <select 
-                                        id="doc-category" 
-                                        className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
-                                      >
-                                        <option value="getting-started">Getting Started</option>
-                                        <option value="api-reference">API Reference</option>
-                                        <option value="tutorials">Tutorials</option>
-                                        <option value="guidelines">Guidelines</option>
-                                      </select>
+                                  <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                      <Label className="text-sm font-medium text-slate-900">
+                                        Additional Settings
+                                      </Label>
                                     </div>
-                                    <div className="space-y-2">
-                                      <Label htmlFor="doc-access" className="text-sm font-medium">Access Level</Label>
-                                      <select 
-                                        id="doc-access" 
-                                        className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
-                                      >
-                                        <option value="public">Public</option>
-                                        <option value="private">Private</option>
-                                      </select>
+                                    <div className="space-y-3">
+                                      <div className="flex items-center gap-2">
+                                        <Checkbox 
+                                          id="doc-featured" 
+                                          className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                        />
+                                        <Label htmlFor="doc-featured" className="text-sm text-slate-600">
+                                          Feature this documentation
+                                        </Label>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Checkbox 
+                                          id="doc-notify" 
+                                          className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                        />
+                                        <Label htmlFor="doc-notify" className="text-sm text-slate-600">
+                                          Notify participants about this documentation
+                                        </Label>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
                               </div>
-                              <DialogFooter className="flex items-center justify-end gap-3 pt-6 border-t border-slate-200">
+
+                              <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 bg-slate-50 flex-shrink-0">
                                 <Button 
                                   variant="outline"
                                   className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
+                                  onClick={() => setAddDocumentationOpen(false)}
                                 >
                                   Cancel
                                 </Button>
@@ -2444,7 +2481,7 @@ export default function AIHackathonManagement() {
                                 >
                                   Create Documentation
                                 </Button>
-                              </DialogFooter>
+                              </div>
                             </DialogContent>
                           </Dialog>
                         </div>
