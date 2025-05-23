@@ -923,7 +923,7 @@ export default function ParticipantsPage() {
   ]
 
   return (
-    <div className="space-y-8 pb-10 px-6 pt-6">
+    <div className="space-y-8 pb-10 px-6">
       {/* Modern Header Section with Stats */}
       <div className="relative overflow-hidden rounded-2xl shadow-lg mt-6 mb-8">
         {/* Gradient background with animated elements */}

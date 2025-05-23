@@ -204,7 +204,7 @@ export default function JudgingPage() {
   };
 
   return (
-    <div className="space-y-8 pb-10 px-6 pt-6">
+    <div className="space-y-8 pb-10 px-6">
       {/* Modern Header Section with Stats */}
       <div className="relative overflow-hidden rounded-2xl shadow-lg mt-6 mb-8">
         {/* Gradient background with animated elements */}
@@ -1012,7 +1012,7 @@ export default function JudgingPage() {
                       <span className="absolute right-0 top-2.5 text-xs text-slate-500">83.3%</span>
                     </div>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 pb-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-slate-600">Education</span>
                       <span className="text-sm font-medium text-slate-700">3/6 Reviewed</span>
