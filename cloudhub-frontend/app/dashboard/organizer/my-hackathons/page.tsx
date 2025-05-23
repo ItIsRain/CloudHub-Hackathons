@@ -47,6 +47,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { addDays } from "date-fns"
 import { DateRange } from "react-day-picker"
 import { Textarea } from "@/components/ui/textarea"
+import { cn } from "@/lib/utils"
 
 // Define interfaces for the criteria and challenges
 interface Criterion {
@@ -752,15 +753,17 @@ export default function OrganizerMyHackathonsPage() {
                         <span className="text-slate-500">Progress</span>
                         <span className="font-medium text-blue-700">{hackathon.progress}%</span>
                       </div>
-                      <Progress 
-                        value={hackathon.progress} 
-                        className="h-1.5" 
-                        indicatorClassName={`${
-                          hackathon.status === "Draft" ? "bg-amber-500" :
-                          hackathon.status === "Completed" ? "bg-slate-500" :
-                          "bg-blue-600"
-                        }`}
-                      />
+                      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div 
+                          className={cn(
+                            "h-full transition-all duration-300 rounded-full",
+                            hackathon.status === "Draft" ? "bg-amber-500" :
+                            hackathon.status === "Completed" ? "bg-slate-500" :
+                            "bg-blue-600"
+                          )}
+                          style={{ width: `${hackathon.progress}%` }}
+                        />
+                      </div>
                     </div>
                   </CardFooter>
                 </Card>
