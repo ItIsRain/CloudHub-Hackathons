@@ -502,55 +502,54 @@ export default function AIHackathonManagement() {
             <TabsList className="p-0 w-full bg-slate-50/80 border border-slate-200/70 shadow-sm rounded-none">
               <TabsTrigger 
                 value="overview"
-                className="flex items-center gap-2 flex-1 text-sm font-medium py-3 rounded-none data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                className="flex items-center gap-2 flex-1 text-sm font-medium py-2.5 rounded-none data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
               >
                 <Activity className="h-4 w-4" />
                 Overview
               </TabsTrigger>
               <TabsTrigger 
                 value="teams"
-                className="flex items-center gap-2 flex-1 text-sm font-medium py-3 rounded-none data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                className="flex items-center gap-2 flex-1 text-sm font-medium py-2.5 rounded-none data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
               >
                 <Users className="h-4 w-4" />
                 Teams
               </TabsTrigger>
               <TabsTrigger 
                 value="sponsors"
-                className="flex items-center gap-2 flex-1 text-sm font-medium py-3 rounded-none data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                className="flex items-center gap-2 flex-1 text-sm font-medium py-2.5 rounded-none data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
               >
                 <Building2 className="h-4 w-4" />
                 Sponsors
               </TabsTrigger>
               <TabsTrigger 
                 value="timeline"
-                className="flex items-center gap-2 flex-1 text-sm font-medium py-3 rounded-none data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                className="flex items-center gap-2 flex-1 text-sm font-medium py-2.5 rounded-none data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
               >
                 <Calendar className="h-4 w-4" />
                 Timeline
               </TabsTrigger>
               <TabsTrigger 
                 value="resources"
-                className="flex items-center gap-2 flex-1 text-sm font-medium py-3 rounded-none data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                className="flex items-center gap-2 flex-1 text-sm font-medium py-2.5 rounded-none data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
               >
                 <Database className="h-4 w-4" />
                 Resources
               </TabsTrigger>
               <TabsTrigger 
                 value="communications"
-                className="flex items-center gap-2 flex-1 text-sm font-medium py-3 rounded-none data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                className="flex items-center gap-2 flex-1 text-sm font-medium py-2.5 rounded-none data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
               >
                 <Mail className="h-4 w-4" />
                 Communications
               </TabsTrigger>
             </TabsList>
-          
             {/* Tab Content */}
             <div className="p-6">
               <TabsContent value="overview" className="mt-0 space-y-6">
                 {/* Overview Content */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <Card className="border-slate-200 shadow-md overflow-hidden">
-                    <CardHeader className="bg-gradient-to-r from-slate-50 via-purple-50 to-blue-50 border-b border-slate-200 p-6">
+                    <CardHeader className="bg-gradient-to-r from-slate-50 via-purple-50 to-blue-50 border-b border-slate-200 px-6 py-7">
                       <div className="flex items-center gap-2">
                         <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-sm">
                           <Calendar className="h-4 w-4 text-white" />
@@ -944,7 +943,7 @@ export default function AIHackathonManagement() {
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="font-medium text-violet-900">Platinum</h4>
                             <Badge variant="outline" className="bg-violet-100 text-violet-700 border-violet-200 shadow-sm">
-                              $25,000
+                              25,000 AED
                             </Badge>
                           </div>
                           <p className="text-sm text-violet-700 mb-3">Premium partnership with maximum visibility and benefits</p>
@@ -968,7 +967,7 @@ export default function AIHackathonManagement() {
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="font-medium text-amber-900">Gold</h4>
                             <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-200 shadow-sm">
-                              $15,000
+                              15,000 AED
                             </Badge>
                           </div>
                           <p className="text-sm text-amber-700 mb-3">Enhanced visibility with premium placement</p>
@@ -992,7 +991,7 @@ export default function AIHackathonManagement() {
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="font-medium text-slate-900">Silver</h4>
                             <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-200 shadow-sm">
-                              $10,000
+                              10,000 AED
                             </Badge>
                           </div>
                           <p className="text-sm text-slate-700 mb-3">Standard sponsorship package with good visibility</p>
@@ -1022,7 +1021,7 @@ export default function AIHackathonManagement() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="timeline" className="space-y-6">
+              <TabsContent value="timeline" className="mt-0 space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Timeline View */}
                   <Card className="lg:col-span-2 border-slate-200 shadow-md overflow-hidden">
@@ -1041,54 +1040,123 @@ export default function AIHackathonManagement() {
                               Add Event
                             </Button>
                           </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Add New Event</DialogTitle>
-                              <DialogDescription>
-                                Add a new event to your hackathon timeline.
-                              </DialogDescription>
+                          <DialogContent className="sm:max-w-[600px] p-0 gap-0">
+                            <DialogHeader className="bg-gradient-to-r from-slate-50 via-purple-50 to-blue-50 border-b border-slate-200 p-6 relative overflow-hidden">
+                              <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
+                              <div className="relative">
+                                <DialogTitle className="text-xl font-semibold tracking-tight text-slate-900">Add New Event</DialogTitle>
+                                <DialogDescription className="text-base text-slate-500 mt-2">
+                                  Add a new event to your hackathon timeline. Events help participants stay on track and informed.
+                                </DialogDescription>
+                              </div>
                             </DialogHeader>
-                            <div className="space-y-4 py-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="event-title">Title</Label>
-                                <Input id="event-title" placeholder="Enter event title" />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="event-description">Description</Label>
-                                <Textarea id="event-description" placeholder="Enter event description" />
-                              </div>
-                              <div className="grid grid-cols-2 gap-4">
+                            
+                            <div className="p-6 space-y-6">
+                              <div className="space-y-4">
                                 <div className="space-y-2">
-                                  <Label htmlFor="event-date">Date</Label>
-                                  <Input id="event-date" type="datetime-local" />
+                                  <Label htmlFor="event-title" className="text-sm font-medium text-slate-900">Title</Label>
+                                  <Input 
+                                    id="event-title" 
+                                    placeholder="Enter event title"
+                                    className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                                  />
                                 </div>
+                                
                                 <div className="space-y-2">
-                                  <Label htmlFor="event-type">Type</Label>
-                                  <select id="event-type" className="w-full rounded-md border border-slate-200 px-3 py-2">
-                                    <option value="milestone">Milestone</option>
-                                    <option value="deadline">Deadline</option>
-                                    <option value="workshop">Workshop</option>
-                                    <option value="announcement">Announcement</option>
-                                  </select>
+                                  <Label htmlFor="event-description" className="text-sm font-medium text-slate-900">Description</Label>
+                                  <Textarea 
+                                    id="event-description" 
+                                    placeholder="Provide event details and any important information" 
+                                    className="min-h-[100px] w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow resize-y"
+                                  />
                                 </div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                  <Label htmlFor="event-duration">Duration (minutes)</Label>
-                                  <Input id="event-duration" type="number" min="0" />
+
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <Label htmlFor="event-date" className="text-sm font-medium text-slate-900">Date & Time</Label>
+                                    <Input 
+                                      id="event-date" 
+                                      type="datetime-local"
+                                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="event-type" className="text-sm font-medium text-slate-900">Event Type</Label>
+                                    <select 
+                                      id="event-type" 
+                                      className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
+                                    >
+                                      <option value="milestone">Milestone</option>
+                                      <option value="deadline">Deadline</option>
+                                      <option value="workshop">Workshop</option>
+                                      <option value="announcement">Announcement</option>
+                                    </select>
+                                  </div>
                                 </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="event-location">Location</Label>
-                                  <Input id="event-location" placeholder="Enter location" />
+
+                                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-4">
+                                  <div className="flex items-center justify-between">
+                                    <Label className="text-sm font-medium text-slate-900">
+                                      Additional Details
+                                    </Label>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="event-duration" className="text-sm font-medium text-slate-900">Duration (minutes)</Label>
+                                      <Input 
+                                        id="event-duration" 
+                                        type="number" 
+                                        min="0"
+                                        placeholder="Enter duration"
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="event-location" className="text-sm font-medium text-slate-900">Location</Label>
+                                      <Input 
+                                        id="event-location" 
+                                        placeholder="Enter location or URL"
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="space-y-3 mt-4">
+                                    <div className="flex items-center gap-2">
+                                      <Checkbox 
+                                        id="event-notify" 
+                                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                      />
+                                      <Label htmlFor="event-notify" className="text-sm text-slate-600">
+                                        Send notification to participants
+                                      </Label>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Checkbox 
+                                        id="event-featured" 
+                                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                      />
+                                      <Label htmlFor="event-featured" className="text-sm text-slate-600">
+                                        Feature this event
+                                      </Label>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                            <DialogFooter>
-                              <Button variant="outline">Cancel</Button>
-                              <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700">
-                                Add Event
+
+                            <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 bg-slate-50">
+                              <Button 
+                                variant="outline"
+                                className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
+                              >
+                                Cancel
                               </Button>
-                            </DialogFooter>
+                              <Button 
+                                className="rounded-lg px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md transition-all hover:shadow-lg"
+                              >
+                                Create Event
+                              </Button>
+                            </div>
                           </DialogContent>
                         </Dialog>
                       </div>
@@ -1223,33 +1291,112 @@ export default function AIHackathonManagement() {
                                 <ChevronRight className="h-5 w-5 ml-auto text-slate-400" />
                               </Button>
                             </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Add New Milestone</DialogTitle>
-                                <DialogDescription>
-                                  Create a new milestone for your hackathon timeline.
-                                </DialogDescription>
+                            <DialogContent className="sm:max-w-[600px] p-0 gap-0">
+                              <DialogHeader className="bg-gradient-to-r from-slate-50 via-purple-50 to-blue-50 border-b border-slate-200 p-6 relative overflow-hidden">
+                                <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
+                                <div className="relative">
+                                  <DialogTitle className="text-xl font-semibold tracking-tight text-slate-900">Add New Milestone</DialogTitle>
+                                  <DialogDescription className="text-base text-slate-500 mt-2">
+                                    Create a new milestone to mark important events and progress in your hackathon timeline.
+                                  </DialogDescription>
+                                </div>
                               </DialogHeader>
-                              <div className="space-y-4 py-4">
-                                <div className="space-y-2">
-                                  <Label htmlFor="milestone-title">Title</Label>
-                                  <Input id="milestone-title" placeholder="Enter milestone title" />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="milestone-description">Description</Label>
-                                  <Textarea id="milestone-description" placeholder="Enter milestone description" />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="milestone-date">Date</Label>
-                                  <Input id="milestone-date" type="datetime-local" />
+                              
+                              <div className="p-6 space-y-6">
+                                <div className="space-y-4">
+                                  <div className="space-y-2">
+                                    <Label htmlFor="milestone-title" className="text-sm font-medium text-slate-900">Title</Label>
+                                    <Input 
+                                      id="milestone-title" 
+                                      placeholder="Enter milestone title"
+                                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                                    />
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <Label htmlFor="milestone-description" className="text-sm font-medium text-slate-900">Description</Label>
+                                    <Textarea 
+                                      id="milestone-description" 
+                                      placeholder="Provide details about this milestone" 
+                                      className="min-h-[100px] w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow resize-y"
+                                    />
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="milestone-date" className="text-sm font-medium text-slate-900">Date</Label>
+                                      <Input 
+                                        id="milestone-date" 
+                                        type="datetime-local"
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="milestone-type" className="text-sm font-medium text-slate-900">Type</Label>
+                                      <select 
+                                        id="milestone-type" 
+                                        className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
+                                      >
+                                        <option value="project">Project</option>
+                                        <option value="submission">Submission</option>
+                                        <option value="judging">Judging</option>
+                                        <option value="event">Event</option>
+                                      </select>
+                                    </div>
+                                  </div>
+
+                                  <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                      <Label className="text-sm font-medium text-slate-900">
+                                        Milestone Settings
+                                      </Label>
+                                    </div>
+                                    <div className="space-y-3">
+                                      <div className="flex items-center gap-2">
+                                        <Checkbox 
+                                          id="milestone-notify" 
+                                          className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                        />
+                                        <Label htmlFor="milestone-notify" className="text-sm text-slate-600">
+                                          Send notification to participants
+                                        </Label>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Checkbox 
+                                          id="milestone-featured" 
+                                          className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                        />
+                                        <Label htmlFor="milestone-featured" className="text-sm text-slate-600">
+                                          Feature this milestone
+                                        </Label>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Checkbox 
+                                          id="milestone-required" 
+                                          className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                        />
+                                        <Label htmlFor="milestone-required" className="text-sm text-slate-600">
+                                          Mark as required milestone
+                                        </Label>
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                              <DialogFooter>
-                                <Button variant="outline">Cancel</Button>
-                                <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700">
+
+                              <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 bg-slate-50">
+                                <Button 
+                                  variant="outline"
+                                  className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
+                                >
+                                  Cancel
+                                </Button>
+                                <Button 
+                                  className="rounded-lg px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md transition-all hover:shadow-lg"
+                                >
                                   Create Milestone
                                 </Button>
-                              </DialogFooter>
+                              </div>
                             </DialogContent>
                           </Dialog>
 
@@ -1266,43 +1413,78 @@ export default function AIHackathonManagement() {
                                 <ChevronRight className="h-5 w-5 ml-auto text-slate-400" />
                               </Button>
                             </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Add New Workshop</DialogTitle>
-                                <DialogDescription>
-                                  Schedule a new workshop for participants.
-                                </DialogDescription>
+                            <DialogContent className="sm:max-w-[600px] p-0 gap-0">
+                              <DialogHeader className="bg-gradient-to-r from-slate-50 via-purple-50 to-blue-50 border-b border-slate-200 p-6 relative overflow-hidden">
+                                <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
+                                <div className="relative">
+                                  <DialogTitle className="text-xl font-semibold tracking-tight text-slate-900">Add New Workshop</DialogTitle>
+                                  <DialogDescription className="text-base text-slate-500 mt-2">
+                                    Schedule a new workshop for participants.
+                                  </DialogDescription>
+                                </div>
                               </DialogHeader>
-                              <div className="space-y-4 py-4">
-                                <div className="space-y-2">
-                                  <Label htmlFor="workshop-title">Title</Label>
-                                  <Input id="workshop-title" placeholder="Enter workshop title" />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="workshop-description">Description</Label>
-                                  <Textarea id="workshop-description" placeholder="Enter workshop description" />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
+                              
+                              <div className="p-6 space-y-6">
+                                <div className="space-y-4">
                                   <div className="space-y-2">
-                                    <Label htmlFor="workshop-date">Date</Label>
-                                    <Input id="workshop-date" type="datetime-local" />
+                                    <Label htmlFor="workshop-title" className="text-sm font-medium text-slate-900">Title</Label>
+                                    <Input 
+                                      id="workshop-title" 
+                                      placeholder="Enter workshop title"
+                                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                                    />
                                   </div>
                                   <div className="space-y-2">
-                                    <Label htmlFor="workshop-duration">Duration (minutes)</Label>
-                                    <Input id="workshop-duration" type="number" min="0" />
+                                    <Label htmlFor="workshop-description" className="text-sm font-medium text-slate-900">Description</Label>
+                                    <Textarea 
+                                      id="workshop-description" 
+                                      placeholder="Enter workshop description"
+                                      className="min-h-[100px] w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow resize-y"
+                                    />
                                   </div>
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="workshop-location">Location</Label>
-                                  <Input id="workshop-location" placeholder="Enter location or meeting link" />
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="workshop-date" className="text-sm font-medium text-slate-900">Date</Label>
+                                      <Input 
+                                        id="workshop-date" 
+                                        type="datetime-local"
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="workshop-duration" className="text-sm font-medium text-slate-900">Duration (minutes)</Label>
+                                      <Input 
+                                        id="workshop-duration" 
+                                        type="number" 
+                                        min="0"
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="workshop-location" className="text-sm font-medium text-slate-900">Location</Label>
+                                    <Input 
+                                      id="workshop-location" 
+                                      placeholder="Enter location or meeting link"
+                                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                                    />
+                                  </div>
                                 </div>
                               </div>
-                              <DialogFooter>
-                                <Button variant="outline">Cancel</Button>
-                                <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700">
+
+                              <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 bg-slate-50">
+                                <Button 
+                                  variant="outline"
+                                  className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
+                                >
+                                  Cancel
+                                </Button>
+                                <Button 
+                                  className="rounded-lg px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md transition-all hover:shadow-lg"
+                                >
                                   Schedule Workshop
                                 </Button>
-                              </DialogFooter>
+                              </div>
                             </DialogContent>
                           </Dialog>
 
@@ -1319,41 +1501,70 @@ export default function AIHackathonManagement() {
                                 <ChevronRight className="h-5 w-5 ml-auto text-slate-400" />
                               </Button>
                             </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Add New Deadline</DialogTitle>
-                                <DialogDescription>
-                                  Set a new deadline for your hackathon.
-                                </DialogDescription>
+                            <DialogContent className="sm:max-w-[600px] p-0 gap-0">
+                              <DialogHeader className="bg-gradient-to-r from-slate-50 via-purple-50 to-blue-50 border-b border-slate-200 p-6 relative overflow-hidden">
+                                <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
+                                <div className="relative">
+                                  <DialogTitle className="text-xl font-semibold tracking-tight text-slate-900">Add New Deadline</DialogTitle>
+                                  <DialogDescription className="text-base text-slate-500 mt-2">
+                                    Set a new deadline for your hackathon.
+                                  </DialogDescription>
+                                </div>
                               </DialogHeader>
-                              <div className="space-y-4 py-4">
-                                <div className="space-y-2">
-                                  <Label htmlFor="deadline-title">Title</Label>
-                                  <Input id="deadline-title" placeholder="Enter deadline title" />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="deadline-description">Description</Label>
-                                  <Textarea id="deadline-description" placeholder="Enter deadline description" />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="deadline-date">Due Date</Label>
-                                  <Input id="deadline-date" type="datetime-local" />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="deadline-reminder">Set Reminder</Label>
-                                  <select id="deadline-reminder" className="w-full rounded-md border border-slate-200 px-3 py-2">
-                                    <option value="1">1 day before</option>
-                                    <option value="3">3 days before</option>
-                                    <option value="7">1 week before</option>
-                                  </select>
+                              
+                              <div className="p-6 space-y-6">
+                                <div className="space-y-4">
+                                  <div className="space-y-2">
+                                    <Label htmlFor="deadline-title" className="text-sm font-medium text-slate-900">Title</Label>
+                                    <Input 
+                                      id="deadline-title" 
+                                      placeholder="Enter deadline title"
+                                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="deadline-description" className="text-sm font-medium text-slate-900">Description</Label>
+                                    <Textarea 
+                                      id="deadline-description" 
+                                      placeholder="Enter deadline description"
+                                      className="min-h-[100px] w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow resize-y"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="deadline-date" className="text-sm font-medium text-slate-900">Due Date</Label>
+                                    <Input 
+                                      id="deadline-date" 
+                                      type="datetime-local"
+                                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="deadline-reminder" className="text-sm font-medium text-slate-900">Set Reminder</Label>
+                                    <select 
+                                      id="deadline-reminder" 
+                                      className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
+                                    >
+                                      <option value="1">1 day before</option>
+                                      <option value="3">3 days before</option>
+                                      <option value="7">1 week before</option>
+                                    </select>
+                                  </div>
                                 </div>
                               </div>
-                              <DialogFooter>
-                                <Button variant="outline">Cancel</Button>
-                                <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700">
+
+                              <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 bg-slate-50">
+                                <Button 
+                                  variant="outline"
+                                  className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
+                                >
+                                  Cancel
+                                </Button>
+                                <Button 
+                                  className="rounded-lg px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md transition-all hover:shadow-lg"
+                                >
                                   Set Deadline
                                 </Button>
-                              </DialogFooter>
+                              </div>
                             </DialogContent>
                           </Dialog>
                         </div>
@@ -1408,7 +1619,7 @@ export default function AIHackathonManagement() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="resources" className="space-y-6">
+              <TabsContent value="resources" className="mt-0 space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Resources List */}
                   <Card className="lg:col-span-2 border-slate-200 shadow-md overflow-hidden">
@@ -1427,51 +1638,134 @@ export default function AIHackathonManagement() {
                               Add Resource
                             </Button>
                           </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Add New Resource</DialogTitle>
-                              <DialogDescription>
-                                Add a new resource to your hackathon.
-                              </DialogDescription>
+                          <DialogContent className="sm:max-w-[600px] p-0 gap-0">
+                            <DialogHeader className="bg-gradient-to-r from-slate-50 via-purple-50 to-blue-50 border-b border-slate-200 p-6 relative overflow-hidden">
+                              <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
+                              <div className="relative">
+                                <DialogTitle className="text-xl font-semibold tracking-tight text-slate-900">Add New Resource</DialogTitle>
+                                <DialogDescription className="text-base text-slate-500 mt-2">
+                                  Add a new resource to help participants in their projects. Resources can be datasets, APIs, documentation, or tools.
+                                </DialogDescription>
+                              </div>
                             </DialogHeader>
-                            <div className="space-y-4 py-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="resource-title">Title</Label>
-                                <Input id="resource-title" placeholder="Enter resource title" />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="resource-description">Description</Label>
-                                <Textarea id="resource-description" placeholder="Enter resource description" />
-                              </div>
-                              <div className="grid grid-cols-2 gap-4">
+                            
+                            <div className="p-6 space-y-6">
+                              <div className="space-y-4">
                                 <div className="space-y-2">
-                                  <Label htmlFor="resource-type">Type</Label>
-                                  <select id="resource-type" className="w-full rounded-md border border-slate-200 px-3 py-2">
-                                    <option value="dataset">Dataset</option>
-                                    <option value="api">API</option>
-                                    <option value="documentation">Documentation</option>
-                                    <option value="tool">Tool</option>
-                                  </select>
+                                  <Label htmlFor="resource-title" className="text-sm font-medium text-slate-900">Title</Label>
+                                  <Input 
+                                    id="resource-title" 
+                                    placeholder="Enter resource title"
+                                    className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                                  />
                                 </div>
+                                
                                 <div className="space-y-2">
-                                  <Label htmlFor="resource-access">Access Level</Label>
-                                  <select id="resource-access" className="w-full rounded-md border border-slate-200 px-3 py-2">
-                                    <option value="public">Public</option>
-                                    <option value="private">Private</option>
-                                  </select>
+                                  <Label htmlFor="resource-description" className="text-sm font-medium text-slate-900">Description</Label>
+                                  <Textarea 
+                                    id="resource-description" 
+                                    placeholder="Provide a detailed description of the resource" 
+                                    className="min-h-[100px] w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow resize-y"
+                                  />
                                 </div>
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="resource-url">Resource URL</Label>
-                                <Input id="resource-url" placeholder="Enter resource URL" />
+
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <Label htmlFor="resource-type" className="text-sm font-medium text-slate-900">Resource Type</Label>
+                                    <select 
+                                      id="resource-type" 
+                                      className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
+                                    >
+                                      <option value="dataset">Dataset</option>
+                                      <option value="api">API</option>
+                                      <option value="documentation">Documentation</option>
+                                      <option value="tool">Tool</option>
+                                    </select>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="resource-access" className="text-sm font-medium text-slate-900">Access Level</Label>
+                                    <select 
+                                      id="resource-access" 
+                                      className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
+                                    >
+                                      <option value="public">Public</option>
+                                      <option value="private">Private</option>
+                                    </select>
+                                  </div>
+                                </div>
+
+                                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-4">
+                                  <div className="flex items-center justify-between">
+                                    <Label className="text-sm font-medium text-slate-900">
+                                      Resource Details
+                                    </Label>
+                                  </div>
+                                  <div className="space-y-4">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="resource-url" className="text-sm font-medium text-slate-900">Resource URL</Label>
+                                      <Input 
+                                        id="resource-url" 
+                                        placeholder="Enter resource URL or endpoint"
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                                      />
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div className="space-y-2">
+                                        <Label htmlFor="resource-format" className="text-sm font-medium text-slate-900">Format</Label>
+                                        <Input 
+                                          id="resource-format" 
+                                          placeholder="e.g., CSV, JSON, PDF"
+                                          className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="resource-size" className="text-sm font-medium text-slate-900">Size</Label>
+                                        <Input 
+                                          id="resource-size" 
+                                          placeholder="e.g., 2.5GB"
+                                          className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="space-y-3 mt-4">
+                                    <div className="flex items-center gap-2">
+                                      <Checkbox 
+                                        id="resource-featured" 
+                                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                      />
+                                      <Label htmlFor="resource-featured" className="text-sm text-slate-600">
+                                        Feature this resource
+                                      </Label>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Checkbox 
+                                        id="resource-notify" 
+                                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                      />
+                                      <Label htmlFor="resource-notify" className="text-sm text-slate-600">
+                                        Notify participants about this resource
+                                      </Label>
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                            <DialogFooter>
-                              <Button variant="outline">Cancel</Button>
-                              <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700">
+
+                            <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 bg-slate-50">
+                              <Button 
+                                variant="outline"
+                                className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
+                              >
+                                Cancel
+                              </Button>
+                              <Button 
+                                className="rounded-lg px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md transition-all hover:shadow-lg"
+                              >
                                 Add Resource
                               </Button>
-                            </DialogFooter>
+                            </div>
                           </DialogContent>
                         </Dialog>
                       </div>
@@ -1585,40 +1879,124 @@ export default function AIHackathonManagement() {
                                 <ChevronRight className="h-5 w-5 ml-auto text-slate-400" />
                               </Button>
                             </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Upload Dataset</DialogTitle>
-                                <DialogDescription>
-                                  Upload a new dataset for participants.
-                                </DialogDescription>
+                            <DialogContent className="sm:max-w-[600px] p-0 gap-0">
+                              <DialogHeader className="bg-gradient-to-r from-slate-50 via-purple-50 to-blue-50 border-b border-slate-200 p-6 relative overflow-hidden">
+                                <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
+                                <div className="relative">
+                                  <DialogTitle className="text-xl font-semibold tracking-tight text-slate-900">Upload Dataset</DialogTitle>
+                                  <DialogDescription className="text-base text-slate-500 mt-2">
+                                    Upload a new dataset for participants to use in their projects.
+                                  </DialogDescription>
+                                </div>
                               </DialogHeader>
-                              <div className="space-y-4 py-4">
-                                <div className="space-y-2">
-                                  <Label htmlFor="dataset-title">Title</Label>
-                                  <Input id="dataset-title" placeholder="Enter dataset title" />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="dataset-description">Description</Label>
-                                  <Textarea id="dataset-description" placeholder="Enter dataset description" />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="dataset-file">Dataset File</Label>
-                                  <Input id="dataset-file" type="file" />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="dataset-access">Access Level</Label>
-                                  <select id="dataset-access" className="w-full rounded-md border border-slate-200 px-3 py-2">
-                                    <option value="public">Public</option>
-                                    <option value="private">Private</option>
-                                  </select>
+                              
+                              <div className="p-6 space-y-6">
+                                <div className="space-y-4">
+                                  <div className="space-y-2">
+                                    <Label htmlFor="dataset-title" className="text-sm font-medium text-slate-900">Title</Label>
+                                    <Input 
+                                      id="dataset-title" 
+                                      placeholder="Enter dataset title"
+                                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                                    />
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <Label htmlFor="dataset-description" className="text-sm font-medium text-slate-900">Description</Label>
+                                    <Textarea 
+                                      id="dataset-description" 
+                                      placeholder="Provide a detailed description of the dataset" 
+                                      className="min-h-[100px] w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow resize-y"
+                                    />
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    <Label htmlFor="dataset-file" className="text-sm font-medium text-slate-900">Dataset File</Label>
+                                    <div className="flex items-center justify-center w-full">
+                                      <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-200 border-dashed rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
+                                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                          <Upload className="w-8 h-8 mb-4 text-slate-400" />
+                                          <p className="mb-2 text-sm text-slate-500">
+                                            <span className="font-semibold">Click to upload</span> or drag and drop
+                                          </p>
+                                          <p className="text-xs text-slate-500">CSV, JSON, or ZIP (MAX. 100MB)</p>
+                                        </div>
+                                        <Input 
+                                          id="dataset-file" 
+                                          type="file" 
+                                          className="hidden" 
+                                          accept=".csv,.json,.zip"
+                                        />
+                                      </label>
+                                    </div>
+                                  </div>
+
+                                  <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                      <Label className="text-sm font-medium text-slate-900">
+                                        Dataset Settings
+                                      </Label>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div className="space-y-2">
+                                        <Label htmlFor="dataset-format" className="text-sm font-medium text-slate-900">Format</Label>
+                                        <select 
+                                          id="dataset-format" 
+                                          className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
+                                        >
+                                          <option value="csv">CSV</option>
+                                          <option value="json">JSON</option>
+                                          <option value="zip">ZIP Archive</option>
+                                        </select>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="dataset-access" className="text-sm font-medium text-slate-900">Access Level</Label>
+                                        <select 
+                                          id="dataset-access" 
+                                          className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
+                                        >
+                                          <option value="public">Public</option>
+                                          <option value="private">Private</option>
+                                        </select>
+                                      </div>
+                                    </div>
+                                    <div className="space-y-3 mt-4">
+                                      <div className="flex items-center gap-2">
+                                        <Checkbox 
+                                          id="dataset-featured" 
+                                          className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                        />
+                                        <Label htmlFor="dataset-featured" className="text-sm text-slate-600">
+                                          Feature this dataset
+                                        </Label>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Checkbox 
+                                          id="dataset-notify" 
+                                          className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                        />
+                                        <Label htmlFor="dataset-notify" className="text-sm text-slate-600">
+                                          Notify participants about this dataset
+                                        </Label>
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                              <DialogFooter>
-                                <Button variant="outline">Cancel</Button>
-                                <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700">
+
+                              <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 bg-slate-50">
+                                <Button 
+                                  variant="outline"
+                                  className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
+                                >
+                                  Cancel
+                                </Button>
+                                <Button 
+                                  className="rounded-lg px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md transition-all hover:shadow-lg"
+                                >
                                   Upload Dataset
                                 </Button>
-                              </DialogFooter>
+                              </div>
                             </DialogContent>
                           </Dialog>
 
@@ -1635,37 +2013,108 @@ export default function AIHackathonManagement() {
                                 <ChevronRight className="h-5 w-5 ml-auto text-slate-400" />
                               </Button>
                             </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Add API Credentials</DialogTitle>
-                                <DialogDescription>
-                                  Add new API credentials for participants.
-                                </DialogDescription>
+                            <DialogContent className="sm:max-w-[600px] p-0 gap-0">
+                              <DialogHeader className="bg-gradient-to-r from-slate-50 via-purple-50 to-blue-50 border-b border-slate-200 p-6 relative overflow-hidden">
+                                <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
+                                <div className="relative">
+                                  <DialogTitle className="text-xl font-semibold tracking-tight text-slate-900">Add API Credentials</DialogTitle>
+                                  <DialogDescription className="text-base text-slate-500 mt-2">
+                                    Configure API access credentials for participants to use in their projects.
+                                  </DialogDescription>
+                                </div>
                               </DialogHeader>
-                              <div className="space-y-4 py-4">
-                                <div className="space-y-2">
-                                  <Label htmlFor="api-name">API Name</Label>
-                                  <Input id="api-name" placeholder="Enter API name" />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="api-key">API Key</Label>
-                                  <Input id="api-key" type="password" placeholder="Enter API key" />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="api-endpoint">API Endpoint</Label>
-                                  <Input id="api-endpoint" placeholder="Enter API endpoint" />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="api-docs">Documentation URL</Label>
-                                  <Input id="api-docs" placeholder="Enter documentation URL" />
+                              
+                              <div className="p-6 space-y-6">
+                                <div className="space-y-4">
+                                  <div className="space-y-2">
+                                    <Label htmlFor="api-name" className="text-sm font-medium text-slate-900">API Name</Label>
+                                    <Input 
+                                      id="api-name" 
+                                      placeholder="Enter API name"
+                                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                                    />
+                                  </div>
+
+                                  <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                      <Label className="text-sm font-medium text-slate-900">
+                                        API Configuration
+                                      </Label>
+                                    </div>
+                                    <div className="space-y-4">
+                                      <div className="space-y-2">
+                                        <Label htmlFor="api-key" className="text-sm font-medium text-slate-900">API Key</Label>
+                                        <Input 
+                                          id="api-key" 
+                                          type="password" 
+                                          placeholder="Enter API key"
+                                          className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="api-endpoint" className="text-sm font-medium text-slate-900">API Endpoint</Label>
+                                        <Input 
+                                          id="api-endpoint" 
+                                          placeholder="Enter API endpoint URL"
+                                          className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="api-docs" className="text-sm font-medium text-slate-900">Documentation URL</Label>
+                                        <Input 
+                                          id="api-docs" 
+                                          placeholder="Enter documentation URL"
+                                          className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    <Label htmlFor="api-description" className="text-sm font-medium text-slate-900">Description</Label>
+                                    <Textarea 
+                                      id="api-description" 
+                                      placeholder="Provide details about the API and its usage" 
+                                      className="min-h-[100px] w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow resize-y"
+                                    />
+                                  </div>
+
+                                  <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                      <Checkbox 
+                                        id="api-featured" 
+                                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                      />
+                                      <Label htmlFor="api-featured" className="text-sm text-slate-600">
+                                        Feature this API
+                                      </Label>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Checkbox 
+                                        id="api-notify" 
+                                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                      />
+                                      <Label htmlFor="api-notify" className="text-sm text-slate-600">
+                                        Notify participants about this API
+                                      </Label>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                              <DialogFooter>
-                                <Button variant="outline">Cancel</Button>
-                                <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700">
+
+                              <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 bg-slate-50">
+                                <Button 
+                                  variant="outline"
+                                  className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
+                                >
+                                  Cancel
+                                </Button>
+                                <Button 
+                                  className="rounded-lg px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md transition-all hover:shadow-lg"
+                                >
                                   Add API
                                 </Button>
-                              </DialogFooter>
+                              </div>
                             </DialogContent>
                           </Dialog>
 
@@ -1921,57 +2370,105 @@ export default function AIHackathonManagement() {
                               Add FAQ
                             </Button>
                           </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Add FAQ</DialogTitle>
-                              <DialogDescription>
-                                Add a new frequently asked question to help participants.
-                              </DialogDescription>
+                          <DialogContent className="sm:max-w-[600px] p-0 gap-0">
+                            <DialogHeader className="bg-gradient-to-r from-slate-50 via-purple-50 to-blue-50 border-b border-slate-200 p-6 relative overflow-hidden">
+                              <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
+                              <div className="relative">
+                                <DialogTitle className="text-xl font-semibold tracking-tight text-slate-900">Add FAQ</DialogTitle>
+                                <DialogDescription className="text-base text-slate-500 mt-2">
+                                  Add a new frequently asked question to help participants find answers quickly.
+                                </DialogDescription>
+                              </div>
                             </DialogHeader>
-                            <div className="space-y-4 py-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="faq-question">Question</Label>
-                                <Input id="faq-question" placeholder="Enter question" />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="faq-answer">Answer</Label>
-                                <Textarea 
-                                  id="faq-answer" 
-                                  placeholder="Enter answer" 
-                                  className="min-h-[150px]"
-                                />
-                              </div>
-                              <div className="grid grid-cols-2 gap-4">
+                            
+                            <div className="p-6 space-y-6">
+                              <div className="space-y-4">
                                 <div className="space-y-2">
-                                  <Label htmlFor="faq-category">Category</Label>
-                                  <select id="faq-category" className="w-full rounded-md border border-slate-200 px-3 py-2">
-                                    <option value="general">General</option>
-                                    <option value="technical">Technical</option>
-                                    <option value="judging">Judging</option>
-                                    <option value="submission">Submission</option>
-                                  </select>
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="faq-order">Display Order</Label>
+                                  <Label htmlFor="faq-question" className="text-sm font-medium text-slate-900">Question</Label>
                                   <Input 
-                                    id="faq-order" 
-                                    type="number" 
-                                    min="1"
-                                    placeholder="Enter display order"
+                                    id="faq-question" 
+                                    placeholder="Enter your question" 
+                                    className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                                   />
                                 </div>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <Checkbox id="faq-published" />
-                                <Label htmlFor="faq-published">Publish immediately</Label>
+                                
+                                <div className="space-y-2">
+                                  <Label htmlFor="faq-answer" className="text-sm font-medium text-slate-900">Answer</Label>
+                                  <Textarea 
+                                    id="faq-answer" 
+                                    placeholder="Provide a clear and concise answer" 
+                                    className="min-h-[150px] w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow resize-y"
+                                  />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <Label htmlFor="faq-category" className="text-sm font-medium text-slate-900">Category</Label>
+                                    <select 
+                                      id="faq-category" 
+                                      className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
+                                    >
+                                      <option value="general">General</option>
+                                      <option value="technical">Technical</option>
+                                      <option value="judging">Judging</option>
+                                      <option value="submission">Submission</option>
+                                    </select>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="faq-order" className="text-sm font-medium text-slate-900">Display Order</Label>
+                                    <Input 
+                                      id="faq-order" 
+                                      type="number" 
+                                      min="1"
+                                      placeholder="Set display priority"
+                                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-4">
+                                  <div className="flex items-center justify-between">
+                                    <Label htmlFor="faq-published" className="text-sm font-medium text-slate-900">
+                                      Visibility Settings
+                                    </Label>
+                                  </div>
+                                  <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                      <Checkbox 
+                                        id="faq-published" 
+                                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                      />
+                                      <Label htmlFor="faq-published" className="text-sm text-slate-600">
+                                        Publish immediately
+                                      </Label>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Checkbox 
+                                        id="faq-featured" 
+                                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                      />
+                                      <Label htmlFor="faq-featured" className="text-sm text-slate-600">
+                                        Feature this FAQ
+                                      </Label>
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                            <DialogFooter>
-                              <Button variant="outline">Cancel</Button>
-                              <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700">
+
+                            <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 bg-slate-50">
+                              <Button 
+                                variant="outline"
+                                className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
+                              >
+                                Cancel
+                              </Button>
+                              <Button 
+                                className="rounded-lg px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md transition-all hover:shadow-lg"
+                              >
                                 Add FAQ
                               </Button>
-                            </DialogFooter>
+                            </div>
                           </DialogContent>
                         </Dialog>
                       </div>
@@ -2060,19 +2557,19 @@ export default function AIHackathonManagement() {
                       <CardContent className="p-6">
                         <div className="space-y-3">
                           <Button 
-                            className="w-full justify-start bg-gradient-to-r from-purple-50 to-purple-100 text-purple-700 border-purple-200 hover:border-purple-300 hover:from-purple-100 hover:to-purple-150 h-auto py-4"
+                            className={quickActionButtonStyles}
                             onClick={() => {
                               router.push('/dashboard/organizer/announcements?action=create&hackathonId=ai-innovation-challenge');
                             }}
                           >
                             <div className="flex items-center gap-3">
-                              <Plus className="h-5 w-5" />
+                              <Plus className="h-5 w-5 text-blue-600" />
                               <div className="text-left">
                                 <div className="font-medium">Create Announcement</div>
-                                <div className="text-sm text-purple-600">Post updates for all participants</div>
+                                <div className="text-sm text-slate-600">Post updates for all participants</div>
                               </div>
                             </div>
-                            <ChevronRight className="h-5 w-5 ml-auto" />
+                            <ChevronRight className="h-5 w-5 ml-auto text-slate-400" />
                           </Button>
                         </div>
                       </CardContent>
@@ -2131,33 +2628,112 @@ export default function AIHackathonManagement() {
             Add Milestone
           </Button>
         </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Milestone</DialogTitle>
-            <DialogDescription>
-              Create a new milestone for your hackathon timeline.
-            </DialogDescription>
+        <DialogContent className="sm:max-w-[600px] p-0 gap-0">
+          <DialogHeader className="bg-gradient-to-r from-slate-50 via-purple-50 to-blue-50 border-b border-slate-200 p-6 relative overflow-hidden">
+            <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
+            <div className="relative">
+              <DialogTitle className="text-xl font-semibold tracking-tight text-slate-900">Add New Milestone</DialogTitle>
+              <DialogDescription className="text-base text-slate-500 mt-2">
+                Create a new milestone to mark important events and progress in your hackathon timeline.
+              </DialogDescription>
+            </div>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input id="title" placeholder="Enter milestone title" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea id="description" placeholder="Enter milestone description" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="date">Date</Label>
-              <Input id="date" type="datetime-local" />
+          
+          <div className="p-6 space-y-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="milestone-title" className="text-sm font-medium text-slate-900">Title</Label>
+                <Input 
+                  id="milestone-title" 
+                  placeholder="Enter milestone title"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="milestone-description" className="text-sm font-medium text-slate-900">Description</Label>
+                <Textarea 
+                  id="milestone-description" 
+                  placeholder="Provide details about this milestone" 
+                  className="min-h-[100px] w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow resize-y"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="milestone-date" className="text-sm font-medium text-slate-900">Date</Label>
+                  <Input 
+                    id="milestone-date" 
+                    type="datetime-local"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="milestone-type" className="text-sm font-medium text-slate-900">Type</Label>
+                  <select 
+                    id="milestone-type" 
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
+                  >
+                    <option value="project">Project</option>
+                    <option value="submission">Submission</option>
+                    <option value="judging">Judging</option>
+                    <option value="event">Event</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium text-slate-900">
+                    Milestone Settings
+                  </Label>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Checkbox 
+                      id="milestone-notify" 
+                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                    />
+                    <Label htmlFor="milestone-notify" className="text-sm text-slate-600">
+                      Send notification to participants
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox 
+                      id="milestone-featured" 
+                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                    />
+                    <Label htmlFor="milestone-featured" className="text-sm text-slate-600">
+                      Feature this milestone
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox 
+                      id="milestone-required" 
+                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                    />
+                    <Label htmlFor="milestone-required" className="text-sm text-slate-600">
+                      Mark as required milestone
+                    </Label>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline">Cancel</Button>
-            <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700">
+
+          <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 bg-slate-50">
+            <Button 
+              variant="outline"
+              className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
+            >
+              Cancel
+            </Button>
+            <Button 
+              className="rounded-lg px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md transition-all hover:shadow-lg"
+            >
               Create Milestone
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -2173,45 +2749,134 @@ export default function AIHackathonManagement() {
             Add Resource
           </Button>
         </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Resource</DialogTitle>
-            <DialogDescription>
-              Add a new resource to your hackathon.
-            </DialogDescription>
+        <DialogContent className="sm:max-w-[600px] p-0 gap-0">
+          <DialogHeader className="bg-gradient-to-r from-slate-50 via-purple-50 to-blue-50 border-b border-slate-200 p-6 relative overflow-hidden">
+            <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
+            <div className="relative">
+              <DialogTitle className="text-xl font-semibold tracking-tight text-slate-900">Add New Resource</DialogTitle>
+              <DialogDescription className="text-base text-slate-500 mt-2">
+                Add a new resource to help participants in their projects. Resources can be datasets, APIs, documentation, or tools.
+              </DialogDescription>
+            </div>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input id="title" placeholder="Enter resource title" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea id="description" placeholder="Enter resource description" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="type">Type</Label>
-              <select id="type" className="w-full rounded-md border border-slate-200 px-3 py-2">
-                <option value="dataset">Dataset</option>
-                <option value="api">API</option>
-                <option value="documentation">Documentation</option>
-                <option value="tool">Tool</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="access">Access Level</Label>
-              <select id="access" className="w-full rounded-md border border-slate-200 px-3 py-2">
-                <option value="public">Public</option>
-                <option value="private">Private</option>
-              </select>
+          
+          <div className="p-6 space-y-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="resource-title" className="text-sm font-medium text-slate-900">Title</Label>
+                <Input 
+                  id="resource-title" 
+                  placeholder="Enter resource title"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="resource-description" className="text-sm font-medium text-slate-900">Description</Label>
+                <Textarea 
+                  id="resource-description" 
+                  placeholder="Provide a detailed description of the resource" 
+                  className="min-h-[100px] w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow resize-y"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="resource-type" className="text-sm font-medium text-slate-900">Resource Type</Label>
+                  <select 
+                    id="resource-type" 
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
+                  >
+                    <option value="dataset">Dataset</option>
+                    <option value="api">API</option>
+                    <option value="documentation">Documentation</option>
+                    <option value="tool">Tool</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="resource-access" className="text-sm font-medium text-slate-900">Access Level</Label>
+                  <select 
+                    id="resource-access" 
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
+                  >
+                    <option value="public">Public</option>
+                    <option value="private">Private</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium text-slate-900">
+                    Resource Details
+                  </Label>
+                </div>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="resource-url" className="text-sm font-medium text-slate-900">Resource URL</Label>
+                    <Input 
+                      id="resource-url" 
+                      placeholder="Enter resource URL or endpoint"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="resource-format" className="text-sm font-medium text-slate-900">Format</Label>
+                      <Input 
+                        id="resource-format" 
+                        placeholder="e.g., CSV, JSON, PDF"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="resource-size" className="text-sm font-medium text-slate-900">Size</Label>
+                      <Input 
+                        id="resource-size" 
+                        placeholder="e.g., 2.5GB"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-3 mt-4">
+                  <div className="flex items-center gap-2">
+                    <Checkbox 
+                      id="resource-featured" 
+                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                    />
+                    <Label htmlFor="resource-featured" className="text-sm text-slate-600">
+                      Feature this resource
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox 
+                      id="resource-notify" 
+                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                    />
+                    <Label htmlFor="resource-notify" className="text-sm text-slate-600">
+                      Notify participants about this resource
+                    </Label>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline">Cancel</Button>
-            <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700">
+
+          <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 bg-slate-50">
+            <Button 
+              variant="outline"
+              className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
+            >
+              Cancel
+            </Button>
+            <Button 
+              className="rounded-lg px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md transition-all hover:shadow-lg"
+            >
               Add Resource
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
