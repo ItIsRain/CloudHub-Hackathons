@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog"
@@ -39,7 +39,9 @@ import {
   AlertTriangle,
   X,
   UserCircle2,
-  Loader2
+  Loader2,
+  Check,
+  X as XIcon
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useEditor, EditorContent } from "@tiptap/react"
@@ -62,6 +64,15 @@ import {
 import StarterKit from "@tiptap/starter-kit"
 import { Link as TiptapLink } from "@tiptap/extension-link"
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface Announcement {
   id: string;
@@ -92,6 +103,10 @@ interface CreateEditDialogProps {
   onSubmit: (data: Announcement) => void;
   getCategoryColor: (category: string) => string;
 }
+
+type FilterType = "all" | "important" | "urgent" | "general" | "scheduled";
+
+const defaultFilters: FilterType = "all";
 
 const dialogVariants = {
   hidden: { opacity: 0, scale: 0.95 },
@@ -697,6 +712,34 @@ const EngagementMetric = ({
   );
 };
 
+// Add these helper functions before the AnnouncementsPage component
+const isToday = (date: string) => {
+  const today = new Date();
+  const compareDate = new Date(date);
+  return (
+    compareDate.getDate() === today.getDate() &&
+    compareDate.getMonth() === today.getMonth() &&
+    compareDate.getFullYear() === today.getFullYear()
+  );
+};
+
+const isThisWeek = (date: string) => {
+  const today = new Date();
+  const compareDate = new Date(date);
+  const diffTime = Math.abs(today.getTime() - compareDate.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays <= 7;
+};
+
+const isThisMonth = (date: string) => {
+  const today = new Date();
+  const compareDate = new Date(date);
+  return (
+    compareDate.getMonth() === today.getMonth() &&
+    compareDate.getFullYear() === today.getFullYear()
+  );
+};
+
 export default function AnnouncementsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -738,6 +781,19 @@ export default function AnnouncementsPage() {
       author: "Mike Johnson"
     }
   ]);
+
+  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+
+  const filteredAnnouncements = useMemo(() => {
+    if (activeFilter === "all") return announcements;
+    if (activeFilter === "scheduled") {
+      return announcements.filter(announcement => announcement.status === "scheduled");
+    }
+    return announcements.filter(
+      announcement => announcement.category.toLowerCase() === activeFilter
+    );
+  }, [announcements, activeFilter]);
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
@@ -943,17 +999,59 @@ export default function AnnouncementsPage() {
                 <CardTitle className="text-lg font-semibold text-slate-800 pl-2">Recent Announcements</CardTitle>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="h-8 border-slate-200 text-slate-600 hover:bg-slate-50">
-                  <Filter className="h-4 w-4 mr-1" />
-                  Filter
-                  <ChevronDown className="h-3 w-3 ml-1" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <DropdownMenu open={isFilterDropdownOpen} onOpenChange={setIsFilterDropdownOpen}>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className={cn(
+                          "h-8 border-slate-200 text-slate-600 hover:bg-slate-50",
+                          activeFilter !== "all" && "border-purple-200 bg-purple-50 text-purple-600"
+                        )}
+                      >
+                        <Filter className="h-4 w-4 mr-1" />
+                        {activeFilter === "all" ? "All Announcements" : (
+                          activeFilter === "scheduled" ? "Scheduled" : 
+                          activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)
+                        )}
+                        <ChevronDown className="h-3 w-3 ml-1" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel className="text-xs text-slate-500">Filter By</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {[
+                        { label: "All Announcements", value: "all" },
+                        { label: "Important", value: "important" },
+                        { label: "Urgent", value: "urgent" },
+                        { label: "General", value: "general" },
+                        { label: "Scheduled", value: "scheduled" }
+                      ].map((option) => (
+                        <DropdownMenuItem
+                          key={option.value}
+                          className="flex items-center justify-between"
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            setActiveFilter(option.value as FilterType);
+                            setIsFilterDropdownOpen(false);
+                          }}
+                        >
+                          <span>{option.label}</span>
+                          {activeFilter === option.value && (
+                            <Check className="h-4 w-4 text-purple-600" />
+                          )}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             </div>
           </CardHeader>
           <CardContent className="p-6">
             <div className="space-y-4">
-              {announcements.map((announcement) => (
+              {filteredAnnouncements.map((announcement) => (
                 <div 
                   key={announcement.id}
                   className="group rounded-xl border border-slate-200 bg-gradient-to-r from-slate-50 to-white p-4 hover:shadow-md transition-all duration-200"

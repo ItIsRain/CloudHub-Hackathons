@@ -164,7 +164,7 @@ export default function DashboardSidebar() {
                     asChild 
                     tooltip="AI Innovation Challenge"
                   >
-                    <Link href="/dashboard/hackathons/ai-innovation" className="flex items-center gap-2 hover:bg-blue-50 transition-all rounded-md">
+                    <Link href="/dashboard/organizer/hackathons/ai-innovation-challenge" className="flex items-center gap-2 hover:bg-blue-50 transition-all rounded-md">
                       <div className="relative flex items-center justify-center h-5 w-5">
                         <div className="absolute inset-0 rounded-full bg-blue-100 opacity-40 hover:opacity-60 transition-opacity"></div>
                         <Sparkles className="h-3.5 w-3.5 text-blue-500 hover:text-blue-600 transition-colors" />
