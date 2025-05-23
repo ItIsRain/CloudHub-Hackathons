@@ -7,27 +7,37 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import {
   Users,
-  Trophy,
-  Calendar,
-  Settings,
+  User,
   Building2,
+  Trophy,
+  CalendarClock,
+  Calendar,
+  Clock,
+  Activity,
+  BarChart3,
+  Plus,
+  PenLine,
+  Trash2,
+  Check,
+  AlertCircle,
+  Download,
+  ShieldCheck,
+  Settings2,
+  Globe,
+  Mail,
+  Phone,
+  Eye,
+  Gift,
   MessageSquare,
   FileText,
   Brain,
   Timer,
-  UserCog,
   Database,
-  Mail,
-  AlertCircle,
   ChevronRight,
-  Plus,
-  ArrowUpRight,
-  Activity,
-  PenLine,
-  Trash2,
-  Check,
   Upload,
-  Edit
+  Edit,
+  Settings,
+  ArrowUpRight
 } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
@@ -37,6 +47,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useRouter } from "next/navigation"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 // Types
 interface HackathonStats {
@@ -72,12 +83,6 @@ interface Sponsor {
     email: string;
     phone: string;
   }[];
-  visibility: {
-    landing: boolean;
-    dashboard: boolean;
-    submissions: boolean;
-    awards: boolean;
-  };
   benefits: string[];
   contribution: number;
 }
@@ -128,6 +133,18 @@ interface FAQ {
   order: number;
   published: boolean;
   featured: boolean;
+}
+
+interface Role {
+  name: 'organizer' | 'judge' | 'mentor' | 'media';
+  count: number;
+  description: string;
+}
+
+interface SponsorshipTier {
+  name: 'platinum' | 'gold' | 'silver' | 'bronze';
+  description: string;
+  minContribution: number;
 }
 
 const stats: HackathonStats = {
@@ -186,12 +203,6 @@ const sponsors: Sponsor[] = [
         phone: "+1 (555) 123-4567"
       }
     ],
-    visibility: {
-      landing: true,
-      dashboard: true,
-      submissions: true,
-      awards: true
-    },
     benefits: [
       "Keynote speaking slot",
       "Dedicated workshop session",
@@ -215,12 +226,6 @@ const sponsors: Sponsor[] = [
         phone: "+1 (555) 234-5678"
       }
     ],
-    visibility: {
-      landing: true,
-      dashboard: true,
-      submissions: true,
-      awards: false
-    },
     benefits: [
       "Workshop session",
       "Booth space",
@@ -382,6 +387,52 @@ const rolePermissions = {
     "view_resources"
   ]
 };
+
+const roles: Role[] = [
+  {
+    name: 'organizer',
+    count: teamMembers.filter(m => m.role === 'organizer').length,
+    description: 'Full access to manage the hackathon, including teams, submissions, and settings.'
+  },
+  {
+    name: 'judge',
+    count: teamMembers.filter(m => m.role === 'judge').length,
+    description: 'Access to review and score submissions during the judging phase.'
+  },
+  {
+    name: 'mentor',
+    count: teamMembers.filter(m => m.role === 'mentor').length,
+    description: 'Can provide guidance to participants and access mentorship resources.'
+  },
+  {
+    name: 'media',
+    count: teamMembers.filter(m => m.role === 'media').length,
+    description: 'Access to media resources and ability to publish content.'
+  }
+];
+
+const sponsorshipTiers: SponsorshipTier[] = [
+  {
+    name: 'platinum',
+    description: 'Premium partnership with maximum visibility and benefits',
+    minContribution: 25000
+  },
+  {
+    name: 'gold',
+    description: 'Enhanced visibility with premium placement',
+    minContribution: 15000
+  },
+  {
+    name: 'silver',
+    description: 'Standard sponsorship package with good visibility',
+    minContribution: 10000
+  },
+  {
+    name: 'bronze',
+    description: 'Basic sponsorship package with essential benefits',
+    minContribution: 5000
+  }
+];
 
 export default function AIHackathonManagement() {
   const [activeTab, setActiveTab] = useState("overview")
@@ -725,9 +776,10 @@ export default function AIHackathonManagement() {
               <TabsContent value="teams" className="mt-0 space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Team Members List */}
-                  <Card className="lg:col-span-2 border-slate-200 shadow-md overflow-hidden">
-                    <CardHeader className="bg-gradient-to-r from-slate-50 via-purple-50 to-blue-50 border-b border-slate-200 p-6">
-                      <div className="flex items-center justify-between">
+                  <Card className="lg:col-span-2 border-slate-200 shadow-md bg-white overflow-hidden hover:shadow-lg transition-shadow duration-200">
+                    <CardHeader className="bg-gradient-to-r from-slate-50 via-purple-50 to-blue-50 border-b border-slate-200 p-6 relative">
+                      <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
+                      <div className="relative flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-sm">
                             <Users className="h-4 w-4 text-white" />
@@ -748,265 +800,78 @@ export default function AIHackathonManagement() {
                         {teamMembers.map((member) => (
                           <div 
                             key={member.id}
-                            className="flex items-center gap-4 p-4 rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-white hover:shadow-md transition-all duration-200"
+                            className="group rounded-xl border border-slate-200 bg-gradient-to-r from-slate-50 to-white overflow-hidden hover:shadow-md transition-all duration-200"
                           >
-                            <div className="flex-shrink-0">
-                              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center text-white font-medium shadow-sm">
-                                {member.name.split(' ').map(n => n[0]).join('')}
-                              </div>
-                            </div>
-                            
-                            <div className="flex-grow min-w-0">
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-medium text-slate-900 truncate">{member.name}</h4>
-                                <Badge 
-                                  variant="outline" 
-                                  className={cn(
-                                    "shadow-sm",
-                                    member.role === 'organizer' && "bg-purple-50 text-purple-700 border-purple-200",
-                                    member.role === 'judge' && "bg-blue-50 text-blue-700 border-blue-200",
-                                    member.role === 'mentor' && "bg-emerald-50 text-emerald-700 border-emerald-200",
-                                    member.role === 'media' && "bg-amber-50 text-amber-700 border-amber-200"
-                                  )}
-                                >
-                                  {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
-                                </Badge>
-                                <Badge 
-                                  variant="outline" 
-                                  className={cn(
-                                    "shadow-sm",
-                                    member.status === 'active' && "bg-emerald-50 text-emerald-700 border-emerald-200",
-                                    member.status === 'pending' && "bg-amber-50 text-amber-700 border-amber-200",
-                                    member.status === 'inactive' && "bg-slate-50 text-slate-700 border-slate-200"
-                                  )}
-                                >
-                                  {member.status.charAt(0).toUpperCase() + member.status.slice(1)}
-                                </Badge>
-                              </div>
-                              <p className="text-sm text-slate-600 truncate">{member.email}</p>
-                              <div className="flex items-center gap-2 mt-2">
-                                {member.permissions.slice(0, 3).map((permission) => (
-                                  <span 
-                                    key={permission}
-                                    className="inline-flex items-center px-2 py-1 rounded-md bg-slate-100 text-slate-700 text-xs shadow-sm"
-                                  >
-                                    {permission.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                                  </span>
-                                ))}
-                                {member.permissions.length > 3 && (
-                                  <span className="text-xs text-slate-500">
-                                    +{member.permissions.length - 3} more
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              <Button 
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEditMember(member)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteMember(member)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Role Management */}
-                  <Card className="border-slate-200 shadow-md overflow-hidden">
-                    <CardHeader className="bg-gradient-to-r from-slate-50 via-purple-50 to-blue-50 border-b border-slate-200 p-6">
-                      <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-sm">
-                          <UserCog className="h-4 w-4 text-white" />
-                        </div>
-                        <CardTitle className="text-lg font-semibold text-slate-800">Role Management</CardTitle>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-6">
-                      <div className="space-y-6">
-                        {Object.entries(rolePermissions).map(([role, permissions]) => (
-                          <div key={role} className="space-y-3">
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-medium capitalize text-slate-800">{role}</h4>
-                              <Badge 
-                                variant="outline" 
-                                className={cn(
-                                  "shadow-sm ml-auto",
-                                  role === 'organizer' && "bg-purple-50 text-purple-700 border-purple-200",
-                                  role === 'judge' && "bg-blue-50 text-blue-700 border-blue-200",
-                                  role === 'mentor' && "bg-emerald-50 text-emerald-700 border-emerald-200",
-                                  role === 'media' && "bg-amber-50 text-amber-700 border-amber-200"
-                                )}
-                              >
-                                {teamMembers.filter(m => m.role === role).length} members
-                              </Badge>
-                            </div>
-                            <div className="space-y-2">
-                              {permissions.map((permission) => (
-                                <div 
-                                  key={permission}
-                                  className="flex items-center justify-between py-2 px-3 rounded-lg bg-gradient-to-r from-slate-50 to-white border border-slate-200 shadow-sm"
-                                >
-                                  <Label 
-                                    htmlFor={`permission-${permission}`}
-                                    className="text-sm text-slate-700"
-                                  >
-                                    {permission.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                                  </Label>
-                                  <Checkbox 
-                                    id={`permission-${permission}`}
-                                    className="data-[state=checked]:bg-purple-600"
-                                  />
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-                <div className="flex justify-end mt-6">
-                  <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md">
-                    Save Changes
-                  </Button>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="sponsors" className="mt-0 space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Sponsors List */}
-                  <Card className="lg:col-span-2 border-slate-200 shadow-md overflow-hidden">
-                    <CardHeader className="bg-gradient-to-r from-slate-50 via-purple-50 to-blue-50 border-b border-slate-200 p-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-sm">
-                            <Building2 className="h-4 w-4 text-white" />
-                          </div>
-                          <CardTitle className="text-lg font-semibold text-slate-800">Sponsors</CardTitle>
-                        </div>
-                        <Button 
-                          className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md"
-                          onClick={handleAddSponsor}
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Sponsor
-                        </Button>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-6">
-                      <div className="space-y-6">
-                        {sponsors.map((sponsor) => (
-                          <div 
-                            key={sponsor.id}
-                            className="rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-white overflow-hidden hover:shadow-md transition-all duration-200"
-                          >
-                            <div className="p-4 bg-white border-b border-slate-200">
+                            <div className="p-4">
                               <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-4">
-                                  <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-slate-100 to-white border border-slate-200 flex items-center justify-center shadow-sm">
-                                    <Building2 className="h-6 w-6 text-slate-400" />
-                                  </div>
+                                  <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
+                                    <AvatarImage src={`https://avatar.vercel.sh/${member.email}`} />
+                                    <AvatarFallback className="bg-gradient-to-br from-slate-100 to-slate-200">
+                                      {member.name.split(' ').map(n => n[0]).join('')}
+                                    </AvatarFallback>
+                                  </Avatar>
                                   <div>
-                                    <h4 className="font-medium text-slate-900">{sponsor.name}</h4>
-                                    <p className="text-sm text-slate-600">{sponsor.description}</p>
+                                    <h4 className="font-medium text-slate-900">{member.name}</h4>
+                                    <p className="text-sm text-slate-600">{member.email}</p>
                                   </div>
                                 </div>
-                                <Badge 
-                                  variant="outline" 
-                                  className={cn(
-                                    "shadow-sm",
-                                    sponsor.tier === 'platinum' && "bg-violet-50 text-violet-700 border-violet-200",
-                                    sponsor.tier === 'gold' && "bg-amber-50 text-amber-700 border-amber-200",
-                                    sponsor.tier === 'silver' && "bg-slate-50 text-slate-700 border-slate-200",
-                                    sponsor.tier === 'bronze' && "bg-orange-50 text-orange-700 border-orange-200"
-                                  )}
-                                >
-                                  {sponsor.tier.charAt(0).toUpperCase() + sponsor.tier.slice(1)} Tier
-                                </Badge>
-                              </div>
-                            </div>
-
-                            <div className="p-4 space-y-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                  <h5 className="text-sm font-medium text-slate-700">Primary Contact</h5>
-                                  <div className="p-3 rounded-lg bg-gradient-to-r from-slate-50 to-white border border-slate-200 space-y-1 shadow-sm">
-                                    <p className="text-sm font-medium text-slate-800">{sponsor.contacts[0].name}</p>
-                                    <p className="text-sm text-slate-600">{sponsor.contacts[0].role}</p>
-                                    <p className="text-sm text-slate-600">{sponsor.contacts[0].email}</p>
-                                  </div>
-                                </div>
-                                <div className="space-y-2">
-                                  <h5 className="text-sm font-medium text-slate-700">Visibility</h5>
-                                  <div className="p-3 rounded-lg bg-gradient-to-r from-slate-50 to-white border border-slate-200 space-y-2 shadow-sm">
-                                    {Object.entries(sponsor.visibility).map(([key, value]) => (
-                                      <div key={key} className="flex items-center gap-2">
-                                        <Checkbox 
-                                          id={`visibility-${key}`}
-                                          checked={value}
-                                          className="data-[state=checked]:bg-purple-600"
-                                        />
-                                        <Label 
-                                          htmlFor={`visibility-${key}`}
-                                          className="text-sm capitalize text-slate-700"
-                                        >
-                                          {key.replace('_', ' ')}
-                                        </Label>
-                                      </div>
-                                    ))}
-                                  </div>
+                                <div className="flex items-center gap-3">
+                                  <Badge 
+                                    variant="outline" 
+                                    className={cn(
+                                      "shadow-sm capitalize",
+                                      member.status === 'active' && "bg-emerald-50 text-emerald-700 border-emerald-200",
+                                      member.status === 'pending' && "bg-amber-50 text-amber-700 border-amber-200",
+                                      member.status === 'inactive' && "bg-slate-50 text-slate-700 border-slate-200"
+                                    )}
+                                  >
+                                    {member.status}
+                                  </Badge>
+                                  <Badge 
+                                    variant="outline" 
+                                    className={cn(
+                                      "shadow-sm capitalize",
+                                      member.role === 'organizer' && "bg-purple-50 text-purple-700 border-purple-200",
+                                      member.role === 'judge' && "bg-blue-50 text-blue-700 border-blue-200",
+                                      member.role === 'mentor' && "bg-indigo-50 text-indigo-700 border-indigo-200",
+                                      member.role === 'media' && "bg-pink-50 text-pink-700 border-pink-200"
+                                    )}
+                                  >
+                                    {member.role}
+                                  </Badge>
                                 </div>
                               </div>
 
-                              <div className="space-y-2">
-                                <h5 className="text-sm font-medium text-slate-700">Benefits</h5>
-                                <div className="flex flex-wrap gap-2">
-                                  {sponsor.benefits.map((benefit, index) => (
-                                    <Badge 
-                                      key={index} 
-                                      variant="outline" 
-                                      className="bg-slate-50 text-slate-700 border-slate-200 shadow-sm"
-                                    >
-                                      {benefit}
-                                    </Badge>
-                                  ))}
-                                </div>
+                              <div className="mt-4 flex flex-wrap gap-2">
+                                {member.permissions.map((permission, index) => (
+                                  <Badge 
+                                    key={index}
+                                    variant="outline" 
+                                    className="bg-slate-50 text-slate-700 border-slate-200 shadow-sm"
+                                  >
+                                    {permission}
+                                  </Badge>
+                                ))}
                               </div>
 
-                              <div className="flex items-center justify-between pt-3 border-t border-slate-200">
-                                <div className="flex items-baseline gap-2">
-                                  <span className="text-sm font-medium text-slate-700">Contribution:</span>
-                                  <span className="text-lg font-semibold text-slate-900">
-                                    {sponsor.contribution.toLocaleString()} AED
-                                  </span>
-                                </div>
+                              <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-200">
+                                <span className="text-sm text-slate-500">Added {member.dateAdded}</span>
                                 <div className="flex items-center gap-2">
                                   <Button 
                                     variant="ghost" 
                                     size="sm"
                                     className="h-8 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
-                                    onClick={() => handleEditSponsor(sponsor)}
+                                    onClick={() => handleEditMember(member)}
                                   >
                                     <PenLine className="h-4 w-4 mr-2" />
                                     Edit
                                   </Button>
                                   <Button 
                                     variant="ghost" 
-                                    size="sm" 
+                                    size="sm"
                                     className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                    onClick={() => handleDeleteSponsor(sponsor)}
+                                    onClick={() => handleDeleteMember(member)}
                                   >
                                     <Trash2 className="h-4 w-4 mr-2" />
                                     Remove
@@ -1020,10 +885,283 @@ export default function AIHackathonManagement() {
                     </CardContent>
                   </Card>
 
+                  {/* Role Management */}
+                  <Card className="border-slate-200 shadow-md bg-white overflow-hidden hover:shadow-lg transition-shadow duration-200">
+                    <CardHeader className="bg-gradient-to-r from-slate-50 via-purple-50 to-blue-50 border-b border-slate-200 p-6 relative">
+                      <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
+                      <div className="relative flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-sm">
+                          <ShieldCheck className="h-4 w-4 text-white" />
+                        </div>
+                        <CardTitle className="text-lg font-semibold text-slate-800">Role Management</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                      <div className="space-y-4">
+                        {roles.map((role) => (
+                          <div 
+                            key={role.name}
+                            className="p-4 rounded-xl bg-gradient-to-br from-slate-50 to-white border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <Badge 
+                                  variant="outline" 
+                                  className={cn(
+                                    "shadow-sm capitalize",
+                                    role.name === 'organizer' && "bg-purple-50 text-purple-700 border-purple-200",
+                                    role.name === 'judge' && "bg-blue-50 text-blue-700 border-blue-200",
+                                    role.name === 'mentor' && "bg-indigo-50 text-indigo-700 border-indigo-200",
+                                    role.name === 'media' && "bg-pink-50 text-pink-700 border-pink-200"
+                                  )}
+                                >
+                                  {role.name}
+                                </Badge>
+                                <span className="text-sm font-medium text-slate-900">{role.count} members</span>
+                              </div>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="h-8 bg-white/50 backdrop-blur-sm border-slate-200 hover:bg-white/75 hover:border-slate-300"
+                              >
+                                <Settings2 className="h-4 w-4 mr-2" />
+                                Configure
+                              </Button>
+                            </div>
+                            <div className="mt-3 text-sm text-slate-600">{role.description}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="sponsors" className="mt-0 space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Sponsors List */}
+                  <Card className="lg:col-span-2 border-slate-200 shadow-md bg-white overflow-hidden hover:shadow-lg transition-shadow duration-200">
+                    <CardHeader className="bg-gradient-to-r from-slate-50 via-purple-50 to-blue-50 border-b border-slate-200 p-6 relative">
+                      <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
+                      <div className="relative flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-sm">
+                            <Building2 className="h-4 w-4 text-white" />
+                          </div>
+                          <CardTitle className="text-lg font-semibold text-slate-800">Sponsors</CardTitle>
+                        </div>
+                        <Button 
+                          className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md transition-all hover:shadow-lg"
+                          onClick={handleAddSponsor}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Sponsor
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                      <div className="space-y-6">
+                        {sponsors.map((sponsor) => (
+                          <div 
+                            key={sponsor.id}
+                            className={cn(
+                              "group rounded-xl border bg-white overflow-hidden hover:shadow-lg transition-all duration-200",
+                              sponsor.tier === 'platinum' && "border-violet-200/50",
+                              sponsor.tier === 'gold' && "border-amber-200/50",
+                              sponsor.tier === 'silver' && "border-slate-200/50",
+                              sponsor.tier === 'bronze' && "border-orange-200/50"
+                            )}
+                          >
+                            <div className={cn(
+                              "p-6 relative border-b",
+                              sponsor.tier === 'platinum' && "bg-gradient-to-r from-slate-50 via-violet-50 to-slate-50 border-violet-200/50",
+                              sponsor.tier === 'gold' && "bg-gradient-to-r from-slate-50 via-amber-50 to-slate-50 border-amber-200/50",
+                              sponsor.tier === 'silver' && "bg-gradient-to-r from-slate-50 via-slate-100 to-slate-50 border-slate-200/50",
+                              sponsor.tier === 'bronze' && "bg-gradient-to-r from-slate-50 via-orange-50 to-slate-50 border-orange-200/50"
+                            )}>
+                              <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-5"></div>
+                              <div className="relative flex items-start gap-6">
+                                <div className={cn(
+                                  "shrink-0 h-20 w-20 rounded-xl border-2 flex items-center justify-center shadow-sm bg-white overflow-hidden",
+                                  sponsor.tier === 'platinum' && "border-violet-200 bg-gradient-to-br from-violet-50 to-white",
+                                  sponsor.tier === 'gold' && "border-amber-200 bg-gradient-to-br from-amber-50 to-white",
+                                  sponsor.tier === 'silver' && "border-slate-200 bg-gradient-to-br from-slate-50 to-white",
+                                  sponsor.tier === 'bronze' && "border-orange-200 bg-gradient-to-br from-orange-50 to-white"
+                                )}>
+                                  {sponsor.logo ? (
+                                    <img 
+                                      src={sponsor.logo} 
+                                      alt={sponsor.name} 
+                                      className="h-14 w-14 object-contain"
+                                    />
+                                  ) : (
+                                    <Building2 className={cn(
+                                      "h-10 w-10",
+                                      sponsor.tier === 'platinum' && "text-violet-300",
+                                      sponsor.tier === 'gold' && "text-amber-300",
+                                      sponsor.tier === 'silver' && "text-slate-300",
+                                      sponsor.tier === 'bronze' && "text-orange-300"
+                                    )} />
+                                  )}
+                                </div>
+                                
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between gap-4">
+                                    <div>
+                                      <h3 className="text-lg font-semibold text-slate-900">{sponsor.name}</h3>
+                                      <a 
+                                        href={sponsor.website} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="mt-1 text-sm text-blue-600 hover:text-blue-700 hover:underline inline-flex items-center gap-1.5"
+                                      >
+                                        <Globe className="h-3.5 w-3.5" />
+                                        {sponsor.website.replace(/^https?:\/\//, '')}
+                                      </a>
+                                    </div>
+                                    <div className="flex items-start gap-3">
+                                      <Badge 
+                                        variant="outline" 
+                                        className={cn(
+                                          "shadow-sm font-medium px-3 py-1",
+                                          sponsor.tier === 'platinum' && "bg-gradient-to-r from-violet-50 to-slate-50 text-violet-700 border-violet-200",
+                                          sponsor.tier === 'gold' && "bg-gradient-to-r from-amber-50 to-slate-50 text-amber-700 border-amber-200",
+                                          sponsor.tier === 'silver' && "bg-gradient-to-r from-slate-100 to-slate-50 text-slate-700 border-slate-200",
+                                          sponsor.tier === 'bronze' && "bg-gradient-to-r from-orange-50 to-slate-50 text-orange-700 border-orange-200"
+                                        )}
+                                      >
+                                        {sponsor.tier.charAt(0).toUpperCase() + sponsor.tier.slice(1)} Tier
+                                      </Badge>
+                                      <div className="flex items-center gap-1">
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm"
+                                          className="h-8 px-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
+                                          onClick={() => handleEditSponsor(sponsor)}
+                                        >
+                                          <PenLine className="h-4 w-4" />
+                                        </Button>
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm"
+                                          className="h-8 px-2 text-slate-600 hover:text-red-600 hover:bg-red-50"
+                                          onClick={() => handleDeleteSponsor(sponsor)}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <p className="mt-2 text-sm text-slate-600 max-w-3xl">{sponsor.description}</p>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="p-6 space-y-6">
+                              <div>
+                                <div className="flex items-center gap-2 mb-3">
+                                  <User className="h-4 w-4 text-slate-500" />
+                                  <h4 className="text-sm font-medium text-slate-900">Primary Contact</h4>
+                                </div>
+                                <div className={cn(
+                                  "p-4 rounded-xl border bg-gradient-to-br from-slate-50 to-white shadow-sm",
+                                  sponsor.tier === 'platinum' && "border-violet-200/50",
+                                  sponsor.tier === 'gold' && "border-amber-200/50",
+                                  sponsor.tier === 'silver' && "border-slate-200/50",
+                                  sponsor.tier === 'bronze' && "border-orange-200/50"
+                                )}>
+                                  <div className="flex items-center gap-3 mb-3">
+                                    <div className={cn(
+                                      "h-10 w-10 rounded-full flex items-center justify-center text-white text-sm font-medium shadow-sm",
+                                      sponsor.tier === 'platinum' && "bg-gradient-to-br from-violet-500 to-violet-600",
+                                      sponsor.tier === 'gold' && "bg-gradient-to-br from-amber-500 to-amber-600",
+                                      sponsor.tier === 'silver' && "bg-gradient-to-br from-slate-500 to-slate-600",
+                                      sponsor.tier === 'bronze' && "bg-gradient-to-br from-orange-500 to-orange-600"
+                                    )}>
+                                      {sponsor.contacts[0].name.split(' ').map(n => n[0]).join('')}
+                                    </div>
+                                    <div>
+                                      <div className="font-medium text-slate-900">{sponsor.contacts[0].name}</div>
+                                      <div className="text-sm text-slate-600">{sponsor.contacts[0].role}</div>
+                                    </div>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                                      <Mail className="h-4 w-4 text-slate-400" />
+                                      <span>{sponsor.contacts[0].email}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                                      <Phone className="h-4 w-4 text-slate-400" />
+                                      <span>{sponsor.contacts[0].phone}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                  <Gift className="h-4 w-4 text-slate-500" />
+                                  <h4 className="text-sm font-medium text-slate-900">Sponsorship Benefits</h4>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  {sponsor.benefits.map((benefit, index) => (
+                                    <div 
+                                      key={index}
+                                      className={cn(
+                                        "px-3 py-1.5 rounded-lg border shadow-sm text-sm flex items-center gap-2",
+                                        sponsor.tier === 'platinum' && "bg-gradient-to-r from-violet-50 to-slate-50 text-violet-700 border-violet-200",
+                                        sponsor.tier === 'gold' && "bg-gradient-to-r from-amber-50 to-slate-50 text-amber-700 border-amber-200",
+                                        sponsor.tier === 'silver' && "bg-gradient-to-r from-slate-100 to-slate-50 text-slate-700 border-slate-200",
+                                        sponsor.tier === 'bronze' && "bg-gradient-to-r from-orange-50 to-slate-50 text-orange-700 border-orange-200"
+                                      )}
+                                    >
+                                      <Check className="h-3.5 w-3.5" />
+                                      {benefit}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div className="pt-4 border-t border-slate-200">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-baseline gap-2">
+                                    <span className="text-sm font-medium text-slate-600">Contribution</span>
+                                    <span className={cn(
+                                      "text-2xl font-semibold",
+                                      sponsor.tier === 'platinum' && "text-violet-700",
+                                      sponsor.tier === 'gold' && "text-amber-700",
+                                      sponsor.tier === 'silver' && "text-slate-700",
+                                      sponsor.tier === 'bronze' && "text-orange-700"
+                                    )}>
+                                      ${sponsor.contribution.toLocaleString()}
+                                    </span>
+                                  </div>
+                                  <Badge 
+                                    variant="outline" 
+                                    className={cn(
+                                      "shadow-sm font-medium",
+                                      sponsor.tier === 'platinum' && "bg-violet-50 text-violet-700 border-violet-200",
+                                      sponsor.tier === 'gold' && "bg-amber-50 text-amber-700 border-amber-200",
+                                      sponsor.tier === 'silver' && "bg-slate-50 text-slate-700 border-slate-200",
+                                      sponsor.tier === 'bronze' && "bg-orange-50 text-orange-700 border-orange-200"
+                                    )}
+                                  >
+                                    {sponsor.tier.charAt(0).toUpperCase() + sponsor.tier.slice(1)}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+
                   {/* Sponsorship Tiers */}
-                  <Card className="border-slate-200 shadow-md overflow-hidden">
-                    <CardHeader className="bg-gradient-to-r from-slate-50 via-purple-50 to-blue-50 border-b border-slate-200 p-6">
-                      <div className="flex items-center gap-2">
+                  <Card className="border-slate-200 shadow-md bg-white overflow-hidden hover:shadow-lg transition-shadow duration-200">
+                    <CardHeader className="bg-gradient-to-r from-slate-50 via-purple-50 to-blue-50 border-b border-slate-200 p-6 relative">
+                      <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
+                      <div className="relative flex items-center gap-2">
                         <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-sm">
                           <Trophy className="h-4 w-4 text-white" />
                         </div>
@@ -1032,85 +1170,48 @@ export default function AIHackathonManagement() {
                     </CardHeader>
                     <CardContent className="p-6">
                       <div className="space-y-4">
-                        <div className="p-4 rounded-lg bg-gradient-to-r from-violet-50 to-violet-50/50 border border-violet-200 shadow-sm">
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-medium text-violet-900">Platinum</h4>
-                            <Badge variant="outline" className="bg-violet-100 text-violet-700 border-violet-200 shadow-sm">
-                              25,000 AED
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-violet-700 mb-3">Premium partnership with maximum visibility and benefits</p>
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2 text-sm text-violet-700">
-                              <Check className="h-4 w-4" />
-                              All Gold tier benefits
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-violet-700">
-                              <Check className="h-4 w-4" />
-                              Keynote speaking opportunity
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-violet-700">
-                              <Check className="h-4 w-4" />
-                              Dedicated workshop session
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="p-4 rounded-lg bg-gradient-to-r from-amber-50 to-amber-50/50 border border-amber-200 shadow-sm">
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-medium text-amber-900">Gold</h4>
-                            <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-200 shadow-sm">
-                              15,000 AED
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-amber-700 mb-3">Enhanced visibility with premium placement</p>
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2 text-sm text-amber-700">
-                              <Check className="h-4 w-4" />
-                              All Silver tier benefits
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-amber-700">
-                              <Check className="h-4 w-4" />
-                              Workshop session
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-amber-700">
-                              <Check className="h-4 w-4" />
-                              Premium booth location
+                        {sponsorshipTiers.map((tier) => (
+                          <div 
+                            key={tier.name}
+                            className={cn(
+                              "p-4 rounded-xl border shadow-sm hover:shadow-md transition-all duration-200",
+                              tier.name === 'platinum' && "bg-gradient-to-br from-violet-50 to-white border-violet-200",
+                              tier.name === 'gold' && "bg-gradient-to-br from-amber-50 to-white border-amber-200",
+                              tier.name === 'silver' && "bg-gradient-to-br from-slate-50 to-white border-slate-200",
+                              tier.name === 'bronze' && "bg-gradient-to-br from-orange-50 to-white border-orange-200"
+                            )}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h4 className={cn(
+                                  "font-medium capitalize",
+                                  tier.name === 'platinum' && "text-violet-900",
+                                  tier.name === 'gold' && "text-amber-900",
+                                  tier.name === 'silver' && "text-slate-900",
+                                  tier.name === 'bronze' && "text-orange-900"
+                                )}>
+                                  {tier.name}
+                                </h4>
+                                <p className="text-sm text-slate-600 mt-1">{tier.description}</p>
+                              </div>
+                              <Badge 
+                                variant="outline" 
+                                className={cn(
+                                  "shadow-sm font-medium",
+                                  tier.name === 'platinum' && "bg-violet-50 text-violet-700 border-violet-200",
+                                  tier.name === 'gold' && "bg-amber-50 text-amber-700 border-amber-200",
+                                  tier.name === 'silver' && "bg-slate-50 text-slate-700 border-slate-200",
+                                  tier.name === 'bronze' && "bg-orange-50 text-orange-700 border-orange-200"
+                                )}
+                              >
+                                ${tier.minContribution.toLocaleString()}+
+                              </Badge>
                             </div>
                           </div>
-                        </div>
-
-                        <div className="p-4 rounded-lg bg-gradient-to-r from-slate-50 to-slate-50/50 border border-slate-200 shadow-sm">
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-medium text-slate-900">Silver</h4>
-                            <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-200 shadow-sm">
-                              10,000 AED
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-slate-700 mb-3">Standard sponsorship package with good visibility</p>
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2 text-sm text-slate-700">
-                              <Check className="h-4 w-4" />
-                              Logo on website & materials
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-slate-700">
-                              <Check className="h-4 w-4" />
-                              Booth space
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-slate-700">
-                              <Check className="h-4 w-4" />
-                              Social media mentions
-                            </div>
-                          </div>
-                        </div>
+                        ))}
                       </div>
                     </CardContent>
                   </Card>
-                </div>
-                <div className="flex justify-end mt-6">
-                  <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md">
-                    Save Changes
-                  </Button>
                 </div>
               </TabsContent>
 
@@ -3120,52 +3221,6 @@ export default function AIHackathonManagement() {
                     </div>
                   </div>
                 </div>
-
-                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium text-slate-900">
-                      Visibility Settings
-                    </Label>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex items-center gap-2">
-                      <Checkbox 
-                        id="visibility-landing"
-                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                      />
-                      <Label htmlFor="visibility-landing" className="text-sm text-slate-600">
-                        Landing Page
-                      </Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox 
-                        id="visibility-dashboard"
-                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                      />
-                      <Label htmlFor="visibility-dashboard" className="text-sm text-slate-600">
-                        Dashboard
-                      </Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox 
-                        id="visibility-submissions"
-                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                      />
-                      <Label htmlFor="visibility-submissions" className="text-sm text-slate-600">
-                        Submissions Page
-                      </Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox 
-                        id="visibility-awards"
-                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                      />
-                      <Label htmlFor="visibility-awards" className="text-sm text-slate-600">
-                        Awards Page
-                      </Label>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -3302,56 +3357,6 @@ export default function AIHackathonManagement() {
                         defaultValue={selectedSponsor?.contacts[0]?.phone}
                         className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                       />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium text-slate-900">
-                      Visibility Settings
-                    </Label>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex items-center gap-2">
-                      <Checkbox 
-                        id="visibility-landing"
-                        defaultChecked={selectedSponsor?.visibility.landing}
-                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                      />
-                      <Label htmlFor="visibility-landing" className="text-sm text-slate-600">
-                        Landing Page
-                      </Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox 
-                        id="visibility-dashboard"
-                        defaultChecked={selectedSponsor?.visibility.dashboard}
-                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                      />
-                      <Label htmlFor="visibility-dashboard" className="text-sm text-slate-600">
-                        Dashboard
-                      </Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox 
-                        id="visibility-submissions"
-                        defaultChecked={selectedSponsor?.visibility.submissions}
-                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                      />
-                      <Label htmlFor="visibility-submissions" className="text-sm text-slate-600">
-                        Submissions Page
-                      </Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox 
-                        id="visibility-awards"
-                        defaultChecked={selectedSponsor?.visibility.awards}
-                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                      />
-                      <Label htmlFor="visibility-awards" className="text-sm text-slate-600">
-                        Awards Page
-                      </Label>
                     </div>
                   </div>
                 </div>
