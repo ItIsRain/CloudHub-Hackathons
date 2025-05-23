@@ -192,7 +192,7 @@ const sponsors: Sponsor[] = [
     id: "1",
     name: "TechCorp AI",
     tier: "platinum",
-    logo: "/sponsors/techcorp.svg",
+    logo: "/placeholder-logo.svg",
     website: "https://techcorp.ai",
     description: "Leading provider of enterprise AI solutions",
     contacts: [
@@ -215,7 +215,7 @@ const sponsors: Sponsor[] = [
     id: "2",
     name: "Neural Dynamics",
     tier: "gold",
-    logo: "/sponsors/neural.svg",
+    logo: "/placeholder-logo.svg",
     website: "https://neuraldynamics.com",
     description: "Pioneering research in neural networks",
     contacts: [
@@ -1133,7 +1133,7 @@ export default function AIHackathonManagement() {
                                       sponsor.tier === 'silver' && "text-slate-700",
                                       sponsor.tier === 'bronze' && "text-orange-700"
                                     )}>
-                                      ${sponsor.contribution.toLocaleString()}
+                                      {sponsor.contribution.toLocaleString()} AED
                                     </span>
                                   </div>
                                   <Badge 
@@ -1204,7 +1204,7 @@ export default function AIHackathonManagement() {
                                   tier.name === 'bronze' && "bg-orange-50 text-orange-700 border-orange-200"
                                 )}
                               >
-                                ${tier.minContribution.toLocaleString()}+
+                                {tier.minContribution.toLocaleString()}+ AED
                               </Badge>
                             </div>
                           </div>
