@@ -1823,14 +1823,6 @@ export default function AIHackathonManagement() {
 
                                 <div className="flex items-center gap-2">
                                   <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    className="h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
-                                  >
-                                    <ArrowUpRight className="h-4 w-4 mr-2" />
-                                    Access
-                                  </Button>
-                                  <Button 
                                     variant="ghost" 
                                     size="sm"
                                     className="h-8 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
@@ -2478,20 +2470,20 @@ export default function AIHackathonManagement() {
                         {/* FAQ Categories */}
                         <div className="flex items-center gap-2 pb-4 border-b border-slate-200">
                           {["all", "general", "technical", "judging", "submission"].map((filter) => (
-                            <Button 
-                              key={filter}
-                              variant="outline" 
-                              className={cn(
-                                "rounded-full transition-all duration-200",
-                                activeFaqFilter === filter
-                                  ? "bg-slate-900 text-white hover:bg-slate-800"
-                                  : "hover:bg-slate-100"
-                              )}
-                              onClick={() => setActiveFaqFilter(filter)}
-                            >
-                              {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                            </Button>
-                          ))}
+                              <Button 
+                                key={filter}
+                                variant="outline" 
+                                className={cn(
+                                  "rounded-full transition-all duration-200",
+                                  activeFaqFilter === filter
+                                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 hover:text-white"
+                                    : "hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-700 hover:border-blue-200"
+                                )}
+                                onClick={() => setActiveFaqFilter(filter)}
+                              >
+                                {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                              </Button>
+                            ))}
                         </div>
 
                         {/* FAQ List */}
