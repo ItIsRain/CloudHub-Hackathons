@@ -96,6 +96,7 @@ export default function Navbar() {
           <Button
             variant="ghost"
             size="sm"
+            asChild
             className={cn(
               "rounded-full px-5 transition-all duration-300",
               scrolled
@@ -103,13 +104,18 @@ export default function Navbar() {
                 : "text-white/90 hover:text-white hover:bg-white/20",
             )}
           >
-            Explore Hackathons
+            <Link href="/dashboard/marketplace">
+              Explore Hackathons
+            </Link>
           </Button>
           <Button
             size="sm"
+            asChild
             className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-full px-5 shadow-md shadow-violet-600/20 hover:shadow-violet-600/40 transition-all duration-300"
           >
-            Dashboard
+            <Link href="/dashboard">
+              Dashboard
+            </Link>
           </Button>
         </div>
 
@@ -154,12 +160,20 @@ export default function Navbar() {
             <div className="pt-4 space-y-3">
               <Button
                 variant="outline"
+                asChild
                 className="w-full py-6 h-auto text-base rounded-xl border-slate-200 text-violet-600 hover:text-white hover:bg-violet-600 hover:border-violet-600"
               >
-                Explore Hackathons
+                <Link href="/dashboard/marketplace">
+                  Explore Hackathons
+                </Link>
               </Button>
-              <Button className="w-full py-6 h-auto text-base bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 rounded-xl shadow-md shadow-violet-600/20">
-                Dashboard
+              <Button 
+                asChild
+                className="w-full py-6 h-auto text-base bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 rounded-xl shadow-md shadow-violet-600/20"
+              >
+                <Link href="/dashboard">
+                  Dashboard
+                </Link>
               </Button>
             </div>
           </div>

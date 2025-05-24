@@ -1,30 +1,47 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// List of paths that don't require authentication
-const publicPaths = ['/', '/login', '/register', '/forgot-password', '/verify-email'];
+// Paths that require authentication
+const authRequiredPaths = [
+  '/dashboard',
+  '/dashboard/marketplace',
+  '/dashboard/my-hackathons',
+  '/dashboard/teams',
+  '/dashboard/messages',
+  '/dashboard/settings',
+  '/dashboard/profile',
+];
+
+// Paths that require organizer role
+const organizerPaths = [
+  '/dashboard/organizer',
+];
 
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get('access_token');
-  const pathname = request.nextUrl.pathname;
-
-  // Allow public paths
-  if (publicPaths.some(path => pathname.startsWith(path))) {
-    // If user is already logged in, redirect to dashboard
-    if (token && (pathname === '/login' || pathname === '/register')) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-    return NextResponse.next();
+  const { pathname } = request.nextUrl;
+  
+  // Get tokens from cookies
+  const accessToken = request.cookies.get('access_token')?.value;
+  const userDataStr = request.cookies.get('user')?.value;
+  const userData = userDataStr ? JSON.parse(userDataStr) : null;
+  
+  // Check if path requires authentication
+  const requiresAuth = authRequiredPaths.some(path => pathname.startsWith(path));
+  
+  // If path requires auth and no token exists, redirect to login
+  if (requiresAuth && !accessToken) {
+    const redirectUrl = new URL('/login', request.url);
+    redirectUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(redirectUrl);
   }
-
-  // Check if user is authenticated
-  if (!token) {
-    const response = NextResponse.redirect(new URL('/login', request.url));
-    response.cookies.delete('access_token');
-    response.cookies.delete('refresh_token');
-    return response;
+  
+  // Check organizer-only paths
+  const isOrganizerPath = organizerPaths.some(path => pathname.startsWith(path));
+  if (isOrganizerPath && userData?.role !== 'organizer') {
+    // Redirect non-organizers to participant dashboard
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
-
+  
   return NextResponse.next();
 }
 

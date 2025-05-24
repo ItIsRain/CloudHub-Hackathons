@@ -42,7 +42,6 @@ export const handleLogout = async () => {
         const { refreshToken } = getStoredTokens();
         
         if (refreshToken) {
-            // Call the logout API endpoint if available
             try {
                 await fetch('/api/auth/logout', {
                     method: 'POST',
@@ -56,10 +55,15 @@ export const handleLogout = async () => {
             }
         }
     } finally {
-        // Always clear local storage
+        // Clear localStorage
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user');
+        
+        // Clear cookies
+        document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+        document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+        document.cookie = 'user=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
         
         // Redirect to login page
         window.location.href = '/login';

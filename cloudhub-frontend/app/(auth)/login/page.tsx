@@ -137,11 +137,20 @@ export default function LoginPage() {
       };
       localStorage.setItem('user', JSON.stringify(userData));
 
+      // Set cookies for server-side access
+      document.cookie = `access_token=${response.access_token}; path=/`;
+      document.cookie = `refresh_token=${response.refresh_token}; path=/`;
+      document.cookie = `user=${JSON.stringify(userData)}; path=/`;
+
       // Show success message
       toast.success("Successfully logged in!");
 
-      // Use router.push instead of setting redirect flag
-      router.push('/dashboard');
+      // Check for redirect parameter
+      const params = new URLSearchParams(window.location.search);
+      const redirectPath = params.get('redirect') || '/dashboard';
+      
+      // Use router.push to redirect
+      router.push(redirectPath);
     } catch (err: any) {
       let errorMessage = 'Invalid email/phone or password';
       
