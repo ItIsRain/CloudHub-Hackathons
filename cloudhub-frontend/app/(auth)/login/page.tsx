@@ -112,45 +112,35 @@ export default function LoginPage() {
         username = `${countryCode}${cleanPhone}@phone.cloudhub.com`;
       }
 
-      // Log the request payload for debugging
-      console.log('Login request payload:', {
-        username,
-        password: '***',
-        remember_me: rememberMe
-      });
-
       const response = await authAPI.login({
         username,
         password,
         remember_me: rememberMe
       });
 
+      // Check if we have both tokens before proceeding
+      if (!response.access_token || !response.refresh_token) {
+        throw new Error('Invalid credentials');
+      }
+
       // Store tokens
       localStorage.setItem('access_token', response.access_token);
-      if (response.refresh_token) {
-        localStorage.setItem('refresh_token', response.refresh_token);
-      }
+      localStorage.setItem('refresh_token', response.refresh_token);
 
       // Show success message
       toast.success("Successfully logged in!");
 
-      // Set redirect flag instead of directly pushing
-      setShouldRedirect(true);
+      // Use router.push instead of setting redirect flag
+      router.push('/dashboard');
     } catch (err: any) {
-      console.error('Login error details:', {
-        status: err.response?.status,
-        statusText: err.response?.statusText,
-        data: err.response?.data,
-        headers: err.response?.headers
-      });
-
-      let errorMessage = 'Failed to login';
+      let errorMessage = 'Invalid email/phone or password';
       
-      if (err.response?.status === 422) {
+      if (err.response?.status === 401) {
+        errorMessage = 'Invalid email/phone or password';
+      } else if (err.response?.status === 422) {
         // Handle validation errors
         const validationErrors = err.response.data;
         if (typeof validationErrors === 'object') {
-          // Extract all error messages from the validation object
           const messages = [];
           for (const key in validationErrors) {
             if (Array.isArray(validationErrors[key])) {
@@ -163,16 +153,20 @@ export default function LoginPage() {
         } else if (err.response.data.detail) {
           errorMessage = err.response.data.detail;
         }
-      } else {
-        errorMessage = err.response?.data?.detail || err.message || 'Failed to login';
+      } else if (err.message) {
+        errorMessage = err.message;
       }
 
+      // Set error state and show toast with longer duration
       setError(errorMessage);
-      toast.error(errorMessage);
+      toast.error(errorMessage, {
+        duration: 5000,
+        position: 'bottom-center',
+      });
     } finally {
       setIsLoading(false);
     }
-  }, [loginMethod, email, phone, countryCode, password, rememberMe, isLoading]);
+  }, [loginMethod, email, phone, countryCode, password, rememberMe, isLoading, router]);
 
   // Memoize tab switcher to prevent rerenders when other state changes
   const TabSwitcher = useMemo(() => (
@@ -448,8 +442,13 @@ export default function LoginPage() {
                 {loginMethod === "email" ? EmailLoginForm : PhoneLoginForm}
 
                 {error && (
-                  <div className="bg-red-50 dark:bg-red-900/30 p-3 rounded-lg border border-red-100 dark:border-red-800/30 text-sm text-red-600 dark:text-red-400">
-                    {error}
+                  <div className="bg-red-50 dark:bg-red-900/30 p-4 rounded-lg border border-red-100 dark:border-red-800/30 text-sm text-red-600 dark:text-red-400 flex items-start">
+                    <div className="shrink-0 mr-2 mt-0.5">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">{error}</div>
                   </div>
                 )}
 
