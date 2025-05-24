@@ -9,6 +9,8 @@ import traceback
 from config.config import settings
 from utils.error_handlers import APIError, setup_logging
 from database import get_db, close_db
+from beanie import init_beanie
+from motor.motor_asyncio import AsyncIOMotorClient
 
 # Import routes
 from routes import auth, user, hackathon, team, project, upload, message
@@ -33,8 +35,17 @@ async def lifespan(app: FastAPI):
     # Startup
     try:
         # Initialize database connection
-        get_db()
+        client = get_db()
         logger.info("MongoDB connection initialized")
+        
+        # Initialize Beanie with all models
+        from models import __all__ as models
+        await init_beanie(
+            database=client[settings.DATABASE_NAME],
+            document_models=models
+        )
+        logger.info("Beanie ODM initialized with all models")
+        
     except Exception as e:
         logger.error(f"Failed to initialize database: {str(e)}")
         raise
@@ -48,17 +59,24 @@ async def lifespan(app: FastAPI):
 # Middleware to check database connection
 async def check_db_connection(request: Request, call_next):
     try:
+        # Skip database check for OPTIONS requests
+        if request.method == "OPTIONS":
+            response = await call_next(request)
+            return response
+
         # Try to get database client
         client = get_db()
         # Test connection
-        client.admin.command('ping')
+        await client.admin.command('ping')
         # If we get here, the connection is good
         response = await call_next(request)
         return response
     except Exception as e:
         error_msg = str(e)
         logger.error(f"Database connection error in middleware: {error_msg}\n{traceback.format_exc()}")
-        return JSONResponse(
+        
+        # Create error response
+        error_response = JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={
                 "status": "error",
@@ -66,6 +84,12 @@ async def check_db_connection(request: Request, call_next):
                 "error": error_msg
             }
         )
+        
+        # Add CORS headers to error response
+        error_response.headers["Access-Control-Allow-Origin"] = "http://localhost:3000"
+        error_response.headers["Access-Control-Allow-Credentials"] = "true"
+        
+        return error_response
 
 # Create FastAPI app
 app = FastAPI(
@@ -84,7 +108,7 @@ register_routes(app)
 # Setup CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=["http://localhost:3000"],  # Add your frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -143,7 +167,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 async def health_check():
     try:
         client = get_db()
-        client.admin.command('ping')
+        await client.admin.command('ping')
         return {"status": "healthy"}
     except Exception as e:
         logger.error(f"Health check failed: {str(e)}")

@@ -1,5 +1,5 @@
 from typing import Optional
-from pymongo import MongoClient
+from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 from config.config import settings
 import logging
@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Global variables
-client: Optional[MongoClient] = None
+client: Optional[AsyncIOMotorClient] = None
 
 def get_db():
     """Get database client."""
@@ -20,14 +20,14 @@ def get_db():
         try:
             logger.info("Initializing new database connection...")
             # Create MongoDB client with connection settings
-            client = MongoClient(
+            client = AsyncIOMotorClient(
                 settings.DATABASE_URL,
                 minPoolSize=settings.MONGODB_MIN_POOL_SIZE,
                 maxPoolSize=settings.MONGODB_MAX_POOL_SIZE,
                 maxIdleTimeMS=settings.MONGODB_MAX_IDLE_TIME_MS,
-                serverSelectionTimeoutMS=5000,  # 5 second timeout
-                connectTimeoutMS=5000,
-                socketTimeoutMS=10000,
+                serverSelectionTimeoutMS=10000,  # 10 second timeout
+                connectTimeoutMS=10000,
+                socketTimeoutMS=20000,
                 retryWrites=True,
                 retryReads=True,
                 appname="CloudHub"
@@ -42,14 +42,14 @@ def get_db():
                 if client:
                     client.close()
                     client = None
-                raise ConnectionError("Could not connect to MongoDB. Please check your connection string and ensure the database is running.") from e
+                raise ConnectionError(f"Could not connect to MongoDB: {str(e)}. Please check if MongoDB is running and accessible.") from e
             
         except Exception as e:
             logger.error(f"Failed to initialize MongoDB client: {str(e)}\n{traceback.format_exc()}")
             if client:
                 client.close()
                 client = None
-            raise
+            raise ConnectionError(f"Database initialization failed: {str(e)}") from e
     
     return client
 
@@ -66,11 +66,11 @@ def close_db():
             logger.error(f"Error closing database connection: {str(e)}")
             raise
 
-def test_connection() -> bool:
+async def test_connection() -> bool:
     """Test database connection."""
     try:
         db = get_db()
-        db.admin.command('ping')
+        await db.admin.command('ping')
         return True
     except Exception as e:
         logger.error(f"Database connection test failed: {str(e)}")

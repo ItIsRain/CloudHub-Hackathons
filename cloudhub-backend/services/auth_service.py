@@ -6,7 +6,7 @@ import pyotp
 from typing import Optional, Tuple, Dict, Any
 from fastapi import HTTPException, status
 from pydantic import EmailStr
-from pymongo import MongoClient
+from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
 
 from config.config import settings
@@ -17,7 +17,7 @@ from models.auth import (
 from models.user import User
 
 class AuthService:
-    def __init__(self, db: MongoClient):
+    def __init__(self, db: AsyncIOMotorClient):
         self.db = db[settings.DATABASE_NAME]
         self.ACCESS_TOKEN_EXPIRE_MINUTES = settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
         self.REFRESH_TOKEN_EXPIRE_DAYS = settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS
@@ -28,7 +28,7 @@ class AuthService:
     async def create_user(self, user_data: Dict[str, Any]) -> Dict[str, Any]:
         """Create a new user with proper password hashing and validation."""
         # Check if email already exists
-        existing_user = self.db.users.find_one({"email": user_data["email"]})
+        existing_user = await self.db.users.find_one({"email": user_data["email"]})
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -104,7 +104,7 @@ class AuthService:
             "updated_at": datetime.utcnow()
         }
         
-        result = self.db.users.insert_one(user)
+        result = await self.db.users.insert_one(user)
         user["_id"] = result.inserted_id
         
         # TODO: Send verification email
@@ -113,7 +113,7 @@ class AuthService:
 
     async def verify_email(self, token: str) -> bool:
         """Verify user's email address."""
-        user = self.db.users.find_one_and_update(
+        user = await self.db.users.find_one_and_update(
             {
                 "verification_token": token,
                 "verification_expires": {"$gt": datetime.utcnow()},
@@ -141,11 +141,11 @@ class AuthService:
     async def authenticate_user(self, username: str, password: str) -> Tuple[Dict[str, Any], str, str]:
         """Authenticate user and return tokens."""
         # Try to find user by email first
-        user = self.db.users.find_one({"email": username})
+        user = await self.db.users.find_one({"email": username})
         
         # If not found by email, try phone number
         if not user:
-            user = self.db.users.find_one({"phone": username})
+            user = await self.db.users.find_one({"phone": username})
 
         if not user:
             raise HTTPException(
@@ -163,7 +163,7 @@ class AuthService:
         # Verify password
         if not bcrypt.checkpw(password.encode(), user["password_hash"].encode()):
             # Increment failed login attempts
-            self.db.users.update_one(
+            await self.db.users.update_one(
                 {"_id": user["_id"]},
                 {
                     "$inc": {"failed_login_attempts": 1},
@@ -180,7 +180,7 @@ class AuthService:
             )
 
         # Reset failed login attempts and update last login
-        self.db.users.update_one(
+        await self.db.users.update_one(
             {"_id": user["_id"]},
             {
                 "$set": {
@@ -227,7 +227,7 @@ class AuthService:
     async def get_user_by_id(self, user_id: str) -> Optional[Dict[str, Any]]:
         """Get user by ID."""
         try:
-            return self.db.users.find_one({"_id": ObjectId(user_id)})
+            return await self.db.users.find_one({"_id": ObjectId(user_id)})
         except:
             return None
 
@@ -363,4 +363,4 @@ class AuthService:
             "timestamp": datetime.utcnow()
         }
         
-        self.db.security_events.insert_one(event) 
+        await self.db.security_events.insert_one(event) 

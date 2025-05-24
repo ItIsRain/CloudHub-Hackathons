@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import jwt
 from jwt.exceptions import PyJWTError
-from pymongo import MongoClient
+from motor.motor_asyncio import AsyncIOMotorClient
 
 from models.auth import (
     UserCreate, UserLogin, UserResponse, TokenResponse,
@@ -17,7 +17,7 @@ router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 # Initialize AuthService
-def get_auth_service(db: MongoClient = Depends(get_database)):
+def get_auth_service(db: AsyncIOMotorClient = Depends(get_database)) -> AuthService:
     return AuthService(db)
 
 async def get_current_user(
