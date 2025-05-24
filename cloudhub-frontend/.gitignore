@@ -65,3 +65,46 @@ logs
 
 # storybook
 storybook-static
+
+# Python Backend
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env/
+.env
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+*.mo
+*.pot
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+instance/
+.webassets-cache
+.env.*
+celerybeat-schedule
+celerybeat.pid
+*.sage.py
+.python-version
+.pdm.toml
+.pytype/
+cython_debug/
+.ruff_cache/
+.nox/

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useTheme } from "next-themes";
+import { useRouter } from "next/navigation";
 import { Mail, Lock, Github, Eye, EyeOff, ShieldCheck, Globe, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,9 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { authAPI } from "@/lib/api/auth";
+import { toast } from "sonner";
+import CountryCodeSelect from '@/components/selects/CountryCodeSelect';
 
 // Country code options for phone login
 const countryCodes = [
@@ -52,46 +56,175 @@ const countryCodes = [
 ];
 
 export default function LoginPage() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const { theme } = useTheme();
+  const { theme, systemTheme } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
   const [loginMethod, setLoginMethod] = useState("email");
   const [countryCode, setCountryCode] = useState("+971");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
 
   // Memoize the logo source to prevent unnecessary rerenders
-  const logoSrc = useMemo(() => theme === 'dark' ? "/CloudHubDark.svg" : "/CloudHub.svg", [theme]);
+  const logoSrc = useMemo(() => {
+    const currentTheme = theme === 'system' ? systemTheme : theme;
+    return currentTheme === 'dark' ? "/CloudHubDark.svg" : "/CloudHub.svg";
+  }, [theme, systemTheme]);
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  // Handle redirect in useEffect to avoid re-renders
+  useEffect(() => {
+    if (shouldRedirect) {
+      router.push('/dashboard');
+      setShouldRedirect(false);
+    }
+  }, [shouldRedirect, router]);
+
+  const handleLogin = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
+    
+    // Validate input
+    if (loginMethod === 'email' && !email) {
+      setError('Email is required');
+      return;
+    }
+    if (loginMethod === 'phone' && !phone) {
+      setError('Phone number is required');
+      return;
+    }
+    if (!password) {
+      setError('Password is required');
+      return;
+    }
+    
     setIsLoading(true);
-    // Simulate loading
-    setTimeout(() => setIsLoading(false), 1500);
-  };
+    setError(null);
+
+    try {
+      let username = email;
+      if (loginMethod === 'phone') {
+        // Remove any non-digit characters from phone number
+        const cleanPhone = phone.replace(/\D/g, '');
+        username = `${countryCode}${cleanPhone}@phone.cloudhub.com`;
+      }
+
+      // Log the request payload for debugging
+      console.log('Login request payload:', {
+        username,
+        password: '***',
+        remember_me: rememberMe
+      });
+
+      const response = await authAPI.login({
+        username,
+        password,
+        remember_me: rememberMe
+      });
+
+      // Store tokens
+      localStorage.setItem('access_token', response.access_token);
+      if (response.refresh_token) {
+        localStorage.setItem('refresh_token', response.refresh_token);
+      }
+
+      // Show success message
+      toast.success("Successfully logged in!");
+
+      // Set redirect flag instead of directly pushing
+      setShouldRedirect(true);
+    } catch (err: any) {
+      console.error('Login error details:', {
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data,
+        headers: err.response?.headers
+      });
+
+      let errorMessage = 'Failed to login';
+      
+      if (err.response?.status === 422) {
+        // Handle validation errors
+        const validationErrors = err.response.data;
+        if (typeof validationErrors === 'object') {
+          // Extract all error messages from the validation object
+          const messages = [];
+          for (const key in validationErrors) {
+            if (Array.isArray(validationErrors[key])) {
+              messages.push(...validationErrors[key]);
+            } else if (typeof validationErrors[key] === 'string') {
+              messages.push(validationErrors[key]);
+            }
+          }
+          errorMessage = messages.join(', ') || 'Invalid input data';
+        } else if (err.response.data.detail) {
+          errorMessage = err.response.data.detail;
+        }
+      } else {
+        errorMessage = err.response?.data?.detail || err.message || 'Failed to login';
+      }
+
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [loginMethod, email, phone, countryCode, password, rememberMe, isLoading]);
 
   // Memoize tab switcher to prevent rerenders when other state changes
   const TabSwitcher = useMemo(() => (
-    <div className="mx-auto max-w-[280px] bg-slate-100/70 dark:bg-slate-800/50 rounded-full p-0.5 flex relative shadow-sm">
-      <div 
-        className={`absolute inset-0 m-0.5 ${loginMethod === 'email' ? 'translate-x-0' : 'translate-x-full'} bg-white dark:bg-slate-700 rounded-full transition-transform duration-300 ease-out shadow-sm`} 
-        style={{width: 'calc(50% - 2px)'}}
-      ></div>
-      <button
-        type="button"
-        onClick={() => setLoginMethod('email')}
-        className={`flex items-center justify-center w-1/2 h-10 rounded-full relative z-10 transition-colors duration-200 ${loginMethod === 'email' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
-      >
-        <Mail className="h-4 w-4 mr-2" />
-        <span className="font-medium text-sm">Email</span>
-      </button>
-      <button
-        type="button"
-        onClick={() => setLoginMethod('phone')}
-        className={`flex items-center justify-center w-1/2 h-10 rounded-full relative z-10 transition-colors duration-200 ${loginMethod === 'phone' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
-      >
-        <Phone className="h-4 w-4 mr-2" />
-        <span className="font-medium text-sm">Phone</span>
-      </button>
+    <div className="relative flex items-center justify-center p-1 mb-6">
+      <div className="flex items-center justify-center bg-slate-100/70 dark:bg-slate-800/50 rounded-2xl p-1.5 w-full max-w-xs relative">
+        {/* Background highlight for active tab */}
+        <div
+          className={`absolute inset-1.5 w-[calc(50%-6px)] ${
+            loginMethod === 'email' ? 'left-1.5' : 'left-[calc(50%+3px)]'
+          } h-[calc(100%-12px)] bg-white dark:bg-slate-700 rounded-xl shadow-sm transition-all duration-300 ease-out`}
+        />
+        
+        {/* Email Tab */}
+        <button
+          type="button"
+          onClick={() => setLoginMethod('email')}
+          className={`flex items-center justify-center w-1/2 h-11 rounded-xl relative z-10 transition-all duration-200 ${
+            loginMethod === 'email'
+              ? 'text-blue-600 dark:text-blue-400 scale-100'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 scale-95'
+          }`}
+        >
+          <div className={`flex items-center space-x-2 transition-transform duration-200 ${
+            loginMethod === 'email' ? 'transform scale-105' : ''
+          }`}>
+            <Mail className={`h-4 w-4 transition-colors duration-200 ${
+              loginMethod === 'email' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'
+            }`} />
+            <span className="font-medium text-sm">Email</span>
+          </div>
+        </button>
+        
+        {/* Phone Tab */}
+        <button
+          type="button"
+          onClick={() => setLoginMethod('phone')}
+          className={`flex items-center justify-center w-1/2 h-11 rounded-xl relative z-10 transition-all duration-200 ${
+            loginMethod === 'phone'
+              ? 'text-blue-600 dark:text-blue-400 scale-100'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 scale-95'
+          }`}
+        >
+          <div className={`flex items-center space-x-2 transition-transform duration-200 ${
+            loginMethod === 'phone' ? 'transform scale-105' : ''
+          }`}>
+            <Phone className={`h-4 w-4 transition-colors duration-200 ${
+              loginMethod === 'phone' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'
+            }`} />
+            <span className="font-medium text-sm">Phone</span>
+          </div>
+        </button>
+      </div>
     </div>
   ), [loginMethod]);
 
@@ -113,6 +246,9 @@ export default function LoginPage() {
             autoCorrect="off"
             className="pl-10 border-slate-200 dark:border-slate-700 focus:border-blue-500 group-hover:border-blue-400 dark:group-hover:border-blue-500 transition-colors h-11 rounded-lg shadow-sm"
             disabled={isLoading}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
           />
         </div>
       </div>
@@ -131,6 +267,9 @@ export default function LoginPage() {
             autoComplete="current-password"
             className="pl-10 pr-10 border-slate-200 dark:border-slate-700 focus:border-blue-500 group-hover:border-blue-400 dark:group-hover:border-blue-500 transition-colors h-11 rounded-lg shadow-sm"
             disabled={isLoading}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
           />
           <button 
             type="button"
@@ -142,41 +281,65 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
-  ), [isLoading, showPassword]);
+  ), [isLoading, showPassword, email, password]);
 
   // Memoize phone login form
   const PhoneLoginForm = useMemo(() => (
     <div className="space-y-3">
-      <Label htmlFor="phone" className="text-sm font-medium flex items-center">
-        Phone Number <Phone className="h-3.5 w-3.5 ml-1 text-muted-foreground" />
+      <Label htmlFor="phone" className="-mb-1.5 text-sm font-medium flex items-center">
+        Phone Number <Phone className="h-3 w-3 ml-1 text-muted-foreground" />
       </Label>
       <div className="flex space-x-2">
-        <div className="w-24">
-          <Select value={countryCode} onValueChange={setCountryCode}>
-            <SelectTrigger className="border-slate-200 dark:border-slate-700 focus:border-blue-500 hover:border-blue-400 dark:hover:border-blue-500 transition-colors h-11 rounded-lg shadow-sm">
-              <SelectValue placeholder="+1" />
-            </SelectTrigger>
-            <SelectContent className="max-h-[200px]">
-              {countryCodes.map(code => (
-                <SelectItem key={code.value} value={code.value}>{code.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="w-[120px]">
+          <CountryCodeSelect 
+            value={countryCode} 
+            onValueChange={(value: string) => setCountryCode(value)} 
+          />
         </div>
         <div className="relative group flex-1">
+          <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
           <Input
             id="phone"
             placeholder="(555) 123-4567"
             type="tel"
-            className="border-slate-200 dark:border-slate-700 focus:border-blue-500 group-hover:border-blue-400 dark:group-hover:border-blue-500 transition-colors h-11 rounded-lg shadow-sm"
+            className="pl-10 border-slate-200 dark:border-slate-700 focus:border-blue-500 group-hover:border-blue-400 dark:group-hover:border-blue-500 transition-colors h-11 rounded-lg shadow-sm"
             disabled={isLoading}
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
+            required
           />
         </div>
       </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="password" className="text-sm font-medium flex items-center">
+          Password <Lock className="h-3.5 w-3.5 ml-1 text-muted-foreground" />
+        </Label>
+        <div className="relative group">
+          <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+          <Input
+            id="password"
+            placeholder="••••••••"
+            type={showPassword ? "text" : "password"}
+            autoCapitalize="none"
+            autoComplete="current-password"
+            className="pl-10 pr-10 border-slate-200 dark:border-slate-700 focus:border-blue-500 group-hover:border-blue-400 dark:group-hover:border-blue-500 transition-colors h-11 rounded-lg shadow-sm"
+            disabled={isLoading}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <button 
+            type="button"
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors" 
+            onClick={() => setShowPassword(!showPassword)}
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+      </div>
     </div>
-  ), [countryCode, phone, isLoading]);
+  ), [countryCode, phone, password, showPassword, isLoading]);
 
   // Memoize loading button for performance
   const SubmitButton = useMemo(() => (
@@ -278,18 +441,25 @@ export default function LoginPage() {
           </div>
           
           <Card className="border-none shadow-xl w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md mx-auto overflow-hidden rounded-2xl">
-            {/* Simplified tab switcher */}
-            <div className="pt-6 px-6 pb-4">
+            <CardContent className="pt-6 px-6 sm:px-8">
               {TabSwitcher}
-            </div>
-            
-            <CardContent className="pt-3 px-6 sm:px-8">
-              <form onSubmit={handleEmailLogin} className="space-y-4">
+              
+              <form onSubmit={handleLogin} className="space-y-4">
                 {loginMethod === "email" ? EmailLoginForm : PhoneLoginForm}
+
+                {error && (
+                  <div className="bg-red-50 dark:bg-red-900/30 p-3 rounded-lg border border-red-100 dark:border-red-800/30 text-sm text-red-600 dark:text-red-400">
+                    {error}
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <Checkbox id="remember" />
+                    <Checkbox 
+                      id="remember" 
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked === true)}
+                    />
                     <Label 
                       htmlFor="remember" 
                       className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
@@ -307,7 +477,6 @@ export default function LoginPage() {
                 </div>
 
                 {SubmitButton}
-                {SocialLoginButtons}
 
                 <div className="bg-blue-50/70 dark:bg-blue-900/30 p-4 rounded-xl border border-blue-100 dark:border-blue-800/30 flex items-center text-sm text-blue-700 dark:text-blue-300 mt-4 shadow-sm">
                   <ShieldCheck className="h-4 w-4 mr-2 flex-shrink-0" />

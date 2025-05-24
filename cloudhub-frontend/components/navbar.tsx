@@ -108,8 +108,11 @@ export default function Navbar() {
           <Button
             size="sm"
             className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-full px-5 shadow-md shadow-violet-600/20 hover:shadow-violet-600/40 transition-all duration-300"
+            asChild
           >
-            Dashboard
+            <Link href="/dashboard/organizer/my-hackathons">
+              Dashboard
+            </Link>
           </Button>
         </div>
 
@@ -158,8 +161,10 @@ export default function Navbar() {
               >
                 Explore Hackathons
               </Button>
-              <Button className="w-full py-6 h-auto text-base bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 rounded-xl shadow-md shadow-violet-600/20">
-                Dashboard
+              <Button className="w-full py-6 h-auto text-base bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 rounded-xl shadow-md shadow-violet-600/20" asChild>
+                <Link href="/dashboard/organizer/my-hackathons">
+                  Dashboard
+                </Link>
               </Button>
             </div>
           </div>

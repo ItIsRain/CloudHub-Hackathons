@@ -7,7 +7,9 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    // Image optimization is now enabled by removing 'unoptimized: true'
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   // Enable React strict mode for better development experience and performance
   reactStrictMode: true,

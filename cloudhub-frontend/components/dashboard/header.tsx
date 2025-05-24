@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/tabs"
 import { useScrollHandler } from "@/hooks/use-scroll-handler"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
 
 export default function DashboardHeader() {
   const [notifications] = useState(3)
@@ -92,9 +93,12 @@ export default function DashboardHeader() {
               variant="outline"
               size="sm"
               className="hidden md:flex items-center gap-1 text-slate-700 border border-slate-100 bg-white/80 backdrop-blur-sm shadow-sm hover:bg-blue-50 hover:text-[#2684ff] hover:border-blue-200 transition-all"
+              asChild
             >
-              <Plus className="h-4 w-4" />
-              <span>New Hackathon</span>
+              <Link href="/dashboard/organizer/my-hackathons">
+                <Plus className="h-4 w-4" />
+                <span>New Hackathon</span>
+              </Link>
             </Button>
           ) : (
             <Dialog open={joinDialogOpen} onOpenChange={setJoinDialogOpen}>

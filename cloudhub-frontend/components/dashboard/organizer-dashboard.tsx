@@ -41,6 +41,13 @@ import {
 } from "recharts"
 import { useRef, useEffect, useState } from "react"
 import Link from "next/link"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 const participantData = [
   { name: "Registered", value: 450 },
@@ -118,15 +125,9 @@ export default function OrganizerDashboard() {
               
               <div className="flex flex-wrap gap-4">
                 <Button className="bg-white text-indigo-700 hover:bg-white/90 shadow-lg transition-all group px-5 py-2 h-auto text-sm font-medium rounded-xl border border-white/50" asChild>
-                  <Link href="/dashboard/my-hackathons">
+                  <Link href="/dashboard/organizer/my-hackathons">
                     <PlusCircle className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
                     <span>Create Hackathon</span>
-                  </Link>
-                </Button>
-                <Button variant="outline" className="text-white border-white/20 bg-white/10 hover:bg-white hover:text-indigo-700 backdrop-blur-xl transition-all group px-5 py-2 h-auto text-sm font-medium rounded-xl" asChild>
-                  <Link href="/dashboard/analytics">
-                    <BarChart3 className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
-                    <span>View Analytics</span>
                   </Link>
                 </Button>
               </div>
@@ -151,7 +152,7 @@ export default function OrganizerDashboard() {
                   </div>
                 </div>
                 <Button variant="outline" className="w-full text-white border-white/20 bg-white/10 hover:bg-white hover:text-indigo-700 backdrop-blur-xl transition-all group px-4 py-2 h-auto text-sm font-medium rounded-xl" asChild>
-                  <Link href="/dashboard/hackathons/1">
+                  <Link href="/dashboard/organizer/hackathons/ai-innovation-challenge/">
                     <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
                     <span>View Details</span>
                   </Link>
@@ -164,7 +165,7 @@ export default function OrganizerDashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card className="bg-white border border-slate-100 shadow-sm hover:shadow-md transition-all overflow-hidden group cursor-pointer" onClick={() => window.location.href = '/dashboard/my-hackathons'}>
+        <Card className="bg-white border border-slate-100 shadow-sm hover:shadow-md transition-all overflow-hidden group cursor-pointer" onClick={() => window.location.href = '/dashboard/organizer/my-hackathons'}>
           <CardContent className="p-0">
             <div className="p-5">
               <div className="mb-3 flex justify-between items-start">
@@ -246,13 +247,16 @@ export default function OrganizerDashboard() {
               <CardTitle className="text-slate-900">Participant Analytics</CardTitle>
               <CardDescription className="text-slate-500">Overview of participant engagement</CardDescription>
             </div>
-            <Tabs defaultValue="all" className="w-[250px]">
-              <TabsList className="grid w-full grid-cols-3 bg-slate-50">
-                <TabsTrigger value="all" className="data-[state=active]:bg-white data-[state=active]:text-blue-600">All</TabsTrigger>
-                <TabsTrigger value="ai-challenge" className="data-[state=active]:bg-white data-[state=active]:text-blue-600">AI Challenge</TabsTrigger>
-                <TabsTrigger value="web3" className="data-[state=active]:bg-white data-[state=active]:text-blue-600">Web3</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <Select defaultValue="all">
+              <SelectTrigger className="w-[180px] bg-white border-slate-200">
+                <SelectValue placeholder="Select hackathon" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Hackathons</SelectItem>
+                <SelectItem value="ai-challenge">AI Challenge</SelectItem>
+                <SelectItem value="web3">Web3 Hackathon</SelectItem>
+              </SelectContent>
+            </Select>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -341,20 +345,12 @@ export default function OrganizerDashboard() {
                 </div>
               </div>
             </div>
-            <div className="mt-6 pt-4 border-t border-slate-100">
-              <Button variant="outline" size="sm" className="text-blue-700 border-blue-200 hover:bg-blue-50" asChild>
-                <Link href="/dashboard/analytics">
-                  View Detailed Analytics
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Link>
-              </Button>
-            </div>
           </CardContent>
         </Card>
 
         {/* Quick Actions */}
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-4">
             <CardTitle>Quick Actions</CardTitle>
             <CardDescription>Manage your hackathons</CardDescription>
           </CardHeader>
@@ -365,26 +361,20 @@ export default function OrganizerDashboard() {
                   title: "Review Submissions",
                   description: "15 new submissions to review",
                   icon: <FileText className="h-5 w-5 text-[#2684ff]" />,
-                  link: "/dashboard/submissions",
+                  link: "/dashboard/organizer/judging",
                 },
                 {
                   title: "Manage Judges",
                   description: "Assign judges to projects",
                   icon: <Award className="h-5 w-5 text-amber-600" />,
-                  link: "/dashboard/judging",
+                  link: "/dashboard/organizer/judging",
                 },
                 {
                   title: "Send Announcements",
                   description: "Update participants",
                   icon: <Megaphone className="h-5 w-5 text-emerald-600" />,
-                  link: "/dashboard/announcements",
-                },
-                {
-                  title: "View Analytics",
-                  description: "Track hackathon performance",
-                  icon: <BarChart3 className="h-5 w-5 text-[#2684ff]" />,
-                  link: "/dashboard/analytics",
-                },
+                  link: "/dashboard/organizer/announcements",
+                }
               ].map((action, index) => (
                 <Button
                   key={index}
@@ -407,10 +397,6 @@ export default function OrganizerDashboard() {
                 </Button>
               ))}
             </div>
-            <Button className="w-full mt-4 bg-blue-600 hover:bg-blue-700">
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Create New Hackathon
-            </Button>
           </CardContent>
         </Card>
       </div>
@@ -559,7 +545,12 @@ export default function OrganizerDashboard() {
                           <span className="text-slate-600">Progress</span>
                           <span className="font-medium text-blue-700">{hackathon.progress}%</span>
                         </div>
-                        <Progress value={hackathon.progress} className="h-1.5 bg-slate-100" indicatorClassName="bg-gradient-to-r from-blue-500 to-indigo-500" />
+                        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-300" 
+                            style={{ width: `${hackathon.progress}%` }}
+                          ></div>
+                        </div>
                       </div>
                       
                       <div className="flex items-center justify-between pt-2">
@@ -589,7 +580,7 @@ export default function OrganizerDashboard() {
               
               <div className="flex justify-center p-6 pt-2">
                 <Button variant="outline" className="w-full max-w-sm border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800" asChild>
-                  <Link href="/dashboard/my-hackathons">
+                  <Link href="/dashboard/organizer/my-hackathons">
                     Manage All Hackathons
                   </Link>
                 </Button>
