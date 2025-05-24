@@ -45,6 +45,7 @@ import AnimatedGradientText from "../animated-gradient-text"
 import { useUserRole } from "./user-role-context"
 import { LucideIcon } from "lucide-react"
 import Image from "next/image"
+import { useAuth } from '@/lib/auth'
 
 // Define the type for navigation items
 interface NavItem {
@@ -58,6 +59,7 @@ export default function DashboardSidebar() {
   const pathname = usePathname()
   const { state } = useSidebar()
   const { isOrganizer } = useUserRole()
+  const { user, logout } = useAuth()
 
   // Check if a menu item is active based on the current path
   const isActive = (href: string) => {
@@ -220,17 +222,24 @@ export default function DashboardSidebar() {
         <div className="p-4">
           <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
             <Avatar className="h-9 w-9 border border-slate-100 shadow-sm">
-              <AvatarImage src="/placeholder.svg?height=36&width=36" alt="User" />
-              <AvatarFallback>JD</AvatarFallback>
+              <AvatarImage src={user?.avatar || '/default-avatar.png'} alt={user?.full_name || 'User'} />
+              <AvatarFallback>
+                {user?.full_name ? user.full_name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U'}
+              </AvatarFallback>
             </Avatar>
             <div className="group-data-[collapsible=icon]:hidden">
-              <p className="text-sm font-medium">John Doe</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{isOrganizer ? "Organizer" : "Participant"}</p>
+              <p className="text-sm font-medium text-slate-900">{user?.full_name || 'Loading...'}</p>
+              <p className="text-xs text-slate-500">{user?.email || ''}</p>
             </div>
           </div>
 
           <div className="mt-4 group-data-[collapsible=icon]:hidden">
-            <Button variant="outline" size="sm" className="w-full justify-start text-slate-600 dark:text-slate-400 border-slate-100 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={logout}
+              className="w-full justify-start text-slate-600 dark:text-slate-400 border-slate-100 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+            >
               <LogOut className="mr-2 h-4 w-4" />
               Log out
             </Button>

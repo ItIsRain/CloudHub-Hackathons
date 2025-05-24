@@ -62,6 +62,7 @@ export interface AuthResponse {
     email: string;
     full_name: string;
     role: UserRole;
+    avatar?: string;
     // ... other user fields
   };
   access_token: string;

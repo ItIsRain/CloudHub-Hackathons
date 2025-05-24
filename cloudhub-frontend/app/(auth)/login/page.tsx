@@ -123,9 +123,19 @@ export default function LoginPage() {
         throw new Error('Invalid credentials');
       }
 
-      // Store tokens
+      // Store tokens and user data
       localStorage.setItem('access_token', response.access_token);
       localStorage.setItem('refresh_token', response.refresh_token);
+      
+      // Store user data
+      const userData = {
+        id: response.user.id,
+        email: response.user.email,
+        full_name: response.user.full_name,
+        role: response.user.role,
+        avatar: response.user.avatar || null
+      };
+      localStorage.setItem('user', JSON.stringify(userData));
 
       // Show success message
       toast.success("Successfully logged in!");

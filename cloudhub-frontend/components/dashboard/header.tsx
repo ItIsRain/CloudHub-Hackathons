@@ -38,6 +38,7 @@ import {
 import { useScrollHandler } from "@/hooks/use-scroll-handler"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
+import { useAuth } from '@/lib/auth'
 
 export default function DashboardHeader() {
   const [notifications] = useState(3)
@@ -47,6 +48,7 @@ export default function DashboardHeader() {
   const [inviteCode, setInviteCode] = useState("")
   const [inviteLink, setInviteLink] = useState("")
   const { isSticky, scrollY } = useScrollHandler()
+  const { user, logout } = useAuth()
 
   // Get page title based on pathname
   const getPageTitle = () => {
@@ -236,26 +238,38 @@ export default function DashboardHeader() {
                 className="relative h-8 gap-1 text-slate-700 hover:bg-blue-50 hover:text-[#2684ff] transition-all"
               >
                 <Avatar className="h-6 w-6 border border-slate-100 shadow-sm">
-                  <AvatarImage src="/placeholder.svg?height=24&width=24" alt="User" />
-                  <AvatarFallback>JD</AvatarFallback>
+                  <AvatarImage src={user?.avatar || '/default-avatar.png'} alt={user?.full_name || 'User'} />
+                  <AvatarFallback>{user?.full_name ? user.full_name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U'}</AvatarFallback>
                 </Avatar>
-                <span className="hidden md:inline-block">John Doe</span>
+                <span className="hidden md:inline-block">{user?.full_name || 'Loading...'}</span>
                 <ChevronDown className="h-4 w-4 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 bg-white/90 backdrop-blur-md border-slate-100 shadow-md">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{user?.full_name || 'Loading...'}</p>
+                  <p className="text-xs leading-none text-muted-foreground">{user?.email || ''}</p>
+                </div>
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="hover:bg-slate-50 hover:text-slate-900 cursor-pointer">
-                <User className="mr-2 h-4 w-4" />
-                Profile
+              <DropdownMenuItem asChild className="hover:bg-slate-50 hover:text-slate-900 cursor-pointer">
+                <Link href="/dashboard/profile" className="flex items-center">
+                  <User className="mr-2 h-4 w-4" />
+                  Profile
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem className="hover:bg-slate-50 hover:text-slate-900 cursor-pointer">
-                <Settings className="mr-2 h-4 w-4" />
-                Settings
+              <DropdownMenuItem asChild className="hover:bg-slate-50 hover:text-slate-900 cursor-pointer">
+                <Link href="/dashboard/settings" className="flex items-center">
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="hover:bg-red-50 hover:text-red-600 cursor-pointer">
+              <DropdownMenuItem 
+                onClick={logout}
+                className="hover:bg-red-50 hover:text-red-600 cursor-pointer"
+              >
                 <LogOut className="mr-2 h-4 w-4" />
                 Log out
               </DropdownMenuItem>

@@ -70,9 +70,10 @@ axiosInstance.interceptors.response.use(
         // Retry the original request
         return axiosInstance(originalRequest);
       } catch (refreshError) {
-        // If refresh fails, clear tokens and redirect
+        // If refresh fails, clear tokens and user data
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
         
         // Only redirect if we're not already on the login page
         if (!window.location.pathname.includes('/login')) {
