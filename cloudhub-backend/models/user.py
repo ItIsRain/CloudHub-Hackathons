@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 from beanie import Document, Link, before_event, Replace, Insert
 from pydantic import Field, EmailStr
-from uuid import UUID
+from bson import ObjectId
 from pymongo import ASCENDING, DESCENDING, IndexModel
 from pymongo import TEXT
 
@@ -111,7 +111,7 @@ class User(Document):
     def to_dict(self) -> dict:
         """Convert user instance to dictionary."""
         base_dict = {
-            'id': str(self.id),
+            'id': str(self.id) if self.id else None,  # Convert ObjectId to string
             'email': self.email,
             'name': self.name,
             'role': self.role,
@@ -142,9 +142,9 @@ class User(Document):
             'last_seen': self.last_seen.isoformat() if self.last_seen else None,
             'is_team_lead': self.is_team_lead,
             'permissions': self.permissions,
-            'active_hackathons': self.active_hackathons,
-            'completed_hackathons': self.completed_hackathons,
-            'active_teams': self.active_teams,
+            'active_hackathons': [str(h) if isinstance(h, ObjectId) else h for h in self.active_hackathons],
+            'completed_hackathons': [str(h) if isinstance(h, ObjectId) else h for h in self.completed_hackathons],
+            'active_teams': [str(t) if isinstance(t, ObjectId) else t for t in self.active_teams],
             'rating': self.rating,
             'achievement_count': self.achievement_count,
             'reputation_score': self.reputation_score,
@@ -207,15 +207,9 @@ class User(Document):
     @classmethod
     async def get_by_email(cls, email: str) -> Optional['User']:
         """Get user by email."""
-        return await cls.find_one(
-            cls.email == email,
-            cls.is_deleted == False
-        )
+        return await cls.find_one(cls.email == email, cls.is_deleted == False)
     
     @classmethod
     async def get_active_users(cls) -> List['User']:
         """Get all active users."""
-        return await cls.find(
-            cls.is_deleted == False,
-            cls.account_locked == False
-        ).to_list() 
+        return await cls.find(cls.is_deleted == False).to_list() 

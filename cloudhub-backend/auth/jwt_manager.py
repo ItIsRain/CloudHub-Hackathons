@@ -1,15 +1,20 @@
 from datetime import datetime, timedelta
 from typing import Optional, Dict
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from motor.motor_asyncio import AsyncIOMotorClient
-import uuid
+from bson import ObjectId
+from bson.errors import InvalidId
 
 from models.user import User
 from models.token import RefreshToken
 from database.dependencies import get_db
 from config.config import settings
+import logging
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 security = HTTPBearer()
 
@@ -28,7 +33,7 @@ class TokenManager:
         try:
             return jwt.encode(to_encode, cls.SECRET_KEY, algorithm=cls.ALGORITHM)
         except Exception as e:
-            print(f"Error creating access token: {str(e)}")
+            logger.error(f"Error creating access token: {str(e)}")
             raise
 
     @classmethod
@@ -49,14 +54,14 @@ class TokenManager:
         try:
             # Create access token
             access_token_data = {
-                "sub": str(user.id),
+                "sub": str(user.id),  # Convert ObjectId to string
                 "email": user.email,
                 "role": user.role,
                 "type": "access"
             }
-            print("Creating access token with data:", access_token_data)
+            logger.debug(f"Creating access token with data: {access_token_data}")
             access_token = cls.create_access_token(access_token_data)
-            print("Access token created successfully")
+            logger.debug("Access token created successfully")
 
             # Get device info
             device_info = {
@@ -66,13 +71,13 @@ class TokenManager:
             }
 
             # Create refresh token
-            print("Creating refresh token...")
+            logger.debug("Creating refresh token...")
             raw_refresh_token, token_doc = await RefreshToken.create_token(
                 user=user,
                 device_info=device_info,
                 expires_in_days=cls.REFRESH_TOKEN_EXPIRE_DAYS
             )
-            print("Refresh token created successfully")
+            logger.debug("Refresh token created successfully")
 
             return {
                 "access_token": access_token,
@@ -81,7 +86,7 @@ class TokenManager:
                 "expires_in": cls.ACCESS_TOKEN_EXPIRE_MINUTES * 60
             }
         except Exception as e:
-            print(f"Error in create_tokens: {str(e)}")
+            logger.error(f"Error in create_tokens: {str(e)}")
             raise
 
     @classmethod
@@ -107,7 +112,7 @@ class TokenManager:
 
         # Create new access token
         access_token_data = {
-            "sub": str(token_doc.user.id),
+            "sub": str(token_doc.user.id),  # Convert ObjectId to string
             "email": token_doc.user.email,
             "role": token_doc.user.role,
             "type": "access"
@@ -131,7 +136,15 @@ class TokenManager:
     @classmethod
     async def revoke_all_user_tokens(cls, user_id: str):
         """Revoke all refresh tokens for a user."""
-        await RefreshToken.revoke_all_for_user(uuid.UUID(user_id))
+        try:
+            user_obj_id = ObjectId(user_id)
+            await RefreshToken.revoke_all_for_user(user_obj_id)
+        except InvalidId as e:
+            logger.error(f"Invalid ObjectId format for user_id: {user_id}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid user ID format: {str(e)}"
+            )
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security)
@@ -155,14 +168,22 @@ async def get_current_user(
                 detail="Invalid token payload"
             )
         
-        user = await User.find_one(User.id == uuid.UUID(user_id))
-        if user is None:
+        try:
+            # Convert string to ObjectId
+            user_obj_id = ObjectId(user_id)
+            user = await User.find_one(User.id == user_obj_id)
+            if user is None:
+                raise HTTPException(
+                    status_code=401,
+                    detail="User not found"
+                )
+            return user
+        except InvalidId as e:
+            logger.error(f"Invalid ObjectId format in token: {user_id}")
             raise HTTPException(
                 status_code=401,
-                detail="User not found"
+                detail=f"Invalid user ID format in token: {str(e)}"
             )
-        
-        return user
         
     except JWTError as e:
         raise HTTPException(

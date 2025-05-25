@@ -6,10 +6,12 @@ from contextlib import asynccontextmanager
 import logging
 import traceback
 from time import time
+from bson import ObjectId
+from bson.errors import InvalidId
 
 from config.config import settings
 from utils.error_handlers import APIError, setup_logging
-from database import get_db, close_db
+from database import get_db, close_db, test_connection
 from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
 
@@ -31,7 +33,8 @@ logger = logging.getLogger(__name__)
 db_status = {
     "last_check": 0,
     "is_connected": False,
-    "check_interval": 5  # Check every 5 seconds
+    "check_interval": 5,  # Check every 5 seconds
+    "beanie_initialized": False
 }
 
 def register_routes(app: FastAPI):
@@ -48,6 +51,7 @@ def register_routes(app: FastAPI):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan events for FastAPI application."""
+    global db_status
     # Startup
     try:
         # Initialize database connection
@@ -73,6 +77,17 @@ async def lifespan(app: FastAPI):
                 allow_index_dropping=True
             )
             logger.info("Beanie ODM initialized with all models")
+            db_status["beanie_initialized"] = True
+            
+            # Test ObjectId handling
+            try:
+                test_id = ObjectId()
+                str_id = str(test_id)
+                logger.debug(f"Successfully tested ObjectId handling: {str_id}")
+            except Exception as oid_err:
+                logger.error(f"Error testing ObjectId handling: {str(oid_err)}")
+                raise
+            
         except Exception as init_error:
             logger.error(f"Error during Beanie initialization: {str(init_error)}")
             logger.error(f"Traceback: {traceback.format_exc()}")
@@ -87,6 +102,7 @@ async def lifespan(app: FastAPI):
     
     # Shutdown
     close_db()
+    db_status["beanie_initialized"] = False
     logger.info("MongoDB connection closed")
 
 # Middleware to check database connection
@@ -106,19 +122,48 @@ async def check_db_connection(request: Request, call_next):
     try:
         # Only check connection if enough time has passed since last check
         if current_time - db_status["last_check"] > db_status["check_interval"]:
-            client = get_db()
-            await client.admin.command('ping')
-            db_status["is_connected"] = True
+            logger.debug("Checking database connection...")
+            is_connected = await test_connection()
+            db_status["is_connected"] = is_connected
             db_status["last_check"] = current_time
+            
+            if not is_connected:
+                logger.error("Database connection test failed")
+                raise ConnectionError("Database connection test failed")
+            
+            if not db_status["beanie_initialized"]:
+                logger.error("Beanie ODM not initialized")
+                raise ConnectionError("Database ODM not initialized")
+            
+            logger.debug("Database connection check passed")
         
         if not db_status["is_connected"]:
             raise ConnectionError("Database is not connected")
+
+        # Test ObjectId handling before proceeding
+        try:
+            if "id" in request.path_params:
+                id_str = request.path_params["id"]
+                try:
+                    ObjectId(id_str)
+                except InvalidId:
+                    logger.error(f"Invalid ObjectId in request: {id_str}")
+                    return JSONResponse(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        content={
+                            "status": "error",
+                            "message": "Invalid ID format"
+                        }
+                    )
+        except Exception as id_err:
+            logger.error(f"Error handling ObjectId: {str(id_err)}")
 
         return await call_next(request)
 
     except Exception as e:
         error_msg = str(e)
         logger.error(f"Database connection error in middleware: {error_msg}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         db_status["is_connected"] = False
         
         # Create error response with CORS headers
@@ -206,19 +251,22 @@ async def general_exception_handler(request: Request, exc: Exception):
         }
     )
 
-# Health check endpoint
 @app.get("/health", tags=["Health"])
 async def health_check():
+    """Health check endpoint."""
     try:
-        client = get_db()
-        await client.admin.command('ping')
-        return {"status": "healthy"}
+        is_connected = await test_connection()
+        return {
+            "status": "healthy" if is_connected else "unhealthy",
+            "database": "connected" if is_connected else "disconnected",
+            "beanie_initialized": db_status["beanie_initialized"]
+        }
     except Exception as e:
         logger.error(f"Health check failed: {str(e)}")
-        return JSONResponse(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            content={"status": "database not ready"}
-        )
+        return {
+            "status": "unhealthy",
+            "error": str(e)
+        }
 
 if __name__ == "__main__":
     import uvicorn

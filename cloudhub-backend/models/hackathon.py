@@ -5,6 +5,7 @@ from beanie import Document, Link, before_event, Replace, Insert
 from models.base import BaseModel as BaseDBModel
 from enum import Enum
 from pymongo import ASCENDING, DESCENDING, TEXT, IndexModel
+from bson import ObjectId
 
 class HackathonStatus(str, Enum):
     DRAFT = "draft"
@@ -15,10 +16,9 @@ class HackathonStatus(str, Enum):
     ARCHIVED = "archived"
 
 class PricingTier(str, Enum):
-    FREE = "free"
     STARTER = "starter"
-    PROFESSIONAL = "professional"
-    ENTERPRISE = "enterprise"
+    GROWTH = "growth"
+    SCALE = "scale"
 
 class Technology(BaseDBModel):
     name: str
@@ -42,12 +42,12 @@ class Timeline(BaseDBModel):
     winners_announcement: datetime
 
 class BillingInfo(BaseDBModel):
-    pricing_tier: PricingTier
-    base_price: float
-    participant_price: float = Field(description="Price per participant")
-    total_amount: float
-    currency: str = "AED"
-    is_paid: bool = False
+    pricing_tier: PricingTier = Field(..., description="Pricing tier (starter, growth, scale)")
+    base_price: float = Field(..., description="Base price for the package")
+    participant_price: float = Field(default=0, description="Price per participant")
+    total_amount: float = Field(..., description="Total amount including base price and participant fees")
+    currency: str = Field(default="AED", description="Currency for pricing")
+    is_paid: bool = Field(default=False, description="Payment status")
     payment_date: Optional[datetime] = None
     invoice_id: Optional[str] = None
 
@@ -108,6 +108,8 @@ class Hackathon(Document):
     is_featured: bool = Field(default=False)
     is_private: bool = Field(default=False)
     access_code: Optional[str] = None
+    is_deleted: bool = Field(default=False)
+    deleted_at: Optional[datetime] = None
     
     class Settings:
         name = "hackathons"
@@ -126,6 +128,86 @@ class Hackathon(Document):
             )
         ]
     
+    def to_dict(self) -> dict:
+        """Convert hackathon instance to dictionary formatted for API response."""
+        # Format timeline dates as ISO strings
+        timeline_dict = None
+        if self.timeline:
+            timeline_dict = {
+                'registration_start': self.timeline.registration_start.isoformat() + 'Z' if self.timeline.registration_start else None,
+                'registration_end': self.timeline.registration_end.isoformat() + 'Z' if self.timeline.registration_end else None,
+                'event_start': self.timeline.event_start.isoformat() + 'Z' if self.timeline.event_start else None,
+                'event_end': self.timeline.event_end.isoformat() + 'Z' if self.timeline.event_end else None,
+                'judging_start': self.timeline.judging_start.isoformat() + 'Z' if self.timeline.judging_start else None,
+                'judging_end': self.timeline.judging_end.isoformat() + 'Z' if self.timeline.judging_end else None,
+                'winners_announcement': self.timeline.winners_announcement.isoformat() + 'Z' if self.timeline.winners_announcement else None,
+            }
+        
+        # Format billing info to match expected API response
+        billing_dict = None
+        if self.billing:
+            billing_dict = {
+                'package': self.billing.pricing_tier.value,  # Convert enum to string
+                'amount': self.billing.total_amount,  # Use total_amount as the main amount
+                'currency': self.billing.currency,
+                'pricing_tier': self.billing.pricing_tier.value,
+                'base_price': self.billing.base_price,
+                'participant_price': self.billing.participant_price,
+                'total_amount': self.billing.total_amount,
+                'is_paid': self.billing.is_paid,
+                'payment_date': self.billing.payment_date.isoformat() + 'Z' if self.billing.payment_date else None,
+                'invoice_id': self.billing.invoice_id,
+            }
+        
+        base_dict = {
+            'id': str(self.id) if self.id else None,  # Convert ObjectId to string
+            'title': self.title,
+            'slug': self.slug,
+            'description': self.description,
+            'short_description': self.short_description,
+            'cover_image': str(self.cover_image) if self.cover_image else None,
+            'banner_image': str(self.banner_image) if self.banner_image else None,
+            'organizer_id': str(self.organizer_id) if self.organizer_id else None,  # Convert ObjectId to string
+            'organization_name': self.organization_name,
+            'organization_logo': str(self.organization_logo) if self.organization_logo else None,
+            'status': self.status,
+            'max_participants': self.max_participants,
+            'min_team_size': self.min_team_size,
+            'max_team_size': self.max_team_size,
+            'is_team_required': self.is_team_required,
+            'technologies': [tech.dict() for tech in self.technologies] if self.technologies else [],
+            'prizes': [prize.dict() for prize in self.prizes] if self.prizes else [],
+            'total_prize_pool': float(self.total_prize_pool),
+            'timeline': timeline_dict,
+            'requirements': self.requirements,
+            'rules': self.rules,
+            'judging_criteria': self.judging_criteria,
+            'resources': [str(resource) for resource in self.resources] if self.resources else [],
+            'submission_template': self.submission_template,
+            'registered_participants': self.registered_participants,
+            'active_participants': self.active_participants,
+            'submitted_projects': self.submitted_projects,
+            'total_teams': self.total_teams,
+            'billing': billing_dict,
+            'created_at': self.created_at.isoformat() + 'Z' if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() + 'Z' if self.updated_at else None,
+            'published_at': self.published_at.isoformat() + 'Z' if self.published_at else None,
+            'tags': self.tags,
+            'is_featured': self.is_featured,
+            'is_private': self.is_private,
+            'access_code': self.access_code,
+            'is_deleted': self.is_deleted,
+            'deleted_at': self.deleted_at.isoformat() + 'Z' if self.deleted_at else None,
+        }
+        return base_dict
+
+    @before_event([Replace, Insert])
+    def update_timestamps(self):
+        """Update timestamps before saving."""
+        if not self.created_at:
+            self.created_at = datetime.utcnow()
+        self.updated_at = datetime.utcnow()
+
     async def update_counts(self):
         """Update participant counts."""
         from models.user import User
@@ -155,23 +237,23 @@ class Hackathon(Document):
         """Update hackathon progress based on timeline."""
         now = datetime.utcnow()
         
-        if now < self.start_date:
+        if now < self.timeline.event_start:
             self.progress = 0
-            self.status = 'Upcoming'
-        elif now > self.end_date:
+            self.status = HackathonStatus.DRAFT
+        elif now > self.timeline.event_end:
             self.progress = 100
-            self.status = 'Completed'
+            self.status = HackathonStatus.COMPLETED
         else:
-            total_duration = (self.end_date - self.start_date).total_seconds()
-            elapsed = (now - self.start_date).total_seconds()
+            total_duration = (self.timeline.event_end - self.timeline.event_start).total_seconds()
+            elapsed = (now - self.timeline.event_start).total_seconds()
             self.progress = min(100, (elapsed / total_duration) * 100)
-            self.status = 'Active'
+            self.status = HackathonStatus.ACTIVE
     
     @classmethod
     async def get_active_hackathons(cls) -> List['Hackathon']:
         """Get all active hackathons."""
         return await cls.find(
-            cls.status == 'Active',
+            cls.status == HackathonStatus.ACTIVE,
             cls.is_deleted == False
         ).to_list()
     
@@ -179,7 +261,7 @@ class Hackathon(Document):
     async def get_upcoming_hackathons(cls) -> List['Hackathon']:
         """Get all upcoming hackathons."""
         return await cls.find(
-            cls.status == 'Upcoming',
+            cls.status == HackathonStatus.PUBLISHED,
             cls.is_deleted == False
         ).to_list()
     
@@ -187,6 +269,6 @@ class Hackathon(Document):
     async def get_completed_hackathons(cls) -> List['Hackathon']:
         """Get all completed hackathons."""
         return await cls.find(
-            cls.status == 'Completed',
+            cls.status == HackathonStatus.COMPLETED,
             cls.is_deleted == False
-        ).to_list() 
+        ).to_list()

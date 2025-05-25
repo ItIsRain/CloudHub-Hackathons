@@ -45,10 +45,9 @@ import Link from "next/link"
 import { Progress } from "@/components/ui/progress"
 import { useToast } from "@/components/ui/use-toast"
 import { addDays } from "date-fns"
-import { DateRange } from "react-day-picker"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
-import { hackathonApi } from '@/lib/api/hackathon';
+import { hackathonApi, HackathonFormData } from '@/lib/api/hackathon';
 
 // Define interfaces for the criteria and challenges
 interface Criterion {
@@ -65,9 +64,24 @@ interface Challenge {
 }
 
 interface Prize {
-  id: string;
+  id?: string;
   place: string;
-  amount: string;
+  position: number;
+  amount: number;
+  currency: string;
+  description: string;
+}
+
+interface Technology {
+  name: string;
+  description: string;
+  icon_url?: string;
+}
+
+// Update the DateRange type to handle undefined values
+interface DateRangeType {
+  from: Date;
+  to: Date;
 }
 
 export default function OrganizerMyHackathonsPage() {
@@ -76,28 +90,49 @@ export default function OrganizerMyHackathonsPage() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [createStepIndex, setCreateStepIndex] = useState(0)
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null)
-  const [selectedMaxParticipants, setSelectedMaxParticipants] = useState(50)
+  const [selectedMaxParticipants, setSelectedMaxParticipants] = useState<number>(50)
   const [isProcessingPayment, setIsProcessingPayment] = useState(false)
   const [hackathonName, setHackathonName] = useState("");
   const [description, setDescription] = useState("");
   const [rulesText, setRulesText] = useState("");
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [logoImage, setLogoImage] = useState<File | null>(null);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+  const [dateRange, setDateRange] = useState<DateRangeType>({
     from: new Date(),
     to: addDays(new Date(), 30),
   });
-  const [registrationDeadline, setRegistrationDeadline] = useState<Date | undefined>(
+  const [registrationDeadline, setRegistrationDeadline] = useState<Date>(
     addDays(new Date(), 14)
   );
-  const [prizePool, setPrizePool] = useState("1000");
+  const [prizePool, setPrizePool] = useState<string>("1000");
   // State for tiered prizes
   const [hasTieredPrizes, setHasTieredPrizes] = useState(false);
   const [prizeSplitOption, setPrizeSplitOption] = useState<string>("none");
   const [prizes, setPrizes] = useState<Prize[]>([
-    { id: '1', place: '1st Place', amount: '500' },
-    { id: '2', place: '2nd Place', amount: '300' },
-    { id: '3', place: '3rd Place', amount: '200' }
+    { 
+      id: '1', 
+      place: '1st Place',
+      position: 1,
+      amount: 500,
+      currency: 'AED',
+      description: '1st Place'
+    },
+    { 
+      id: '2', 
+      place: '2nd Place',
+      position: 2,
+      amount: 300,
+      currency: 'AED',
+      description: '2nd Place'
+    },
+    { 
+      id: '3', 
+      place: '3rd Place',
+      position: 3,
+      amount: 200,
+      currency: 'AED',
+      description: '3rd Place'
+    }
   ]);
   const [participationPrize, setParticipationPrize] = useState("Certificate of Participation");
   
@@ -125,7 +160,9 @@ export default function OrganizerMyHackathonsPage() {
   
   // Calculate total weight of all criteria
   const calculateTotalWeight = (): number => {
-    return criteriaWeights.reduce((total, criterion) => total + Number(criterion.weight), 0);
+    const total = criteriaWeights.reduce((total, criterion) => total + Number(criterion.weight), 0);
+    // Round to 2 decimal places to handle floating point precision
+    return Math.round(total * 100) / 100;
   };
   
   // Update criterion weight
@@ -244,36 +281,39 @@ export default function OrganizerMyHackathonsPage() {
   }
   
   // Function to handle prize place change
-  const handlePrizePlace = (id: string, newPlace: string) => {
+  const handlePrizePlace = (id: string | undefined, newPlace: string) => {
+    if (!id) return;
     setPrizes(prizes.map(p => 
-      p.id === id ? { ...p, place: newPlace } : p
-    ))
-  }
+      p.id === id ? { ...p, place: newPlace, description: newPlace } : p
+    ));
+  };
   
   // Function to handle prize amount change
-  const handlePrizeAmount = (id: string, newAmount: string) => {
+  const handlePrizeAmount = (id: string | undefined, newAmount: string) => {
+    if (!id) return;
     setPrizes(prizes.map(p => 
-      p.id === id ? { ...p, amount: newAmount } : p
-    ))
-  }
+      p.id === id ? { ...p, amount: parseFloat(newAmount) || 0 } : p
+    ));
+  };
   
   // Function to add a new prize tier
   const handleAddPrize = () => {
-    // Find the highest id to ensure unique ids
     const maxId = Math.max(...prizes.map(p => Number(p.id)), 0);
-    
-    // Add a new prize tier
-    const newPrize = {
+    const newPosition = prizes.length + 1;
+    const newPrize: Prize = {
       id: String(maxId + 1),
-      place: `${maxId + 1}${getOrdinalSuffix(maxId + 1)} Place`,
-      amount: "100"
+      place: `${newPosition}${getOrdinalSuffix(newPosition)} Place`,
+      position: newPosition,
+      amount: 100,
+      currency: 'AED',
+      description: `${newPosition}${getOrdinalSuffix(newPosition)} Place`
     };
-    
     setPrizes([...prizes, newPrize]);
   }
   
   // Function to delete a prize tier
-  const handleDeletePrize = (id: string) => {
+  const handleDeletePrize = (id: string | undefined) => {
+    if (!id) return;
     // Always keep at least one prize
     if (prizes.length <= 1) return;
     
@@ -285,52 +325,50 @@ export default function OrganizerMyHackathonsPage() {
   const handlePrizeSplitChange = (option: string) => {
     setPrizeSplitOption(option);
     
-    // Update the tiered prizes state
-    if (option === "none") {
-      setHasTieredPrizes(false);
-    } else {
-      setHasTieredPrizes(true);
-      
-      const totalPrize = Number(prizePool) || 0;
+    // Update hasTieredPrizes based on the selected option
+    setHasTieredPrizes(option !== "none");
+    
+    if (option !== "none") {
+      const totalPrize = parseFloat(prizePool) || 0;
       
       // Update prize distribution based on selected split
       if (option === "standard") {
         // 50-30-20 split
         setPrizes([
-          { id: '1', place: '1st Place', amount: Math.round(totalPrize * 0.5).toString() },
-          { id: '2', place: '2nd Place', amount: Math.round(totalPrize * 0.3).toString() },
-          { id: '3', place: '3rd Place', amount: Math.round(totalPrize * 0.2).toString() }
+          { id: '1', place: '1st Place', position: 1, amount: Math.round(totalPrize * 0.5), currency: 'AED', description: '1st Place' },
+          { id: '2', place: '2nd Place', position: 2, amount: Math.round(totalPrize * 0.3), currency: 'AED', description: '2nd Place' },
+          { id: '3', place: '3rd Place', position: 3, amount: Math.round(totalPrize * 0.2), currency: 'AED', description: '3rd Place' }
         ]);
       } else if (option === "winner-focused") {
         // 70-20-10 split (more for winner)
         setPrizes([
-          { id: '1', place: '1st Place', amount: Math.round(totalPrize * 0.7).toString() },
-          { id: '2', place: '2nd Place', amount: Math.round(totalPrize * 0.2).toString() },
-          { id: '3', place: '3rd Place', amount: Math.round(totalPrize * 0.1).toString() }
+          { id: '1', place: '1st Place', position: 1, amount: Math.round(totalPrize * 0.7), currency: 'AED', description: '1st Place' },
+          { id: '2', place: '2nd Place', position: 2, amount: Math.round(totalPrize * 0.2), currency: 'AED', description: '2nd Place' },
+          { id: '3', place: '3rd Place', position: 3, amount: Math.round(totalPrize * 0.1), currency: 'AED', description: '3rd Place' }
         ]);
       } else if (option === "balanced") {
         // 40-30-30 split (more balanced)
         setPrizes([
-          { id: '1', place: '1st Place', amount: Math.round(totalPrize * 0.4).toString() },
-          { id: '2', place: '2nd Place', amount: Math.round(totalPrize * 0.3).toString() },
-          { id: '3', place: '3rd Place', amount: Math.round(totalPrize * 0.3).toString() }
+          { id: '1', place: '1st Place', position: 1, amount: Math.round(totalPrize * 0.4), currency: 'AED', description: '1st Place' },
+          { id: '2', place: '2nd Place', position: 2, amount: Math.round(totalPrize * 0.3), currency: 'AED', description: '2nd Place' },
+          { id: '3', place: '3rd Place', position: 3, amount: Math.round(totalPrize * 0.3), currency: 'AED', description: '3rd Place' }
         ]);
       } else if (option === "top5") {
         // Top 5 winners
         setPrizes([
-          { id: '1', place: '1st Place', amount: Math.round(totalPrize * 0.35).toString() },
-          { id: '2', place: '2nd Place', amount: Math.round(totalPrize * 0.25).toString() },
-          { id: '3', place: '3rd Place', amount: Math.round(totalPrize * 0.2).toString() },
-          { id: '4', place: '4th Place', amount: Math.round(totalPrize * 0.12).toString() },
-          { id: '5', place: '5th Place', amount: Math.round(totalPrize * 0.08).toString() }
+          { id: '1', place: '1st Place', position: 1, amount: Math.round(totalPrize * 0.35), currency: 'AED', description: '1st Place' },
+          { id: '2', place: '2nd Place', position: 2, amount: Math.round(totalPrize * 0.25), currency: 'AED', description: '2nd Place' },
+          { id: '3', place: '3rd Place', position: 3, amount: Math.round(totalPrize * 0.20), currency: 'AED', description: '3rd Place' },
+          { id: '4', place: '4th Place', position: 4, amount: Math.round(totalPrize * 0.12), currency: 'AED', description: '4th Place' },
+          { id: '5', place: '5th Place', position: 5, amount: Math.round(totalPrize * 0.08), currency: 'AED', description: '5th Place' }
         ]);
       } else if (option === "custom") {
         // Keep current prizes or set default custom
         if (prizes.length === 0) {
           setPrizes([
-            { id: '1', place: '1st Place', amount: Math.round(totalPrize * 0.5).toString() },
-            { id: '2', place: '2nd Place', amount: Math.round(totalPrize * 0.3).toString() },
-            { id: '3', place: '3rd Place', amount: Math.round(totalPrize * 0.2).toString() }
+            { id: '1', place: '1st Place', position: 1, amount: Math.round(totalPrize * 0.5), currency: 'AED', description: '1st Place' },
+            { id: '2', place: '2nd Place', position: 2, amount: Math.round(totalPrize * 0.3), currency: 'AED', description: '2nd Place' },
+            { id: '3', place: '3rd Place', position: 3, amount: Math.round(totalPrize * 0.2), currency: 'AED', description: '3rd Place' }
           ]);
         }
       }
@@ -379,66 +417,114 @@ export default function OrganizerMyHackathonsPage() {
 
   const { toast } = useToast()
 
+  // Add error state after other state declarations
+  const [formErrors, setFormErrors] = useState<string[]>([]);
+
+  // Update the handleCreateHackathon function
   const handleCreateHackathon = async () => {
-    // Validate form
-    if (!hackathonName) {
-      toast({
-        title: "Missing information",
-        description: "Please provide a name for your hackathon",
-        variant: "destructive",
-      });
-      return;
+    // Create an array to collect all validation errors
+    const errors: string[] = [];
+
+    if (!hackathonName || hackathonName.length < 3 || hackathonName.length > 100) {
+      errors.push("Title must be between 3 and 100 characters");
     }
 
-    if (!dateRange?.from || !dateRange?.to) {
-      toast({
-        title: "Missing information",
-        description: "Please select a date range for your hackathon",
-        variant: "destructive",
-      });
-      return;
+    if (!description || description.length < 10) {
+      errors.push("Description must be at least 10 characters long");
+    }
+
+    if (!dateRange.from || !dateRange.to) {
+      errors.push("Please select a date range for your hackathon");
     }
 
     if (!registrationDeadline) {
+      errors.push("Please select a registration deadline");
+    }
+
+    if (!selectedPackage) {
+      errors.push("Please select a package for your hackathon");
+    }
+
+    if (!prizePool || parseFloat(prizePool) <= 0) {
+      errors.push("Please enter a valid prize pool amount");
+    }
+
+    if (prizes.length === 0) {
+      errors.push("Please add at least one prize tier");
+    }
+
+    const totalWeight = calculateTotalWeight();
+    if (totalWeight !== 100) {
+      errors.push(`Judging criteria total weight is ${totalWeight}%. It must equal exactly 100%`);
+    }
+
+    // Validate prize amounts don't exceed prize pool
+    const totalPrizeAmount = prizes.reduce((sum, prize) => sum + Number(prize.amount), 0);
+    if (totalPrizeAmount > parseFloat(prizePool)) {
+      errors.push("Total prize amounts cannot exceed the prize pool");
+    }
+
+    // Update the form errors state
+    setFormErrors(errors);
+
+    // If there are any errors, show them in toast and return
+    if (errors.length > 0) {
       toast({
-        title: "Missing information",
-        description: "Please select a registration deadline",
+        title: "Please fix the following errors:",
+        description: (
+          <ul className="list-disc pl-4 mt-2 space-y-1">
+            {errors.map((error, index) => (
+              <li key={index} className="text-sm">{error}</li>
+            ))}
+          </ul>
+        ),
         variant: "destructive",
       });
       return;
     }
 
-    if (calculateTotalWeight() !== 100) {
-      toast({
-        title: "Invalid judging criteria",
-        description: "The total weight of all judging criteria must equal 100%",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Proceed to payment step
+    // If validation passes, proceed to payment step
     setCreateStepIndex(2);
     setIsProcessingPayment(true);
 
     try {
-      // Create hackathon data object
-      const hackathonData = {
+      // Create hackathon data object with all required fields
+      const hackathonData: HackathonFormData = {
         title: hackathonName,
         description,
+        short_description: description.substring(0, 200),
+        organization_name: organizationName,
+        cover_image: coverImageUrl,
+        banner_image: bannerImageUrl,
+        organization_logo: organizationLogo,
         dateRange: {
           from: dateRange.from,
           to: dateRange.to
         },
-        registrationDeadline,
+        registrationDeadline: registrationDeadline,
         maxParticipants: selectedMaxParticipants,
-        package: selectedPackage?.toLowerCase() as 'starter' | 'growth' | 'scale',
+        min_team_size: minTeamSize,
+        max_team_size: maxTeamSize,
+        is_team_required: isTeamRequired,
+        package: selectedPackage as 'starter' | 'growth' | 'scale',
         prizePool,
-        prizes,
-        judgingCriteria: criteriaWeights,
-        challenges,
-        rules: rulesText || "", // Updated to use rulesText state variable
+        prizes: prizes.map(prize => ({
+          place: prize.place,
+          amount: prize.amount.toString(),
+          position: prize.position,
+          description: prize.description,
+          currency: prize.currency
+        })),
+        judgingCriteria: criteriaWeights.map(criteria => ({
+          name: criteria.name,
+          weight: criteria.weight,
+          description: `${criteria.name} evaluation criteria`
+        })),
+        challenges: [],
+        rules: rulesText,
         requirements: [],
+        resources: resources,
+        submission_template: submissionTemplate || "",
         isPrivate: false,
         tags: []
       };
@@ -459,7 +545,7 @@ export default function OrganizerMyHackathonsPage() {
       handleDialogOpenChange(false);
       setCreateStepIndex(0);
       
-      // Reset all form fields
+      // Reset all form fields with default dates
       setHackathonName("");
       setDescription("");
       setCoverImage(null);
@@ -473,11 +559,26 @@ export default function OrganizerMyHackathonsPage() {
       setPrizePool("1000");
       setSelectedPackage(null);
       setCriteriaWeights([
-        { id: '1', name: 'Innovation', weight: 25, description: 'How original and innovative is the solution?' },
-        { id: '2', name: 'Technical Complexity', weight: 25, description: 'How technically challenging was the implementation?' },
-        { id: '3', name: 'User Experience', weight: 25, description: 'How intuitive and user-friendly is the solution?' },
-        { id: '4', name: 'Impact & Practicality', weight: 25, description: 'How impactful and practical is the solution for real-world use?' },
+        { id: '1', name: 'Innovation', weight: 30, description: 'Evaluating the innovation and creativity of the solution' },
+        { id: '2', name: 'Technical Complexity', weight: 30, description: 'Assessing the technical sophistication and implementation' },
+        { id: '3', name: 'Impact', weight: 20, description: 'Measuring the potential real-world impact' },
+        { id: '4', name: 'Presentation', weight: 20, description: 'Quality of presentation and documentation' }
       ]);
+      setPrizes([
+        { id: '1', place: '1st Place', position: 1, amount: 500, currency: 'AED', description: '1st Place' },
+        { id: '2', place: '2nd Place', position: 2, amount: 300, currency: 'AED', description: '2nd Place' },
+        { id: '3', place: '3rd Place', position: 3, amount: 200, currency: 'AED', description: '3rd Place' }
+      ]);
+      setResources([]);
+      setSubmissionTemplate(""); // Use empty string instead of null
+      setOrganizationName("");
+      setMinTeamSize(1);
+      setMaxTeamSize(4);
+      setIsTeamRequired(true);
+      setCoverImageUrl("");
+      setBannerImageUrl("");
+      setOrganizationLogo("");
+
     } catch (error: any) {
       setIsProcessingPayment(false);
       toast({
@@ -573,6 +674,54 @@ export default function OrganizerMyHackathonsPage() {
 
   // Add hackathonType state variable after the other useState declarations
   const [hackathonType, setHackathonType] = useState("online");
+
+  // Add new state variables after existing ones
+  const [minTeamSize, setMinTeamSize] = useState<number>(1);
+  const [maxTeamSize, setMaxTeamSize] = useState<number>(4);
+  const [isTeamRequired, setIsTeamRequired] = useState(true);
+  const [coverImageUrl, setCoverImageUrl] = useState<string>("");
+  const [bannerImageUrl, setBannerImageUrl] = useState<string>("");
+  const [organizationLogo, setOrganizationLogo] = useState<string>("");
+  const [submissionTemplate, setSubmissionTemplate] = useState<string>("");
+  const [resources, setResources] = useState<string[]>([]);
+  const [organizationName, setOrganizationName] = useState<string>("");
+
+  // Update the state variables with proper types
+  const [maxParticipants, setMaxParticipants] = useState<number>(100);
+
+  // Update the prize pool handler
+  const handlePrizePoolChange = (value: string) => {
+    setPrizePool(value);
+  };
+
+  // Update the team size handlers
+  const handleMinTeamSizeChange = (value: string) => {
+    setMinTeamSize(parseInt(value) || 1);
+  };
+
+  const handleMaxTeamSizeChange = (value: string) => {
+    setMaxTeamSize(parseInt(value) || 4);
+  };
+
+  const handleMaxParticipantsChange = (value: string) => {
+    setMaxParticipants(parseInt(value) || 100);
+  };
+
+  // Update the date change handlers
+  const handleDateRangeFromChange = (value: string) => {
+    const from = value ? new Date(value) : new Date();
+    setDateRange(prev => ({ ...prev, from }));
+  };
+
+  const handleDateRangeToChange = (value: string) => {
+    const to = value ? new Date(value) : addDays(new Date(), 30);
+    setDateRange(prev => ({ ...prev, to }));
+  };
+
+  const handleRegistrationDeadlineChange = (value: string) => {
+    const date = value ? new Date(value) : addDays(new Date(), 14);
+    setRegistrationDeadline(date);
+  };
 
   return (
     <div className="space-y-8 pb-10 px-6">
@@ -1303,6 +1452,21 @@ export default function OrganizerMyHackathonsPage() {
               scrollbarWidth: 'thin',
               scrollbarColor: '#e2e8f0 #f8fafc'
             }}>
+              {/* Error Summary */}
+              {formErrors.length > 0 && (
+                <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-red-800 mb-2">
+                    <XCircle className="h-5 w-5" />
+                    <h4 className="font-medium">Please fix the following errors:</h4>
+                  </div>
+                  <ul className="list-disc pl-5 space-y-1">
+                    {formErrors.map((error, index) => (
+                      <li key={index} className="text-sm text-red-700">{error}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
               <div className="space-y-8 w-full">
                 {/* Top Row: Basic Information and Schedule & Capacity side by side */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1361,21 +1525,15 @@ export default function OrganizerMyHackathonsPage() {
                               <div className="flex items-center gap-2">
                                 <Input 
                                   type="date" 
-                                  value={dateRange?.from ? dateRange.from.toISOString().substring(0, 10) : ''}
-                                  onChange={(e) => {
-                                    const from = e.target.value ? new Date(e.target.value) : undefined;
-                                    setDateRange({ from, to: dateRange?.to });
-                                  }}
+                                  value={dateRange.from.toISOString().substring(0, 10)}
+                                  onChange={(e) => handleDateRangeFromChange(e.target.value)}
                                   className="h-9"
                                 />
                                 <span className="text-sm text-slate-500">to</span>
                                 <Input 
                                   type="date" 
-                                  value={dateRange?.to ? dateRange.to.toISOString().substring(0, 10) : ''}
-                                  onChange={(e) => {
-                                    const to = e.target.value ? new Date(e.target.value) : undefined;
-                                    setDateRange({ from: dateRange?.from, to });
-                                  }}
+                                  value={dateRange.to.toISOString().substring(0, 10)}
+                                  onChange={(e) => handleDateRangeToChange(e.target.value)}
                                   className="h-9"
                                 />
                               </div>
@@ -1389,11 +1547,8 @@ export default function OrganizerMyHackathonsPage() {
                               {/* Placeholder for DatePicker */}
                               <Input 
                                 type="date" 
-                                value={registrationDeadline ? registrationDeadline.toISOString().substring(0, 10) : ''}
-                                onChange={(e) => {
-                                  const date = e.target.value ? new Date(e.target.value) : undefined;
-                                  setRegistrationDeadline(date);
-                                }}
+                                value={registrationDeadline.toISOString().substring(0, 10)}
+                                onChange={(e) => handleRegistrationDeadlineChange(e.target.value)}
                                 className="h-9 w-full"
                               />
                             </div>
