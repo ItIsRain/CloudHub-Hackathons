@@ -36,11 +36,14 @@ class UserResponse(BaseModel):
     id: str
     email: EmailStr
     name: str
-    role: UserRole
-    status: UserStatus
+    role: str
+    status: str
     email_verified: bool
     created_at: datetime
     updated_at: datetime
+
+    class Config:
+        from_attributes = True
 
 class TokenResponse(BaseModel):
     """Token response model."""

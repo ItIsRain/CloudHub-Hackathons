@@ -30,7 +30,7 @@ def get_auth_service(db: AsyncIOMotorClient = Depends(get_database)) -> AuthServ
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
     auth_service: AuthService = Depends(get_auth_service)
-) -> UserResponse:
+) -> User:
     """Get current user from JWT token."""
     try:
         payload = jwt.decode(
@@ -46,7 +46,7 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    user = await auth_service.get_user_by_id(user_id)
+    user = await User.get(user_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -54,7 +54,7 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    return UserResponse(**user)
+    return user
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(
@@ -112,7 +112,6 @@ async def register(
         "communication_preferences": user.get("communication_preferences", {}),
         "notification_settings": user.get("notification_settings", {}),
         "availability": user.get("availability", {}),
-        "email_verified": user.get("email_verified", False),
         "phone_verified": user.get("phone_verified", False)
     }
     
@@ -162,10 +161,22 @@ async def login(
         # Create tokens
         tokens = await TokenManager.create_tokens(user, request)
         
-        # Return response with user data
+        # Convert user data to response format
+        user_data = {
+            "id": str(user.id),
+            "email": user.email,
+            "name": user.name,
+            "role": user.role,
+            "status": UserStatus.ACTIVE.value,
+            "email_verified": user.email_verified,
+            "created_at": user.created_at,
+            "updated_at": user.updated_at
+        }
+        
+        # Return response with formatted user data
         return {
             **tokens,
-            "user": user.dict(exclude={"password_hash"})
+            "user": user_data
         }
     except HTTPException as e:
         raise e
@@ -212,19 +223,31 @@ async def logout_all_devices(
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    auth_service: AuthService = Depends(get_auth_service)
 ):
     """Get current user information."""
-    return UserResponse(
-        id=str(current_user.id),
-        email=current_user.email,
-        name=current_user.name,
-        role=current_user.role,
-        status=UserStatus.ACTIVE if not current_user.is_deleted else UserStatus.INACTIVE,
-        email_verified=current_user.email_verified,
-        created_at=current_user.created_at,
-        updated_at=current_user.updated_at
-    )
+    # Get fresh user data from database to ensure we have the latest status
+    user = await User.get(current_user.id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    # Convert user data to UserResponse format
+    user_data = {
+        "id": str(user.id),
+        "email": user.email,
+        "name": user.name,
+        "role": user.role,
+        "status": UserStatus.ACTIVE.value,  # Use the enum value directly
+        "email_verified": user.email_verified,
+        "created_at": user.created_at,
+        "updated_at": user.updated_at
+    }
+    
+    return UserResponse(**user_data)
 
 @router.get("/sessions")
 async def get_active_sessions(
