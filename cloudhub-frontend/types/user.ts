@@ -1,14 +1,16 @@
-export type UserRole = 'organizer' | 'participant' | 'judge' | 'mentor' | 'media' | 'admin';
+export type UserRole = 'admin' | 'organizer' | 'participant' | 'judge';
 
 export interface User {
     id: string;
     email: string;
-    full_name: string;
+    name: string;
+    full_name?: string;
     role: UserRole;
-    phone?: string;
-    avatar?: string;
+    status: string;
     email_verified: boolean;
     phone_verified?: boolean;
+    avatar?: string;
+    phone?: string;
     organization_name?: string;
     created_at: string;
     updated_at: string;

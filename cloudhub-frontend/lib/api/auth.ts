@@ -74,16 +74,25 @@ class AuthAPI {
     
     const { access_token, refresh_token, user } = response.data;
 
+    // Map backend user data to frontend format
+    const mappedUser = user ? {
+      ...user,
+      full_name: user.name, // Map name to full_name
+    } : null;
+
     // Store tokens in both localStorage and cookies for better security
     localStorage.setItem(TOKEN_STORAGE.ACCESS_TOKEN, access_token);
     localStorage.setItem(TOKEN_STORAGE.REFRESH_TOKEN, refresh_token);
-    if (user) localStorage.setItem(TOKEN_STORAGE.USER, JSON.stringify(user));
+    if (mappedUser) localStorage.setItem(TOKEN_STORAGE.USER, JSON.stringify(mappedUser));
 
     // Set cookies with httpOnly flag
     Cookies.set(TOKEN_STORAGE.ACCESS_TOKEN, access_token, { secure: true, sameSite: 'strict' });
     Cookies.set(TOKEN_STORAGE.REFRESH_TOKEN, refresh_token, { secure: true, sameSite: 'strict' });
 
-    return response.data;
+    return {
+      ...response.data,
+      user: mappedUser
+    };
   }
 
   async refreshTokens(): Promise<TokenResponse> {
@@ -141,7 +150,14 @@ class AuthAPI {
 
   async getCurrentUser(): Promise<User> {
     const response = await axiosInstance.get<User>('/auth/me');
-    return response.data;
+    // Map backend user data to frontend format
+    const mappedUser = {
+      ...response.data,
+      full_name: response.data.name, // Map name to full_name
+    };
+    // Update stored user data
+    localStorage.setItem(TOKEN_STORAGE.USER, JSON.stringify(mappedUser));
+    return mappedUser;
   }
 
   async getSessions(): Promise<Session[]> {
