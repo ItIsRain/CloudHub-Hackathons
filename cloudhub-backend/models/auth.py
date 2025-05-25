@@ -41,6 +41,7 @@ class UserResponse(BaseModel):
     email_verified: bool
     created_at: datetime
     updated_at: datetime
+    organization_name: Optional[str] = None
 
     class Config:
         from_attributes = True

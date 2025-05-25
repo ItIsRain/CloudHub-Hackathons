@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -48,6 +48,7 @@ import { addDays } from "date-fns"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { hackathonApi, HackathonFormData } from '@/lib/api/hackathon';
+import { useAuth } from '@/contexts/auth-context'
 
 // Define interfaces for the criteria and challenges
 interface Criterion {
@@ -85,6 +86,13 @@ interface DateRangeType {
 }
 
 export default function OrganizerMyHackathonsPage() {
+  const { user } = useAuth();
+  
+  // Add useEffect to log user data when component mounts
+  useEffect(() => {
+    // Removed debug logging
+  }, [user]);
+
   const [isCreateHackathonOpen, setIsCreateHackathonOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
@@ -433,6 +441,11 @@ export default function OrganizerMyHackathonsPage() {
       errors.push("Description must be at least 10 characters long");
     }
 
+    // Remove organization name validation since it's already provided during registration
+    // if (!user?.organization_name) {
+    //   errors.push("Organization name is required. Please update your organization profile first.");
+    // }
+
     if (!dateRange.from || !dateRange.to) {
       errors.push("Please select a date range for your hackathon");
     }
@@ -493,7 +506,7 @@ export default function OrganizerMyHackathonsPage() {
         title: hackathonName,
         description,
         short_description: description.substring(0, 200),
-        organization_name: organizationName,
+        organization_name: user?.organization_name || user?.full_context?.organization_name || "",
         cover_image: coverImageUrl,
         banner_image: bannerImageUrl,
         organization_logo: organizationLogo,
@@ -528,6 +541,10 @@ export default function OrganizerMyHackathonsPage() {
         isPrivate: false,
         tags: []
       };
+
+      // Log user data and organization name for debugging
+      console.log("User data:", user);
+      console.log("Organization name being used:", user?.organization_name);
 
       // Send request to create hackathon
       const response = await hackathonApi.createHackathon(hackathonData);
@@ -571,9 +588,8 @@ export default function OrganizerMyHackathonsPage() {
       ]);
       setResources([]);
       setSubmissionTemplate(""); // Use empty string instead of null
-      setOrganizationName("");
       setMinTeamSize(1);
-      setMaxTeamSize(4);
+      // Don't reset maxTeamSize to keep user's selection
       setIsTeamRequired(true);
       setCoverImageUrl("");
       setBannerImageUrl("");
@@ -677,7 +693,7 @@ export default function OrganizerMyHackathonsPage() {
 
   // Add new state variables after existing ones
   const [minTeamSize, setMinTeamSize] = useState<number>(1);
-  const [maxTeamSize, setMaxTeamSize] = useState<number>(4);
+  const [maxTeamSize, setMaxTeamSize] = useState<number>(6);
   const [isTeamRequired, setIsTeamRequired] = useState(true);
   const [coverImageUrl, setCoverImageUrl] = useState<string>("");
   const [bannerImageUrl, setBannerImageUrl] = useState<string>("");
@@ -700,7 +716,7 @@ export default function OrganizerMyHackathonsPage() {
   };
 
   const handleMaxTeamSizeChange = (value: string) => {
-    setMaxTeamSize(parseInt(value) || 4);
+    setMaxTeamSize(parseInt(value) || 6);
   };
 
   const handleMaxParticipantsChange = (value: string) => {
@@ -1509,121 +1525,32 @@ export default function OrganizerMyHackathonsPage() {
                         />
                       </div>
 
-                      {/* Schedule & Capacity */}
+                      {/* Team Configuration */}
                       <div className="space-y-4 pt-4 border-t border-slate-200">
                         <div className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-2 text-slate-600" />
-                          <h3 className="text-sm font-medium">Schedule & Capacity</h3>
+                          <Users className="h-4 w-4 mr-2 text-slate-600" />
+                          <h3 className="text-sm font-medium">Team Configuration</h3>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {/* Date Range Picker */}
                           <div className="space-y-2">
-                            <Label htmlFor="date-range" className="text-sm font-medium">Hackathon Dates</Label>
-                            <div className="border border-slate-200 rounded-md p-3">
-                              {/* Placeholder for DatePickerWithRange */}
-                              <div className="flex items-center gap-2">
-                                <Input 
-                                  type="date" 
-                                  value={dateRange.from.toISOString().substring(0, 10)}
-                                  onChange={(e) => handleDateRangeFromChange(e.target.value)}
-                                  className="h-9"
-                                />
-                                <span className="text-sm text-slate-500">to</span>
-                                <Input 
-                                  type="date" 
-                                  value={dateRange.to.toISOString().substring(0, 10)}
-                                  onChange={(e) => handleDateRangeToChange(e.target.value)}
-                                  className="h-9"
-                                />
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Registration Deadline */}
-                          <div className="space-y-2">
-                            <Label htmlFor="registration-deadline" className="text-sm font-medium">Registration Deadline</Label>
-                            <div className="border border-slate-200 rounded-md p-3">
-                              {/* Placeholder for DatePicker */}
-                              <Input 
-                                type="date" 
-                                value={registrationDeadline.toISOString().substring(0, 10)}
-                                onChange={(e) => handleRegistrationDeadlineChange(e.target.value)}
-                                className="h-9 w-full"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Maximum Participants */}
-                          <div className="space-y-2">
-                            <Label htmlFor="max-participants" className="text-sm font-medium flex items-center justify-between">
-                              <span>Max Participants <span className="text-red-500">*</span></span>
-                              <span className="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full text-xs">
-                                Package Limit: {
-                                  selectedPackage === "Growth" ? "100" :
-                                  selectedPackage === "Scale" ? "250" : "50"
-                                }
-                              </span>
-                            </Label>
-                            <div className="flex items-center">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="h-10 w-10 rounded-r-none flex items-center justify-center border-indigo-200"
-                                onClick={() => setSelectedMaxParticipants(Math.max(10, selectedMaxParticipants - 10))}
-                                disabled={selectedMaxParticipants <= 10}
-                              >
-                                <span className="text-lg">-</span>
-                              </Button>
-                              <Input
-                                id="max-participants"
-                                type="number"
-                                className="h-10 rounded-none text-center focus:border-indigo-500 focus:ring-indigo-500 border-x-0"
-                                value={selectedMaxParticipants}
-                                onChange={(e) => {
-                                  const value = parseInt(e.target.value);
-                                  if (!isNaN(value)) {
-                                    // Find the selected package's limit
-                                    let limit = 50; // Default for Starter plan
-                                    if (selectedPackage === "Growth") limit = 100;
-                                    if (selectedPackage === "Scale") limit = 250;
-                                    
-                                    // Ensure the value doesn't exceed the package limit
-                                    setSelectedMaxParticipants(Math.min(limit, Math.max(10, value)));
-                                  }
-                                }}
-                                min="10"
-                                max={
-                                  selectedPackage === "Growth" ? "100" :
-                                  selectedPackage === "Scale" ? "250" : "50"
-                                }
-                                required
-                                style={{ appearance: 'textfield' }}
-                              />
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="h-10 w-10 rounded-l-none flex items-center justify-center border-indigo-200"
-                                onClick={() => {
-                                  // Find the selected package's limit
-                                  let limit = 50; // Default for Starter plan
-                                  if (selectedPackage === "Growth") limit = 100;
-                                  if (selectedPackage === "Scale") limit = 250;
-                                  
-                                  setSelectedMaxParticipants(Math.min(limit, selectedMaxParticipants + 10));
-                                }}
-                                disabled={
-                                  (selectedPackage === "Starter" && selectedMaxParticipants >= 50) ||
-                                  (selectedPackage === "Growth" && selectedMaxParticipants >= 100) ||
-                                  (selectedPackage === "Scale" && selectedMaxParticipants >= 250)
-                                }
-                              >
-                                <span className="text-lg">+</span>
-                              </Button>
-                            </div>
-                            <p className="text-xs text-slate-500">Select the maximum number of participants</p>
+                            <Label htmlFor="team-size" className="text-sm font-medium">Team Size</Label>
+                            <Select 
+                              value={maxTeamSize.toString()} 
+                              onValueChange={(value) => setMaxTeamSize(parseInt(value))}
+                            >
+                              <SelectTrigger id="team-size" className="h-10">
+                                <SelectValue placeholder="Select max team size" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {[1, 2, 3, 4, 5, 6].map((size) => (
+                                  <SelectItem key={size} value={size.toString()}>
+                                    Up to {size} member{size > 1 ? 's' : ''}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-slate-500">Maximum number of members per team</p>
                           </div>
 
                           <div className="space-y-2">

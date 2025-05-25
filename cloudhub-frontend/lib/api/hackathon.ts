@@ -58,6 +58,9 @@ interface BackendHackathonData {
     winners_announcement: string;
   };
   max_participants: number;
+  min_team_size: number;
+  max_team_size: number;
+  is_team_required: boolean;
   billing: {
     package: string;
     amount: number;
@@ -103,7 +106,7 @@ export const hackathonApi = {
       title: data.title,
       description: data.description,
       short_description: data.short_description || data.description.substring(0, 200),
-      organization_name: data.organization_name || 'Default Organization',
+      organization_name: data.organization_name,
       timeline: {
         registration_start: formatDate(new Date()),
         registration_end: formatDate(data.registrationDeadline),
@@ -114,6 +117,9 @@ export const hackathonApi = {
         winners_announcement: formatDate(new Date(data.dateRange.to.getTime() + 48 * 60 * 60 * 1000))
       },
       max_participants: data.maxParticipants,
+      min_team_size: data.min_team_size,
+      max_team_size: data.max_team_size,
+      is_team_required: data.is_team_required,
       billing: {
         package: data.package.toLowerCase(),
         amount: parseFloat(data.prizePool) || 0,

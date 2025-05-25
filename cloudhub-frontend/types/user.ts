@@ -14,4 +14,11 @@ export interface User {
     organization_name?: string;
     created_at: string;
     updated_at: string;
+    full_context?: {
+        id: string;
+        email: string;
+        name: string;
+        organization_name: string;
+        [key: string]: any;  // Allow other properties
+    };
 } 

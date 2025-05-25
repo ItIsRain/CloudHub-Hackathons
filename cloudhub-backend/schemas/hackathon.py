@@ -60,7 +60,7 @@ class HackathonBase(BaseModel):
     organization_logo: Optional[HttpUrl] = None
     max_participants: int = Field(default=100, ge=1)
     min_team_size: int = Field(default=1, ge=1)
-    max_team_size: int = Field(default=4, ge=1)
+    max_team_size: int = Field(ge=1)
     is_team_required: bool = Field(default=True)
     technologies: Optional[List[Technology]] = None
     prizes: Optional[List[Prize]] = None

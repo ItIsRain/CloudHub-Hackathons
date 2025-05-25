@@ -14,6 +14,12 @@ class UserBase(BaseModel):
     social_links: Dict[str, str] = Field(default_factory=dict)
     timezone: Optional[str] = None
     preferences: Dict[str, Any] = Field(default_factory=dict)
+    
+    # Organization fields
+    organization_name: Optional[str] = None
+    organization_website: Optional[str] = None
+    organization_size: Optional[str] = None
+    industry: Optional[str] = None
 
 class UserCreate(UserBase):
     """Schema for creating a new user."""
@@ -31,7 +37,13 @@ class UserUpdate(BaseModel):
     social_links: Optional[Dict[str, str]] = None
     timezone: Optional[str] = None
     preferences: Optional[Dict[str, Any]] = None
-
+    
+    # Organization fields for updates
+    organization_name: Optional[str] = None
+    organization_website: Optional[str] = None
+    organization_size: Optional[str] = None
+    industry: Optional[str] = None
+    
     class Config:
         from_attributes = True
 
@@ -53,6 +65,17 @@ class UserResponse(UserBase):
     phone_verified: bool
     created_at: datetime
     updated_at: datetime
-
+    
+    # Additional organization fields that should be in response
+    specializations: List[str] = Field(default_factory=list)
+    mentorship_areas: List[str] = Field(default_factory=list)
+    phone: Optional[str] = None
+    country: Optional[str] = None
+    communication_preferences: Dict[str, Any] = Field(default_factory=dict)
+    notification_settings: Dict[str, Any] = Field(default_factory=dict)
+    availability: Dict[str, Any] = Field(default_factory=dict)
+    accepted_terms: bool = False
+    accepted_privacy_policy: bool = False
+    
     class Config:
-        from_attributes = True 
+        from_attributes = True

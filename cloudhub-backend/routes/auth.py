@@ -170,7 +170,8 @@ async def login(
             "status": UserStatus.ACTIVE.value,
             "email_verified": user.email_verified,
             "created_at": user.created_at,
-            "updated_at": user.updated_at
+            "updated_at": user.updated_at,
+            "organization_name": user.organization_name
         }
         
         # Return response with formatted user data
@@ -244,7 +245,8 @@ async def get_current_user_info(
         "status": UserStatus.ACTIVE.value,  # Use the enum value directly
         "email_verified": user.email_verified,
         "created_at": user.created_at,
-        "updated_at": user.updated_at
+        "updated_at": user.updated_at,
+        "organization_name": user.organization_name
     }
     
     return UserResponse(**user_data)

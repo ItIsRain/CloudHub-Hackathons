@@ -3,6 +3,7 @@
 import axiosInstance from './axios';
 import { User, UserRole } from '@/types/user';
 import Cookies from 'js-cookie';
+import type { AxiosInstance } from 'axios';
 
 export interface LoginCredentials {
   username: string;
@@ -57,13 +58,26 @@ const TOKEN_STORAGE = {
   USER: 'user'
 };
 
-class AuthAPI {
+export class AuthAPI {
+  private api: AxiosInstance;
+
+  constructor() {
+    this.api = axiosInstance;
+  }
+
+  private handleError(error: any): never {
+    if (error.response?.data?.detail) {
+      throw new Error(error.response.data.detail);
+    }
+    throw error;
+  }
+
   async login(credentials: LoginCredentials): Promise<TokenResponse> {
     const formData = new URLSearchParams();
     formData.append('username', credentials.username);
     formData.append('password', credentials.password);
 
-    const response = await axiosInstance.post<TokenResponse>('/auth/login', 
+    const response = await this.api.post<TokenResponse>('/auth/login', 
       formData,
       {
         headers: {
@@ -77,8 +91,17 @@ class AuthAPI {
     // Map backend user data to frontend format
     const mappedUser = user ? {
       ...user,
-      full_name: user.name, // Map name to full_name
-    } : null;
+      full_name: user.name,
+      // Ensure organization_name is properly mapped from the response
+      organization_name: user.organization_name || undefined,
+      // Only create full_context if we have an organization name
+      full_context: user.organization_name ? {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        organization_name: user.organization_name
+      } : undefined
+    } : undefined;
 
     // Store tokens in both localStorage and cookies for better security
     localStorage.setItem(TOKEN_STORAGE.ACCESS_TOKEN, access_token);
@@ -102,7 +125,7 @@ class AuthAPI {
     }
 
     try {
-      const response = await axiosInstance.post<TokenResponse>('/auth/refresh', {
+      const response = await this.api.post<TokenResponse>('/auth/refresh', {
         refresh_token
       });
 
@@ -124,7 +147,7 @@ class AuthAPI {
   }
 
   async register(data: RegisterData): Promise<TokenResponse> {
-    const response = await axiosInstance.post<TokenResponse>('/auth/register', data);
+    const response = await this.api.post<TokenResponse>('/auth/register', data);
     return response.data;
   }
 
@@ -132,7 +155,7 @@ class AuthAPI {
     const refresh_token = localStorage.getItem(TOKEN_STORAGE.REFRESH_TOKEN);
     if (refresh_token) {
       try {
-        await axiosInstance.post('/auth/logout', { refresh_token });
+        await this.api.post('/auth/logout', { refresh_token });
       } catch (error) {
         console.error('Error during logout:', error);
       }
@@ -142,43 +165,40 @@ class AuthAPI {
 
   async logoutAll(): Promise<void> {
     try {
-      await axiosInstance.post('/auth/logout-all');
+      await this.api.post('/auth/logout-all');
     } finally {
       this.clearTokens();
     }
   }
 
   async getCurrentUser(): Promise<User> {
-    const response = await axiosInstance.get<User>('/auth/me');
-    // Map backend user data to frontend format
-    const mappedUser = {
-      ...response.data,
-      full_name: response.data.name, // Map name to full_name
-    };
-    // Update stored user data
-    localStorage.setItem(TOKEN_STORAGE.USER, JSON.stringify(mappedUser));
-    return mappedUser;
+    try {
+      const response = await this.api.get<User>('/auth/me');
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
   }
 
   async getSessions(): Promise<Session[]> {
-    const response = await axiosInstance.get<Session[]>('/auth/sessions');
+    const response = await this.api.get<Session[]>('/auth/sessions');
     return response.data;
   }
 
   async revokeSession(sessionId: string): Promise<void> {
-    await axiosInstance.post(`/auth/sessions/${sessionId}/revoke`);
+    await this.api.post(`/auth/sessions/${sessionId}/revoke`);
   }
 
   async requestPasswordReset(data: PasswordResetData): Promise<void> {
-    await axiosInstance.post('/auth/password-reset', data);
+    await this.api.post('/auth/password-reset', data);
   }
 
   async resetPassword(data: PasswordResetConfirmData): Promise<void> {
-    await axiosInstance.post('/auth/password-reset/confirm', data);
+    await this.api.post('/auth/password-reset/confirm', data);
   }
 
   async verifyEmail(token: string): Promise<void> {
-    await axiosInstance.post(`/auth/verify-email/${token}`);
+    await this.api.post(`/auth/verify-email/${token}`);
   }
 
   clearTokens(): void {
