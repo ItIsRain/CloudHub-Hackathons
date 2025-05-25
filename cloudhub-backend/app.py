@@ -5,6 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from contextlib import asynccontextmanager
 import logging
 import traceback
+from time import time
 
 from config.config import settings
 from utils.error_handlers import APIError, setup_logging
@@ -15,8 +16,23 @@ from motor.motor_asyncio import AsyncIOMotorClient
 # Import routes
 from routes import auth, user, hackathon, team, project, upload, message
 
+# Import models
+from models.user import User
+from models.token import RefreshToken
+from models.message import Message, GroupMessage, Group
+from models.project import Project
+from models.team import Team
+from models.hackathon import Hackathon
+
 # Configure logging
 logger = logging.getLogger(__name__)
+
+# Cache for database connection status
+db_status = {
+    "last_check": 0,
+    "is_connected": False,
+    "check_interval": 5  # Check every 5 seconds
+}
 
 def register_routes(app: FastAPI):
     """Register all route handlers."""
@@ -38,16 +54,43 @@ async def lifespan(app: FastAPI):
         client = get_db()
         logger.info("MongoDB connection initialized")
         
-        # Initialize Beanie with all models
-        from models import __all__ as models
-        await init_beanie(
-            database=client[settings.DATABASE_NAME],
-            document_models=models
-        )
-        logger.info("Beanie ODM initialized with all models")
+        # Initialize Beanie with all Document models
+        document_models = [
+            User,
+            RefreshToken,
+            Message,
+            GroupMessage,
+            Group,
+            Project,
+            Team,
+            Hackathon
+        ]
+        
+        # Debug: Print index definitions for each model
+        for model in document_models:
+            logger.info(f"Checking indexes for model: {model.__name__}")
+            if hasattr(model, 'Settings') and hasattr(model.Settings, 'indexes'):
+                for idx in model.Settings.indexes:
+                    if isinstance(idx, dict):
+                        logger.info(f"Index definition for {model.__name__}: {idx}")
+                    else:
+                        logger.info(f"Index definition for {model.__name__}: {idx.document}")
+        
+        try:
+            await init_beanie(
+                database=client[settings.DATABASE_NAME],
+                document_models=document_models,
+                allow_index_dropping=True
+            )
+            logger.info("Beanie ODM initialized with all models")
+        except Exception as init_error:
+            logger.error(f"Error during Beanie initialization: {str(init_error)}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            raise
         
     except Exception as e:
         logger.error(f"Failed to initialize database: {str(e)}")
+        logger.error(f"Detailed traceback: {traceback.format_exc()}")
         raise
     
     yield
@@ -58,38 +101,49 @@ async def lifespan(app: FastAPI):
 
 # Middleware to check database connection
 async def check_db_connection(request: Request, call_next):
-    try:
-        # Skip database check for OPTIONS requests
-        if request.method == "OPTIONS":
-            response = await call_next(request)
-            return response
+    # Skip checks for non-critical paths
+    path = request.url.path
+    if (path.startswith("/static") or 
+        path.startswith("/_next") or 
+        path == "/health" or 
+        path == "/favicon.ico" or
+        request.method == "OPTIONS"):
+        return await call_next(request)
 
-        # Try to get database client
-        client = get_db()
-        # Test connection
-        await client.admin.command('ping')
-        # If we get here, the connection is good
-        response = await call_next(request)
-        return response
+    current_time = time()
+    global db_status
+
+    try:
+        # Only check connection if enough time has passed since last check
+        if current_time - db_status["last_check"] > db_status["check_interval"]:
+            client = get_db()
+            await client.admin.command('ping')
+            db_status["is_connected"] = True
+            db_status["last_check"] = current_time
+        
+        if not db_status["is_connected"]:
+            raise ConnectionError("Database is not connected")
+
+        return await call_next(request)
+
     except Exception as e:
         error_msg = str(e)
-        logger.error(f"Database connection error in middleware: {error_msg}\n{traceback.format_exc()}")
+        logger.error(f"Database connection error in middleware: {error_msg}")
+        db_status["is_connected"] = False
         
-        # Create error response
-        error_response = JSONResponse(
+        # Create error response with CORS headers
+        return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={
                 "status": "error",
                 "message": "Database connection not ready. Please try again in a few seconds.",
                 "error": error_msg
+            },
+            headers={
+                "Access-Control-Allow-Origin": "http://localhost:3000",
+                "Access-Control-Allow-Credentials": "true"
             }
         )
-        
-        # Add CORS headers to error response
-        error_response.headers["Access-Control-Allow-Origin"] = "http://localhost:3000"
-        error_response.headers["Access-Control-Allow-Credentials"] = "true"
-        
-        return error_response
 
 # Create FastAPI app
 app = FastAPI(

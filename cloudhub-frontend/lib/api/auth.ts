@@ -1,74 +1,31 @@
 "use client";
 
 import axiosInstance from './axios';
+import { User, UserRole } from '@/types/user';
+import Cookies from 'js-cookie';
 
-export type UserRole = 'organizer' | 'participant' | 'judge' | 'mentor' | 'media' | 'admin';
-
-export interface RegisterData {
-  // Basic Information
-  email: string;
-  password: string;
-  full_name: string;
-  role: UserRole;
-  phone?: string;
-  country?: string;
-  timezone?: string;
-  
-  // Profile Information
-  bio?: string;
-  avatar?: string;
-  skills?: string[];
-  languages?: Array<{ language: string; level: string }>;
-  certifications?: Array<{ name: string; issuer: string; date: string }>;
-  social_links?: { [key: string]: string };
-  
-  // Role-specific Information
-  organization_name?: string;
-  organization_website?: string;
-  organization_size?: string;
-  industry?: string;
-  specializations?: string[];
-  mentorship_areas?: string[];
-  
-  // Organization-specific Information (for organizers)
-  organization_description?: string;
-  organization_focus_areas?: string[];
-  organization_social_links?: {
-    github?: string;
-    linkedin?: string;
-    twitter?: string;
-    website?: string;
-  };
-  
-  // Preferences
-  communication_preferences?: { [key: string]: boolean };
-  notification_settings?: { [key: string]: boolean };
-  availability?: { days: string[]; hours: string[] };
-  
-  // Terms and Conditions
-  accepted_terms: boolean;
-  accepted_privacy_policy: boolean;
-}
-
-export interface LoginData {
+export interface LoginCredentials {
   username: string;
   password: string;
-  remember_me?: boolean;
 }
 
-export interface AuthResponse {
-  user: {
-    id: string;
-    email: string;
-    full_name: string;
-    role: UserRole;
-    avatar?: string;
-    // ... other user fields
-  };
+export interface TokenResponse {
   access_token: string;
   refresh_token: string;
   token_type: string;
   expires_in: number;
+  user?: User;
+}
+
+export interface Session {
+  id: string;
+  device_info: {
+    user_agent: string;
+    ip: string;
+    timestamp: string;
+  };
+  created_at: string;
+  expires_at: string;
 }
 
 export interface PasswordResetData {
@@ -81,103 +38,158 @@ export interface PasswordResetConfirmData {
   confirm_password: string;
 }
 
+export interface RegisterData {
+  email: string;
+  password: string;
+  full_name: string;
+  role: UserRole;
+  phone?: string;
+  country?: string;
+  timezone?: string;
+  organization_name?: string;
+  accepted_terms: boolean;
+  accepted_privacy_policy: boolean;
+}
+
+const TOKEN_STORAGE = {
+  ACCESS_TOKEN: 'access_token',
+  REFRESH_TOKEN: 'refresh_token',
+  USER: 'user'
+};
+
 class AuthAPI {
-  async register(data: RegisterData): Promise<AuthResponse> {
-    try {
-      const response = await axiosInstance.post<AuthResponse>('/auth/register', data);
-      return response.data;
-    } catch (error: any) {
-      if (error.response?.data?.detail) {
-        throw new Error(error.response.data.detail);
+  async login(credentials: LoginCredentials): Promise<TokenResponse> {
+    const formData = new URLSearchParams();
+    formData.append('username', credentials.username);
+    formData.append('password', credentials.password);
+
+    const response = await axiosInstance.post<TokenResponse>('/auth/login', 
+      formData,
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
       }
+    );
+    
+    const { access_token, refresh_token, user } = response.data;
+
+    // Store tokens in both localStorage and cookies for better security
+    localStorage.setItem(TOKEN_STORAGE.ACCESS_TOKEN, access_token);
+    localStorage.setItem(TOKEN_STORAGE.REFRESH_TOKEN, refresh_token);
+    if (user) localStorage.setItem(TOKEN_STORAGE.USER, JSON.stringify(user));
+
+    // Set cookies with httpOnly flag
+    Cookies.set(TOKEN_STORAGE.ACCESS_TOKEN, access_token, { secure: true, sameSite: 'strict' });
+    Cookies.set(TOKEN_STORAGE.REFRESH_TOKEN, refresh_token, { secure: true, sameSite: 'strict' });
+
+    return response.data;
+  }
+
+  async refreshTokens(): Promise<TokenResponse> {
+    const refresh_token = localStorage.getItem(TOKEN_STORAGE.REFRESH_TOKEN);
+    if (!refresh_token) {
+      throw new Error('No refresh token available');
+    }
+
+    try {
+      const response = await axiosInstance.post<TokenResponse>('/auth/refresh', {
+        refresh_token
+      });
+
+      const { access_token, refresh_token: new_refresh_token } = response.data;
+
+      // Update tokens in both localStorage and cookies
+      localStorage.setItem(TOKEN_STORAGE.ACCESS_TOKEN, access_token);
+      localStorage.setItem(TOKEN_STORAGE.REFRESH_TOKEN, new_refresh_token);
+
+      Cookies.set(TOKEN_STORAGE.ACCESS_TOKEN, access_token, { secure: true, sameSite: 'strict' });
+      Cookies.set(TOKEN_STORAGE.REFRESH_TOKEN, new_refresh_token, { secure: true, sameSite: 'strict' });
+
+      return response.data;
+    } catch (error) {
+      // If refresh fails, clear all tokens and throw error
+      this.clearTokens();
       throw error;
     }
   }
 
-  async login(data: LoginData): Promise<AuthResponse> {
-    try {
-      // Create form data
-      const formData = new URLSearchParams();
-      formData.append('username', data.username);
-      formData.append('password', data.password);
-      if (data.remember_me !== undefined) {
-        formData.append('remember_me', data.remember_me.toString());
-      }
-
-      const response = await axiosInstance.post<AuthResponse>('/auth/login', 
-        formData.toString(),
-        {
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-        }
-      );
-      return response.data;
-    } catch (error: any) {
-      if (error.response?.data?.detail) {
-        throw new Error(error.response.data.detail);
-      }
-      throw error;
-    }
+  async register(data: RegisterData): Promise<TokenResponse> {
+    const response = await axiosInstance.post<TokenResponse>('/auth/register', data);
+    return response.data;
   }
 
   async logout(): Promise<void> {
-    try {
-      await axiosInstance.post('/auth/logout');
-    } catch (error: any) {
-      if (error.response?.data?.detail) {
-        throw new Error(error.response.data.detail);
+    const refresh_token = localStorage.getItem(TOKEN_STORAGE.REFRESH_TOKEN);
+    if (refresh_token) {
+      try {
+        await axiosInstance.post('/auth/logout', { refresh_token });
+      } catch (error) {
+        console.error('Error during logout:', error);
       }
-      throw error;
+    }
+    this.clearTokens();
+  }
+
+  async logoutAll(): Promise<void> {
+    try {
+      await axiosInstance.post('/auth/logout-all');
+    } finally {
+      this.clearTokens();
     }
   }
 
-  async refreshToken(refreshToken: string): Promise<AuthResponse> {
-    try {
-      const response = await axiosInstance.post<AuthResponse>('/auth/refresh', {
-        refresh_token: refreshToken,
-      });
-      return response.data;
-    } catch (error: any) {
-      if (error.response?.data?.detail) {
-        throw new Error(error.response.data.detail);
-      }
-      throw error;
-    }
+  async getCurrentUser(): Promise<User> {
+    const response = await axiosInstance.get<User>('/auth/me');
+    return response.data;
+  }
+
+  async getSessions(): Promise<Session[]> {
+    const response = await axiosInstance.get<Session[]>('/auth/sessions');
+    return response.data;
+  }
+
+  async revokeSession(sessionId: string): Promise<void> {
+    await axiosInstance.post(`/auth/sessions/${sessionId}/revoke`);
   }
 
   async requestPasswordReset(data: PasswordResetData): Promise<void> {
-    try {
-      await axiosInstance.post('/auth/password-reset', data);
-    } catch (error: any) {
-      if (error.response?.data?.detail) {
-        throw new Error(error.response.data.detail);
-      }
-      throw error;
-    }
+    await axiosInstance.post('/auth/password-reset', data);
   }
 
   async resetPassword(data: PasswordResetConfirmData): Promise<void> {
-    try {
-      await axiosInstance.post('/auth/password-reset/confirm', data);
-    } catch (error: any) {
-      if (error.response?.data?.detail) {
-        throw new Error(error.response.data.detail);
-      }
-      throw error;
-    }
+    await axiosInstance.post('/auth/password-reset/confirm', data);
   }
 
   async verifyEmail(token: string): Promise<void> {
-    try {
-      await axiosInstance.post(`/auth/verify-email/${token}`);
-    } catch (error: any) {
-      if (error.response?.data?.detail) {
-        throw new Error(error.response.data.detail);
-      }
-      throw error;
-    }
+    await axiosInstance.post(`/auth/verify-email/${token}`);
+  }
+
+  clearTokens(): void {
+    localStorage.removeItem(TOKEN_STORAGE.ACCESS_TOKEN);
+    localStorage.removeItem(TOKEN_STORAGE.REFRESH_TOKEN);
+    localStorage.removeItem(TOKEN_STORAGE.USER);
+    
+    Cookies.remove(TOKEN_STORAGE.ACCESS_TOKEN);
+    Cookies.remove(TOKEN_STORAGE.REFRESH_TOKEN);
+  }
+
+  getStoredTokens(): { accessToken: string | null; refreshToken: string | null } {
+    return {
+      accessToken: localStorage.getItem(TOKEN_STORAGE.ACCESS_TOKEN),
+      refreshToken: localStorage.getItem(TOKEN_STORAGE.REFRESH_TOKEN)
+    };
+  }
+
+  isAuthenticated(): boolean {
+    return !!localStorage.getItem(TOKEN_STORAGE.ACCESS_TOKEN);
   }
 }
 
-export const authAPI = new AuthAPI(); 
+// Export a single instance of the AuthAPI
+export const authAPI = new AuthAPI();
+
+export interface ErrorResponse {
+  detail?: string;
+  errors?: Array<{ msg: string }>;
+} 

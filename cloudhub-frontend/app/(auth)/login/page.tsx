@@ -90,14 +90,26 @@ export default function LoginPage() {
     // Validate input
     if (loginMethod === 'email' && !email) {
       setError('Email is required');
+      toast.error('Email is required', {
+        duration: 5000,
+        position: 'bottom-center',
+      });
       return;
     }
     if (loginMethod === 'phone' && !phone) {
       setError('Phone number is required');
+      toast.error('Phone number is required', {
+        duration: 5000,
+        position: 'bottom-center',
+      });
       return;
     }
     if (!password) {
       setError('Password is required');
+      toast.error('Password is required', {
+        duration: 5000,
+        position: 'bottom-center',
+      });
       return;
     }
     
@@ -120,7 +132,7 @@ export default function LoginPage() {
 
       // Check if we have both tokens before proceeding
       if (!response.access_token || !response.refresh_token) {
-        throw new Error('Invalid credentials');
+        throw new Error('Authentication failed');
       }
 
       // Store tokens and user data
@@ -152,6 +164,7 @@ export default function LoginPage() {
       // Use router.push to redirect
       router.push(redirectPath);
     } catch (err: any) {
+      setIsLoading(false);
       let errorMessage = 'Invalid email/phone or password';
       
       if (err.response?.status === 401) {
@@ -182,10 +195,9 @@ export default function LoginPage() {
         duration: 5000,
         position: 'bottom-center',
       });
-    } finally {
-      setIsLoading(false);
+      return; // Return early to prevent further execution
     }
-  }, [loginMethod, email, phone, countryCode, password, rememberMe, isLoading, router]);
+  }, [loginMethod, email, phone, countryCode, password, rememberMe, router]);
 
   // Memoize tab switcher to prevent rerenders when other state changes
   const TabSwitcher = useMemo(() => (

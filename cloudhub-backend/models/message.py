@@ -4,6 +4,7 @@ from beanie import Document, Link, before_event, Replace, Insert
 from pydantic import Field
 from models.base import BaseModel
 from models.user import User
+from pymongo import ASCENDING, DESCENDING, TEXT, IndexModel
 
 class Message(BaseModel):
     """Message model for direct messages between users."""
@@ -27,10 +28,10 @@ class Message(BaseModel):
         name = "messages"
         use_state_management = True
         indexes = [
-            "sender.id",
-            "receiver.id",
-            "created_at",
-            "is_read"
+            IndexModel([("sender.id", 1)], name="idx_message_sender_id"),
+            IndexModel([("receiver.id", 1)], name="idx_message_receiver_id"),
+            IndexModel([("created_at", -1)], name="idx_message_created_at"),
+            IndexModel([("is_read", 1)], name="idx_message_read_status")
         ]
     
     def to_dict(self) -> dict:
@@ -76,10 +77,10 @@ class GroupMessage(BaseModel):
         name = "group_messages"
         use_state_management = True
         indexes = [
-            "sender.id",
-            "group.id",
-            "created_at",
-            "is_pinned"
+            IndexModel([("sender.id", 1)], name="idx_group_message_sender_id"),
+            IndexModel([("group.id", 1)], name="idx_group_message_group_id"),
+            IndexModel([("created_at", -1)], name="idx_group_message_created_at"),
+            IndexModel([("is_pinned", 1)], name="idx_group_message_pinned")
         ]
     
     def to_dict(self) -> dict:
@@ -130,9 +131,9 @@ class Group(BaseModel):
         name = "groups"
         use_state_management = True
         indexes = [
-            "name",
-            "members",
-            "admins"
+            IndexModel([("name", ASCENDING)], name="idx_group_name"),
+            IndexModel([("members", ASCENDING)], name="idx_group_members"),
+            IndexModel([("admins", ASCENDING)], name="idx_group_admins")
         ]
     
     def to_dict(self) -> dict:

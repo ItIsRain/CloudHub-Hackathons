@@ -1,30 +1,75 @@
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import Field
+from pydantic import Field, HttpUrl
 from beanie import Document, Link, before_event, Replace, Insert
 from models.base import BaseModel as BaseDBModel
+from enum import Enum
+from pymongo import ASCENDING, DESCENDING, TEXT, IndexModel
+
+class TeamRole(str, Enum):
+    LEADER = "leader"
+    MEMBER = "member"
+
+class TeamMember(Document):
+    user_id: str = Field(..., description="ID of the team member")
+    role: TeamRole = Field(default=TeamRole.MEMBER)
+    joined_at: datetime = Field(default_factory=datetime.utcnow)
+    skills: List[str] = Field(default_factory=list)
+    contributions: List[str] = Field(default_factory=list)
+
+class TeamStatus(str, Enum):
+    FORMING = "forming"  # Still accepting members
+    COMPLETE = "complete"  # Team is full
+    ACTIVE = "active"  # Working on project
+    SUBMITTED = "submitted"  # Project submitted
+    DISQUALIFIED = "disqualified"
 
 class Team(BaseDBModel):
     """Team model."""
     
     # Basic information
-    name: str
-    hackathon: Link['Hackathon']
-    leader: Link['User']
+    name: str = Field(..., min_length=3, max_length=50)
+    hackathon_id: str = Field(..., description="ID of the hackathon")
     
     # Team details
-    members: List[str] = Field(default_factory=list)  # List of user IDs
-    invited_emails: List[str] = Field(default_factory=list)
-    status: str = "forming"  # forming, complete, locked
-    max_size: int = 4
-    current_size: int = 1
-    looking_for_members: bool = True
+    description: str = Field(default="", max_length=500)
+    logo: Optional[HttpUrl] = None
+    looking_for_members: bool = Field(default=True)
+    required_skills: List[str] = Field(default_factory=list)
+    
+    # Members
+    leader_id: str = Field(..., description="ID of the team leader")
+    members: List[TeamMember] = Field(default_factory=list)
+    max_members: int = Field(default=4)
+    
+    # Project
+    project_name: Optional[str] = None
+    project_description: Optional[str] = None
+    project_repository: Optional[HttpUrl] = None
+    project_demo_url: Optional[HttpUrl] = None
+    project_submission_url: Optional[HttpUrl] = None
+    technologies_used: List[str] = Field(default_factory=list)
+    
+    # Status
+    status: TeamStatus = Field(default=TeamStatus.FORMING)
+    is_disqualified: bool = Field(default=False)
+    disqualification_reason: Optional[str] = None
+    
+    # Judging
+    total_score: float = Field(default=0)
+    judge_scores: List[dict] = Field(default_factory=list)
+    judge_feedback: List[dict] = Field(default_factory=list)
+    final_rank: Optional[int] = None
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    submitted_at: Optional[datetime] = None
     
     # Team profile
     skills: List[str] = Field(default_factory=list)
     project_idea: Optional[str] = None
     avatar: Optional[str] = None
-    description: Optional[str] = None
     tags: List[str] = Field(default_factory=list)
     
     # Communication and collaboration
@@ -55,50 +100,44 @@ class Team(BaseDBModel):
         name = "teams"
         use_state_management = True
         indexes = [
-            "hackathon.id",
-            "leader.id",
-            "members",
-            "invitation_code",
-            "status"
+            # Basic indexes
+            IndexModel([("hackathon_id", 1)], name="idx_team_hackathon"),
+            IndexModel([("leader_id", 1)], name="idx_team_leader"),
+            IndexModel([("status", 1)], name="idx_team_status"),
+            IndexModel([("final_rank", 1)], name="idx_team_final_rank"),
+            # Text search index
+            IndexModel(
+                [("name", "text"), ("project_name", "text")],
+                name="idx_team_text_search",
+                weights={"name": 10, "project_name": 5}
+            )
         ]
     
     async def add_member(self, user_id: str) -> bool:
         """Add a member to the team."""
-        if user_id not in self.members and len(self.members) < self.max_size:
-            self.members.append(user_id)
-            self.current_size = len(self.members)
-            if self.current_size >= self.max_size:
-                self.looking_for_members = False
-                self.status = 'complete'
+        if user_id not in self.members and len(self.members) < self.max_members:
+            self.members.append(TeamMember(user_id=user_id))
             await self.save()
             return True
         return False
     
     async def remove_member(self, user_id: str) -> bool:
         """Remove a member from the team."""
-        if user_id in self.members and user_id != str(self.leader.id):
-            self.members.remove(user_id)
-            self.current_size = len(self.members)
-            self.looking_for_members = True
-            self.status = 'forming'
-            await self.save()
-            return True
+        for member in self.members:
+            if member.user_id == user_id:
+                self.members.remove(member)
+                await self.save()
+                return True
         return False
     
     async def add_invited_email(self, email: str) -> bool:
         """Add an email to invited list."""
-        if email not in self.invited_emails:
-            self.invited_emails.append(email)
-            await self.save()
-            return True
+        # This method is not applicable for Team model
         return False
     
     async def remove_invited_email(self, email: str) -> bool:
         """Remove an email from invited list."""
-        if email in self.invited_emails:
-            self.invited_emails.remove(email)
-            await self.save()
-            return True
+        # This method is not applicable for Team model
         return False
     
     async def update_project_details(self, data: Dict[str, Any]):
@@ -137,7 +176,7 @@ class Team(BaseDBModel):
     async def get_by_hackathon(cls, hackathon_id: str) -> List['Team']:
         """Get all teams for a hackathon."""
         return await cls.find(
-            cls.hackathon.id == hackathon_id,
+            cls.hackathon_id == hackathon_id,
             cls.is_deleted == False
         ).to_list()
     

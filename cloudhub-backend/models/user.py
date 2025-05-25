@@ -1,13 +1,16 @@
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 from beanie import Document, Link, before_event, Replace, Insert
-from pydantic import Field
+from pydantic import Field, EmailStr
+from uuid import UUID
+from pymongo import ASCENDING, DESCENDING, IndexModel
+from pymongo import TEXT
 
 class User(Document):
     """User model."""
     
     # Basic information
-    email: str = Field(unique=True)
+    email: EmailStr = Field(unique=True)
     password_hash: str
     name: str
     avatar: Optional[str] = None
@@ -75,17 +78,35 @@ class User(Document):
     is_deleted: bool = False
     deleted_at: Optional[datetime] = None
     
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
     class Settings:
         name = "users"
         use_state_management = True
         indexes = [
-            "email",
-            "role",
-            "organization_name",
-            "skills",
-            "active_hackathons",
-            "active_teams"
+            # Basic indexes
+            IndexModel([("email", 1)], unique=True, name="idx_user_email_unique"),
+            IndexModel([("role", 1)], name="idx_user_role"),
+            IndexModel([("organization_name", 1)], name="idx_user_org_name"),
+            IndexModel([("skills", 1)], name="idx_user_skills"),
+            IndexModel([("active_hackathons", 1)], name="idx_user_active_hackathons"),
+            IndexModel([("active_teams", 1)], name="idx_user_active_teams"),
+            # Text search index
+            IndexModel(
+                [("name", "text"), ("bio", "text")],
+                name="idx_user_text_search",
+                weights={"name": 10, "bio": 5}
+            )
         ]
+    
+    @before_event([Replace, Insert])
+    def update_timestamps(self):
+        """Update timestamps before saving."""
+        if not self.created_at:
+            self.created_at = datetime.utcnow()
+        self.updated_at = datetime.utcnow()
     
     def to_dict(self) -> dict:
         """Convert user instance to dictionary."""
@@ -125,7 +146,9 @@ class User(Document):
             'email_verified': self.email_verified,
             'phone_verified': self.phone_verified,
             'accepted_terms': self.accepted_terms,
-            'accepted_privacy_policy': self.accepted_privacy_policy
+            'accepted_privacy_policy': self.accepted_privacy_policy,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
     
     async def update_last_seen(self):
@@ -187,10 +210,4 @@ class User(Document):
         return await cls.find(
             cls.is_deleted == False,
             cls.account_locked == False
-        ).to_list()
-    
-    @before_event([Replace, Insert])
-    def set_defaults(self):
-        """Set default values before saving."""
-        if not self.last_seen:
-            self.last_seen = datetime.utcnow() 
+        ).to_list() 

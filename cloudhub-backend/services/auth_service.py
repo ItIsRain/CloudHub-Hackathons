@@ -12,8 +12,9 @@ from bson import ObjectId
 from config.config import settings
 from models.auth import (
     UserRole, UserStatus, UserCreate, UserResponse,
-    RefreshToken, SecurityEvent
+    SecurityEvent
 )
+from models.token import RefreshToken
 from models.user import User
 
 class AuthService:

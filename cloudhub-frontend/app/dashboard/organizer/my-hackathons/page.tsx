@@ -48,6 +48,7 @@ import { addDays } from "date-fns"
 import { DateRange } from "react-day-picker"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
+import { hackathonApi } from '@/lib/api/hackathon';
 
 // Define interfaces for the criteria and challenges
 interface Criterion {
@@ -79,6 +80,7 @@ export default function OrganizerMyHackathonsPage() {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false)
   const [hackathonName, setHackathonName] = useState("");
   const [description, setDescription] = useState("");
+  const [rulesText, setRulesText] = useState("");
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [logoImage, setLogoImage] = useState<File | null>(null);
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -419,59 +421,71 @@ export default function OrganizerMyHackathonsPage() {
     setCreateStepIndex(2);
     setIsProcessingPayment(true);
 
-    // Create hackathon object
-    const hackathonData = {
-      name: hackathonName,
-      description,
-      dateRange,
-      registrationDeadline,
-      maxParticipants: selectedMaxParticipants,
-      prizePool,
-      package: selectedPackage,
-      judgingCriteria: criteriaWeights,
-      // Add other form fields as needed
-    };
+    try {
+      // Create hackathon data object
+      const hackathonData = {
+        title: hackathonName,
+        description,
+        dateRange: {
+          from: dateRange.from,
+          to: dateRange.to
+        },
+        registrationDeadline,
+        maxParticipants: selectedMaxParticipants,
+        package: selectedPackage?.toLowerCase() as 'starter' | 'growth' | 'scale',
+        prizePool,
+        prizes,
+        judgingCriteria: criteriaWeights,
+        challenges,
+        rules: rulesText || "", // Updated to use rulesText state variable
+        requirements: [],
+        isPrivate: false,
+        tags: []
+      };
 
-    // TODO: Send hackathon data to API
-    console.log("Creating hackathon:", hackathonData);
-    
-    // Simulate API call with timeout
-    setTimeout(() => {
+      // Send request to create hackathon
+      const response = await hackathonApi.createHackathon(hackathonData);
+      
       setIsProcessingPayment(false);
       
-      // Show success message (only visible if user hasn't closed the dialog)
-      setTimeout(() => {
-        // Close dialog and show success message
-        handleDialogOpenChange(false);
-        setCreateStepIndex(0);
-        
-        toast({
-          title: "Hackathon created!",
-          description: "Your hackathon has been created successfully",
-          variant: "default"
-        });
-        
-        // Reset form
-        setHackathonName("");
-        setDescription("");
-        setCoverImage(null);
-        setLogoImage(null);
-        setDateRange({
-          from: new Date(),
-          to: addDays(new Date(), 30),
-        });
-        setRegistrationDeadline(addDays(new Date(), 14));
-        setSelectedMaxParticipants(100);
-        setPrizePool("1000");
-        setSelectedPackage(null);
-        setCriteriaWeights([
-          { id: '1', name: 'Innovation', weight: 25, description: 'How original and innovative is the solution?' },
-          { id: '2', name: 'Technical Complexity', weight: 25, description: 'How technically challenging was the implementation?' },
-          { id: '3', name: 'User Experience', weight: 25, description: 'How intuitive and user-friendly is the solution?' },
-          { id: '4', name: 'Impact & Practicality', weight: 25, description: 'How impactful and practical is the solution for real-world use?' },
-        ]);
-      }, 2000);
-    }, 3000);
+      // Show success message
+      toast({
+        title: "Hackathon created!",
+        description: "Your hackathon has been created successfully",
+        variant: "default"
+      });
+      
+      // Reset form and close dialog
+      handleDialogOpenChange(false);
+      setCreateStepIndex(0);
+      
+      // Reset all form fields
+      setHackathonName("");
+      setDescription("");
+      setCoverImage(null);
+      setLogoImage(null);
+      setDateRange({
+        from: new Date(),
+        to: addDays(new Date(), 30),
+      });
+      setRegistrationDeadline(addDays(new Date(), 14));
+      setSelectedMaxParticipants(100);
+      setPrizePool("1000");
+      setSelectedPackage(null);
+      setCriteriaWeights([
+        { id: '1', name: 'Innovation', weight: 25, description: 'How original and innovative is the solution?' },
+        { id: '2', name: 'Technical Complexity', weight: 25, description: 'How technically challenging was the implementation?' },
+        { id: '3', name: 'User Experience', weight: 25, description: 'How intuitive and user-friendly is the solution?' },
+        { id: '4', name: 'Impact & Practicality', weight: 25, description: 'How impactful and practical is the solution for real-world use?' },
+      ]);
+    } catch (error: any) {
+      setIsProcessingPayment(false);
+      toast({
+        title: "Error creating hackathon",
+        description: error.response?.data?.detail || "An unexpected error occurred",
+        variant: "destructive"
+      });
+    }
   };
 
   // Dummy data for hackathons

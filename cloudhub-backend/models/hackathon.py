@@ -1,85 +1,129 @@
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import Field
+from pydantic import Field, HttpUrl
 from beanie import Document, Link, before_event, Replace, Insert
 from models.base import BaseModel as BaseDBModel
+from enum import Enum
+from pymongo import ASCENDING, DESCENDING, TEXT, IndexModel
 
-class Hackathon(BaseDBModel):
+class HackathonStatus(str, Enum):
+    DRAFT = "draft"
+    PUBLISHED = "published"
+    ACTIVE = "active"
+    JUDGING = "judging"
+    COMPLETED = "completed"
+    ARCHIVED = "archived"
+
+class PricingTier(str, Enum):
+    FREE = "free"
+    STARTER = "starter"
+    PROFESSIONAL = "professional"
+    ENTERPRISE = "enterprise"
+
+class Technology(BaseDBModel):
+    name: str
+    description: str
+    icon_url: Optional[HttpUrl] = None
+
+class Prize(BaseDBModel):
+    position: int = Field(description="Prize position (1st, 2nd, 3rd, etc)")
+    amount: float = Field(description="Prize amount")
+    currency: str = Field(default="AED", description="Prize currency")
+    description: str = Field(description="Prize description")
+    sponsor: Optional[str] = None
+
+class Timeline(BaseDBModel):
+    registration_start: datetime
+    registration_end: datetime
+    event_start: datetime
+    event_end: datetime
+    judging_start: datetime
+    judging_end: datetime
+    winners_announcement: datetime
+
+class BillingInfo(BaseDBModel):
+    pricing_tier: PricingTier
+    base_price: float
+    participant_price: float = Field(description="Price per participant")
+    total_amount: float
+    currency: str = "AED"
+    is_paid: bool = False
+    payment_date: Optional[datetime] = None
+    invoice_id: Optional[str] = None
+
+class Hackathon(Document):
     """Hackathon model."""
     
     # Basic information
-    title: str
-    description: str
-    organizer: Link['User']
-    organizer_logo: Optional[str] = None
+    title: str = Field(..., min_length=3, max_length=100)
+    slug: str = Field(..., unique=True)
+    description: str = Field(..., min_length=10)
+    short_description: str = Field(..., max_length=200)
+    cover_image: Optional[HttpUrl] = None
+    banner_image: Optional[HttpUrl] = None
     
-    # Event details
-    prize_pool: Optional[str] = None
-    location: Optional[str] = None
-    venue: Optional[str] = None
-    start_date: datetime
-    end_date: datetime
-    status: str = "Upcoming"
-    progress: float = 0.0
+    # Organization
+    organizer_id: str = Field(..., description="ID of the organizing user")
+    organization_name: str = Field(..., description="Name of the organizing entity")
+    organization_logo: Optional[HttpUrl] = None
     
-    # Categories and requirements
-    categories: List[str] = Field(default_factory=list)
+    # Configuration
+    status: HackathonStatus = Field(default=HackathonStatus.DRAFT)
+    max_participants: int = Field(default=100)
+    min_team_size: int = Field(default=1)
+    max_team_size: int = Field(default=4)
+    is_team_required: bool = Field(default=True)
+    
+    # Features
+    technologies: List[Technology] = Field(default_factory=list)
+    prizes: List[Prize] = Field(default_factory=list)
+    total_prize_pool: float = Field(default=0)
+    timeline: Timeline
+    
+    # Requirements
     requirements: List[str] = Field(default_factory=list)
     rules: List[str] = Field(default_factory=list)
-    eligibility: List[str] = Field(default_factory=list)
+    judging_criteria: List[str] = Field(default_factory=list)
     
-    # Media and presentation
-    image: Optional[str] = None
-    cover_image: Optional[str] = None
-    short_description: Optional[str] = None
+    # Resources
+    resources: List[HttpUrl] = Field(default_factory=list)
+    submission_template: Optional[str] = None
     
-    # Participation limits
-    max_participants: Optional[int] = None
-    participant_count: int = 0
-    team_count: int = 0
-    submission_count: int = 0
-    mentor_count: int = 0
-    judge_count: int = 0
+    # Statistics
+    registered_participants: int = Field(default=0)
+    active_participants: int = Field(default=0)
+    submitted_projects: int = Field(default=0)
+    total_teams: int = Field(default=0)
     
-    # Timeline and deadlines
-    registration_deadline: Optional[datetime] = None
-    submission_deadline: Optional[datetime] = None
-    judging_deadline: Optional[datetime] = None
-    current_phase: str = "registration"
+    # Billing
+    billing: BillingInfo
     
-    # Features and settings
-    featured: bool = False
-    registration_status: str = "open"
-    difficulty: Optional[str] = None
-    mode: Optional[str] = None
-    timezone: Optional[str] = None
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    published_at: Optional[datetime] = None
     
-    # Resources and participants
-    resources: List[str] = Field(default_factory=list)
-    mentors: List[str] = Field(default_factory=list)
-    judges: List[str] = Field(default_factory=list)
-    sponsors: List[str] = Field(default_factory=list)
-    
-    # Additional information
-    timeline: List[Dict[str, Any]] = Field(default_factory=list)
-    budget: Dict[str, Any] = Field(default_factory=dict)
-    sponsorship_tiers: List[Dict[str, Any]] = Field(default_factory=list)
-    application_questions: List[Dict[str, Any]] = Field(default_factory=list)
-    custom_fields: Dict[str, Any] = Field(default_factory=dict)
-    
-    # Analytics and feedback
-    analytics: Dict[str, Any] = Field(default_factory=dict)
-    feedback: List[Dict[str, Any]] = Field(default_factory=list)
+    # Metadata
+    tags: List[str] = Field(default_factory=list)
+    is_featured: bool = Field(default=False)
+    is_private: bool = Field(default=False)
+    access_code: Optional[str] = None
     
     class Settings:
         name = "hackathons"
         use_state_management = True
         indexes = [
-            "organizer.id",
-            "status",
-            "start_date",
-            "end_date",
-            "featured"
+            # Basic indexes
+            IndexModel([("slug", 1)], unique=True, name="idx_hackathon_slug_unique"),
+            IndexModel([("organizer_id", 1)], name="idx_hackathon_organizer"),
+            IndexModel([("status", 1)], name="idx_hackathon_status"),
+            IndexModel([("is_featured", 1)], name="idx_hackathon_featured"),
+            # Text search index
+            IndexModel(
+                [("title", "text"), ("description", "text")],
+                name="idx_hackathon_text_search",
+                weights={"title": 10, "description": 5}
+            )
         ]
     
     async def update_counts(self):

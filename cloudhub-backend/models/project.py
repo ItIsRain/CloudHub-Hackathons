@@ -3,6 +3,7 @@ from typing import Optional, List, Dict, Any
 from pydantic import Field
 from beanie import Document, Link, before_event, Replace, Insert
 from models.base import BaseModel as BaseDBModel
+from pymongo import ASCENDING, DESCENDING, TEXT, IndexModel
 
 class Project(BaseDBModel):
     """Project model for hackathon submissions."""
@@ -59,11 +60,18 @@ class Project(BaseDBModel):
         name = "projects"
         use_state_management = True
         indexes = [
-            "team.id",
-            "hackathon.id",
-            "status",
-            "submitted_at",
-            "final_score"
+            # Basic indexes
+            IndexModel([("team.id", 1)], name="idx_project_team_id"),
+            IndexModel([("hackathon.id", 1)], name="idx_project_hackathon_id"),
+            IndexModel([("status", 1)], name="idx_project_status"),
+            IndexModel([("submitted_at", -1)], name="idx_project_submitted_at"),
+            IndexModel([("final_score", -1)], name="idx_project_final_score"),
+            # Text search index
+            IndexModel(
+                [("title", "text"), ("description", "text")],
+                name="idx_project_text_search",
+                weights={"title": 10, "description": 5}
+            )
         ]
     
     async def submit(self):

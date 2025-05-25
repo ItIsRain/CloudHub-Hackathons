@@ -24,39 +24,93 @@ async def create_hackathon(
             detail="Unauthorized to create hackathon"
         )
     
-    # Create hackathon
+    # Validate required fields
+    required_fields = ['title', 'description', 'dateRange', 'registrationDeadline', 'maxParticipants']
+    for field in required_fields:
+        if field not in hackathon_data:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Missing required field: {field}"
+            )
+    
+    # Create timeline object
+    timeline = {
+        "registration_start": datetime.utcnow(),
+        "registration_end": hackathon_data['registrationDeadline'],
+        "event_start": hackathon_data['dateRange']['from'],
+        "event_end": hackathon_data['dateRange']['to'],
+        "judging_start": hackathon_data['dateRange']['to'],  # Default to end date
+        "judging_end": datetime.fromtimestamp(datetime.timestamp(hackathon_data['dateRange']['to']) + 86400),  # End date + 1 day
+        "winners_announcement": datetime.fromtimestamp(datetime.timestamp(hackathon_data['dateRange']['to']) + 172800),  # End date + 2 days
+    }
+    
+    # Create billing info based on package
+    billing_info = {
+        "pricing_tier": hackathon_data.get('package', 'starter').upper(),
+        "base_price": {
+            "STARTER": 2500,
+            "GROWTH": 7500,
+            "SCALE": 20000
+        }.get(hackathon_data.get('package', 'starter').upper(), 2500),
+        "participant_price": 0,  # Calculated based on max participants if needed
+        "total_amount": hackathon_data.get('totalAmount', 2500),
+        "currency": "AED",
+        "is_paid": False
+    }
+    
+    # Process judging criteria
+    judging_criteria = []
+    for criterion in hackathon_data.get('judgingCriteria', []):
+        judging_criteria.append({
+            "name": criterion['name'],
+            "weight": criterion['weight'],
+            "description": criterion['description']
+        })
+    
+    # Process prizes
+    prizes = []
+    for prize in hackathon_data.get('prizes', []):
+        prizes.append({
+            "position": int(prize['place'].split()[0]),  # Extract number from "1st Place"
+            "amount": float(prize['amount']),
+            "currency": "AED",
+            "description": prize['place']
+        })
+    
+    # Create hackathon object
     hackathon = Hackathon(
         title=hackathon_data['title'],
+        slug=hackathon_data['title'].lower().replace(' ', '-'),
         description=hackathon_data['description'],
-        organizer=str(current_user.id),
-        start_date=hackathon_data['start_date'],
-        end_date=hackathon_data['end_date'],
-        registration_deadline=hackathon_data['registration_deadline'],
-        submission_deadline=hackathon_data['submission_deadline'],
-        organizer_logo=hackathon_data.get('organizer_logo'),
-        prize_pool=hackathon_data.get('prize_pool'),
-        location=hackathon_data.get('location'),
-        venue=hackathon_data.get('venue'),
-        categories=hackathon_data.get('categories', []),
+        short_description=hackathon_data['description'][:200],
+        organizer_id=str(current_user.id),
+        organization_name=current_user.organization_name or "Independent Organizer",
+        status=HackathonStatus.DRAFT,
+        max_participants=hackathon_data['maxParticipants'],
+        min_team_size=1,
+        max_team_size=4,
+        is_team_required=True,
+        prizes=prizes,
+        total_prize_pool=float(hackathon_data.get('prizePool', 0)),
+        timeline=timeline,
         requirements=hackathon_data.get('requirements', []),
-        rules=hackathon_data.get('rules', []),
-        eligibility=hackathon_data.get('eligibility', []),
-        image=hackathon_data.get('image'),
-        cover_image=hackathon_data.get('cover_image'),
-        short_description=hackathon_data.get('short_description'),
-        max_participants=hackathon_data.get('max_participants'),
-        difficulty=hackathon_data.get('difficulty'),
-        mode=hackathon_data.get('mode'),
-        timezone=hackathon_data.get('timezone'),
-        resources=hackathon_data.get('resources', []),
-        mentors=hackathon_data.get('mentors', []),
-        judges=hackathon_data.get('judges', []),
-        sponsors=hackathon_data.get('sponsors', []),
-        timeline=hackathon_data.get('timeline', []),
-        budget=hackathon_data.get('budget', {}),
-        sponsorship_tiers=hackathon_data.get('sponsorship_tiers', []),
-        application_questions=hackathon_data.get('application_questions', [])
+        rules=hackathon_data.get('rules', []).split('\n'),
+        judging_criteria=judging_criteria,
+        billing=billing_info,
+        tags=hackathon_data.get('tags', []),
+        is_featured=False,
+        is_private=hackathon_data.get('isPrivate', False)
     )
+    
+    # Add challenges if provided
+    if 'challenges' in hackathon_data:
+        hackathon.challenges = [
+            {
+                "title": challenge['title'],
+                "description": challenge['description']
+            }
+            for challenge in hackathon_data['challenges']
+        ]
     
     await hackathon.save()
     

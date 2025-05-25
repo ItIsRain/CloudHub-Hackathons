@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
+import { getStoredUser } from "@/lib/auth"
 import {
   CalendarDays,
   Clock,
@@ -79,6 +80,7 @@ const hackathonData = [
 export default function OrganizerDashboard() {
   // Simulate loading state
   const [isLoading, setIsLoading] = useState(true)
+  const user = getStoredUser()
   
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -87,6 +89,9 @@ export default function OrganizerDashboard() {
     
     return () => clearTimeout(timer)
   }, [])
+
+  // Get first name from full name
+  const firstName = user?.full_name?.split(' ')[0] || 'Admin'
 
   return (
     <div className="space-y-8 pb-10 px-6 mt-6">
@@ -116,7 +121,7 @@ export default function OrganizerDashboard() {
               </div>
               
               <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 tracking-tight">
-                Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-violet-200">Admin!</span>
+                Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-violet-200">{firstName}!</span>
               </h1>
               
               <p className="text-white/90 text-lg mb-8 max-w-lg font-light">

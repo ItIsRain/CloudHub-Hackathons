@@ -19,18 +19,22 @@ def get_db():
     if client is None:
         try:
             logger.info("Initializing new database connection...")
-            # Create MongoDB client with connection settings
+            # Create MongoDB client with optimized connection settings
             client = AsyncIOMotorClient(
                 settings.DATABASE_URL,
                 minPoolSize=settings.MONGODB_MIN_POOL_SIZE,
                 maxPoolSize=settings.MONGODB_MAX_POOL_SIZE,
                 maxIdleTimeMS=settings.MONGODB_MAX_IDLE_TIME_MS,
-                serverSelectionTimeoutMS=10000,  # 10 second timeout
-                connectTimeoutMS=10000,
-                socketTimeoutMS=20000,
+                serverSelectionTimeoutMS=5000,  # Reduced to 5 seconds
+                connectTimeoutMS=5000,          # Reduced to 5 seconds
+                socketTimeoutMS=10000,          # Reduced to 10 seconds
                 retryWrites=True,
                 retryReads=True,
-                appname="CloudHub"
+                appname="CloudHub",
+                waitQueueTimeoutMS=2000,        # Added wait queue timeout
+                heartbeatFrequencyMS=10000,     # Added heartbeat frequency
+                maxConnecting=2,                # Limit concurrent connection attempts
+                localThresholdMS=15             # Reduced local threshold for faster server selection
             )
             
             try:
@@ -57,14 +61,9 @@ def close_db():
     """Close database connection."""
     global client
     if client:
-        try:
-            logger.info("Closing database connection...")
-            client.close()
-            client = None
-            logger.info("MongoDB connection closed")
-        except Exception as e:
-            logger.error(f"Error closing database connection: {str(e)}")
-            raise
+        client.close()
+        client = None
+        logger.info("Database connection closed")
 
 async def test_connection() -> bool:
     """Test database connection."""

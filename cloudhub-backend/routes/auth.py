@@ -1,17 +1,24 @@
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, Form
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import jwt
 from jwt.exceptions import PyJWTError
 from motor.motor_asyncio import AsyncIOMotorClient
+from datetime import datetime, timedelta
+from typing import Optional
+from pydantic import BaseModel, EmailStr
 
 from models.auth import (
     UserCreate, UserLogin, UserResponse, TokenResponse,
     PasswordReset, PasswordResetConfirm, UserStatus
 )
+from models.user import User
+from models.token import RefreshToken
 from services.auth_service import AuthService
 from database.dependencies import get_database
 from config.config import settings
+from auth.jwt_manager import TokenManager, get_current_user
+from auth.password import get_password_hash, verify_password
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -111,69 +118,150 @@ async def register(
     
     return UserResponse(**user_response)
 
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str
+    expires_in: int
+    user: dict
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
 @router.post("/login", response_model=TokenResponse)
 async def login(
-    request: Request,
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    auth_service: AuthService = Depends(get_auth_service)
+    username: str = Form(...),
+    password: str = Form(...),
+    request: Request = None
 ):
     """Login user and return tokens."""
-    user, access_token, refresh_token = await auth_service.authenticate_user(
-        form_data.username,
-        form_data.password
-    )
-    
-    # Log security event
-    await auth_service.log_security_event(
-        user_id=str(user["_id"]),
-        event_type="user_login",
-        event_data={"identifier": form_data.username},  # Use generic identifier instead of email
-        ip_address=request.client.host,
-        user_agent=request.headers.get("user-agent", "")
-    )
-    
-    # Create user response data
-    user_data = {
-        "id": str(user["_id"]),
-        "email": user["email"],
-        "full_name": user["name"],
-        "role": user["role"],
-        "phone": user.get("phone"),
-        "avatar": user.get("avatar"),
-        "email_verified": user["email_verified"],
-        "phone_verified": user.get("phone_verified", False)
-    }
-    
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        expires_in=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        user=user_data
-    )
+    try:
+        print(f"Login attempt for user: {username}")
+        
+        # Find user by email
+        user = await User.find_one(User.email == username)
+        if not user:
+            print(f"User not found: {username}")
+            raise HTTPException(
+                status_code=401,
+                detail="Incorrect email or password"
+            )
+        
+        print(f"User found: {user.email}, verifying password...")
+        
+        # Verify password
+        try:
+            is_valid = verify_password(password, user.password_hash)
+            print(f"Password verification result: {is_valid}")
+            if not is_valid:
+                raise HTTPException(
+                    status_code=401,
+                    detail="Incorrect email or password"
+                )
+        except Exception as e:
+            print(f"Password verification error: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error verifying password: {str(e)}"
+            )
+        
+        print("Creating tokens...")
+        # Create tokens
+        tokens = await TokenManager.create_tokens(user, request)
+        
+        print("Preparing response...")
+        # Return response with user data
+        return {
+            **tokens,
+            "user": user.dict(exclude={"password_hash"})
+        }
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        print(f"Unexpected error during login: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred during login: {str(e)}"
+        )
 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(
-    refresh_token: str,
-    auth_service: AuthService = Depends(get_auth_service)
+    refresh_request: RefreshRequest,
+    request: Request
 ):
     """Refresh access token using refresh token."""
-    access_token, new_refresh_token = await auth_service.refresh_token(refresh_token)
-    
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=new_refresh_token,
-        expires_in=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60
-    )
+    try:
+        tokens = await TokenManager.refresh_tokens(refresh_request.refresh_token, request)
+        return tokens
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=401,
+            detail=f"Error refreshing token: {str(e)}"
+        )
 
 @router.post("/logout")
 async def logout(
-    refresh_token: str,
-    current_user: UserResponse = Depends(get_current_user),
-    auth_service: AuthService = Depends(get_auth_service)
+    refresh_request: RefreshRequest,
+    current_user: User = Depends(get_current_user)
 ):
-    """Logout user by revoking refresh token."""
-    await auth_service.revoke_refresh_token(refresh_token)
+    """Logout user and revoke refresh token."""
+    await TokenManager.revoke_token(refresh_request.refresh_token)
     return {"message": "Successfully logged out"}
+
+@router.post("/logout-all")
+async def logout_all_devices(
+    current_user: User = Depends(get_current_user)
+):
+    """Logout from all devices by revoking all refresh tokens."""
+    await TokenManager.revoke_all_user_tokens(str(current_user.id))
+    return {"message": "Successfully logged out from all devices"}
+
+@router.get("/me")
+async def get_current_user_info(
+    current_user: User = Depends(get_current_user)
+):
+    """Get current user information."""
+    return current_user.dict(exclude={"hashed_password"})
+
+@router.get("/sessions")
+async def get_active_sessions(
+    current_user: User = Depends(get_current_user)
+):
+    """Get all active sessions for the current user."""
+    active_tokens = await RefreshToken.find({
+        "user": current_user.id,
+        "revoked": False,
+        "expires_at": {"$gt": datetime.utcnow()}
+    }).to_list()
+    
+    return [{
+        "id": str(token.id),
+        "device_info": token.device_info,
+        "created_at": token.created_at,
+        "expires_at": token.expires_at
+    } for token in active_tokens]
+
+@router.post("/sessions/{session_id}/revoke")
+async def revoke_session(
+    session_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Revoke a specific session."""
+    token = await RefreshToken.find_one({
+        "id": session_id,
+        "user": current_user.id
+    })
+    
+    if token:
+        await token.revoke()
+        return {"message": "Session revoked successfully"}
+    
+    raise HTTPException(
+        status_code=404,
+        detail="Session not found"
+    )
 
 @router.post("/verify-email/{token}")
 async def verify_email(
@@ -236,9 +324,4 @@ async def disable_2fa(
 ):
     """Disable 2FA for user."""
     await auth_service.disable_2fa(str(current_user.id))
-    return {"message": "2FA disabled successfully"}
-
-@router.get("/me", response_model=UserResponse)
-async def get_current_user_info(current_user: UserResponse = Depends(get_current_user)):
-    """Get current user information."""
-    return current_user 
+    return {"message": "2FA disabled successfully"} 
