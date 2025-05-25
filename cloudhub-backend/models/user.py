@@ -110,12 +110,20 @@ class User(Document):
     
     def to_dict(self) -> dict:
         """Convert user instance to dictionary."""
-        return {
+        base_dict = {
             'id': str(self.id),
             'email': self.email,
             'name': self.name,
-            'avatar': self.avatar,
             'role': self.role,
+            'status': 'active' if not self.is_deleted else 'inactive',
+            'email_verified': self.email_verified,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+        # Add additional fields for extended responses
+        extended_dict = {
+            'avatar': self.avatar,
             'phone': self.phone,
             'country': self.country,
             'timezone': self.timezone,
@@ -143,13 +151,13 @@ class User(Document):
             'communication_preferences': self.communication_preferences,
             'notification_settings': self.notification_settings,
             'availability': self.availability,
-            'email_verified': self.email_verified,
             'phone_verified': self.phone_verified,
             'accepted_terms': self.accepted_terms,
             'accepted_privacy_policy': self.accepted_privacy_policy,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
+
+        # Return both base and extended fields
+        return {**base_dict, **extended_dict}
     
     async def update_last_seen(self):
         """Update user's last seen timestamp."""

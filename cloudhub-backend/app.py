@@ -66,16 +66,6 @@ async def lifespan(app: FastAPI):
             Hackathon
         ]
         
-        # Debug: Print index definitions for each model
-        for model in document_models:
-            logger.info(f"Checking indexes for model: {model.__name__}")
-            if hasattr(model, 'Settings') and hasattr(model.Settings, 'indexes'):
-                for idx in model.Settings.indexes:
-                    if isinstance(idx, dict):
-                        logger.info(f"Index definition for {model.__name__}: {idx}")
-                    else:
-                        logger.info(f"Index definition for {model.__name__}: {idx.document}")
-        
         try:
             await init_beanie(
                 database=client[settings.DATABASE_NAME],

@@ -136,23 +136,17 @@ async def login(
 ):
     """Login user and return tokens."""
     try:
-        print(f"Login attempt for user: {username}")
-        
         # Find user by email
         user = await User.find_one(User.email == username)
         if not user:
-            print(f"User not found: {username}")
             raise HTTPException(
                 status_code=401,
                 detail="Incorrect email or password"
             )
         
-        print(f"User found: {user.email}, verifying password...")
-        
         # Verify password
         try:
             is_valid = verify_password(password, user.password_hash)
-            print(f"Password verification result: {is_valid}")
             if not is_valid:
                 raise HTTPException(
                     status_code=401,
@@ -165,11 +159,9 @@ async def login(
                 detail=f"Error verifying password: {str(e)}"
             )
         
-        print("Creating tokens...")
         # Create tokens
         tokens = await TokenManager.create_tokens(user, request)
         
-        print("Preparing response...")
         # Return response with user data
         return {
             **tokens,
@@ -218,12 +210,21 @@ async def logout_all_devices(
     await TokenManager.revoke_all_user_tokens(str(current_user.id))
     return {"message": "Successfully logged out from all devices"}
 
-@router.get("/me")
+@router.get("/me", response_model=UserResponse)
 async def get_current_user_info(
     current_user: User = Depends(get_current_user)
 ):
     """Get current user information."""
-    return current_user.dict(exclude={"hashed_password"})
+    return UserResponse(
+        id=str(current_user.id),
+        email=current_user.email,
+        name=current_user.name,
+        role=current_user.role,
+        status=UserStatus.ACTIVE if not current_user.is_deleted else UserStatus.INACTIVE,
+        email_verified=current_user.email_verified,
+        created_at=current_user.created_at,
+        updated_at=current_user.updated_at
+    )
 
 @router.get("/sessions")
 async def get_active_sessions(

@@ -25,16 +25,18 @@ def get_db():
                 minPoolSize=settings.MONGODB_MIN_POOL_SIZE,
                 maxPoolSize=settings.MONGODB_MAX_POOL_SIZE,
                 maxIdleTimeMS=settings.MONGODB_MAX_IDLE_TIME_MS,
-                serverSelectionTimeoutMS=5000,  # Reduced to 5 seconds
-                connectTimeoutMS=5000,          # Reduced to 5 seconds
-                socketTimeoutMS=10000,          # Reduced to 10 seconds
+                serverSelectionTimeoutMS=30000,  # Increased to 30 seconds
+                connectTimeoutMS=30000,          # Increased to 30 seconds
+                socketTimeoutMS=45000,           # Increased to 45 seconds
                 retryWrites=True,
                 retryReads=True,
                 appname="CloudHub",
-                waitQueueTimeoutMS=2000,        # Added wait queue timeout
-                heartbeatFrequencyMS=10000,     # Added heartbeat frequency
-                maxConnecting=2,                # Limit concurrent connection attempts
-                localThresholdMS=15             # Reduced local threshold for faster server selection
+                waitQueueTimeoutMS=10000,        # Increased wait queue timeout
+                heartbeatFrequencyMS=10000,      # Keep heartbeat frequency
+                maxConnecting=2,                 # Keep max concurrent connections
+                localThresholdMS=15,             # Keep local threshold
+                w="majority",                    # Added write concern
+                readPreference="primaryPreferred" # Added read preference
             )
             
             try:

@@ -49,9 +49,7 @@ class RefreshToken(Document):
             )
             
             # Save to database
-            print(f"Creating refresh token for user: {user.id}")
             await token.save()
-            print("Refresh token saved successfully")
             
             return raw_token, token
         except Exception as e:

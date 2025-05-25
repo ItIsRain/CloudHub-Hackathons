@@ -26,8 +26,6 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         if isinstance(hashed_password, str):
             hashed_password = hashed_password.encode('utf-8')
             
-        print(f"Verifying password - plain length: {len(plain_password)}, hash length: {len(hashed_password)}")
-        
         # Verify the password
         return bcrypt.checkpw(plain_password, hashed_password)
     except Exception as e:
