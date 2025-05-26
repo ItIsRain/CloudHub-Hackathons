@@ -1,7 +1,7 @@
 "use client";
 
 import axios from 'axios';
-import { API_BASE_URL } from '@/config';
+import { toast } from 'sonner';
 
 interface TokenResponse {
   access_token: string;
@@ -9,7 +9,7 @@ interface TokenResponse {
 }
 
 const axiosInstance = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -19,7 +19,9 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('access_token');
-    if (token && config.headers) {
+    if (token) {
+      // Set the Authorization header if we have a token
+      config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -33,62 +35,23 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config as any & { _retry?: boolean };
+    const originalRequest = error.config;
 
-    // Skip token refresh for auth endpoints
-    const isAuthEndpoint = originalRequest.url?.includes('/auth/');
-    if (isAuthEndpoint) {
+    // Skip token refresh for auth endpoints to avoid infinite loops
+    const isAuthEndpoint = originalRequest?.url?.includes('/auth/');
+    
+    if (error.response?.status === 401 && !isAuthEndpoint) {
+      // Clear tokens and redirect to login
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      
+      // Show error message
+      toast.error('Session expired. Please log in again.');
+      
+      // Redirect to login page
+      window.location.href = '/login';
+      
       return Promise.reject(error);
-    }
-
-    // If the error is 401 and we haven't retried yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      try {
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (!refreshToken) {
-          throw new Error('No refresh token available');
-        }
-
-        // Try to refresh the token
-        const response = await axios.post<TokenResponse>(`${API_BASE_URL}/auth/refresh`, {
-          refresh_token: refreshToken,
-        });
-
-        const { access_token, refresh_token } = response.data;
-
-        // Update tokens
-        localStorage.setItem('access_token', access_token);
-        localStorage.setItem('refresh_token', refresh_token);
-
-        // Update the authorization header
-        if (originalRequest.headers) {
-          originalRequest.headers.Authorization = `Bearer ${access_token}`;
-        }
-
-        // Retry the original request
-        return axiosInstance(originalRequest);
-      } catch (refreshError) {
-        // If refresh fails, clear tokens and user data
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
-        
-        // Clear cookies
-        document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
-        document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
-        document.cookie = 'user=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
-
-        // Dispatch a custom event to notify the app of authentication failure
-        window.dispatchEvent(new CustomEvent('auth:failed'));
-        
-        // Only redirect if we're not already on the login page
-        if (!window.location.pathname.includes('/login')) {
-          window.location.href = '/login?error=session_expired';
-        }
-        return Promise.reject(refreshError);
-      }
     }
 
     return Promise.reject(error);

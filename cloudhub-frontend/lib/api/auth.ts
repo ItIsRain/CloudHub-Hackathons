@@ -3,7 +3,6 @@
 import axiosInstance from './axios';
 import { User, UserRole } from '@/types/user';
 import Cookies from 'js-cookie';
-import type { AxiosInstance } from 'axios';
 
 export interface LoginCredentials {
   username: string;
@@ -59,16 +58,30 @@ const TOKEN_STORAGE = {
 };
 
 export class AuthAPI {
-  private api: AxiosInstance;
+  private api: typeof axiosInstance;
 
   constructor() {
     this.api = axiosInstance;
   }
 
   private handleError(error: any): never {
+    // Handle specific error cases
+    if (error.response?.status === 401) {
+      if (error.response?.data?.detail) {
+        throw new Error(error.response.data.detail);
+      }
+      throw new Error('Not authenticated');
+    }
+    
     if (error.response?.data?.detail) {
       throw new Error(error.response.data.detail);
     }
+
+    // Handle network errors
+    if (error.message === 'Network Error') {
+      throw new Error('Unable to connect to server. Please check your internet connection.');
+    }
+
     throw error;
   }
 
