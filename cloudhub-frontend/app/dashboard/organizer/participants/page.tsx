@@ -812,7 +812,6 @@ export default function ParticipantsPage() {
     const { participant, status, note } = dialogState;
     if (participant) {
       // Update participant status in your data
-      console.log('Status updated:', { participant: participant.name, status, note });
       setDialogState(prev => ({
         ...prev,
         isOpen: false,

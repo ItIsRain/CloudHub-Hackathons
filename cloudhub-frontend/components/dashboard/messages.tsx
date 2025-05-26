@@ -230,10 +230,6 @@ export default function Messages() {
   // Handle sending a new message
   const handleSendMessage = () => {
     if (!newMessage.trim() || !selectedConversation) return
-
-    // We would normally send this to an API
-    // For now, we'll just log it
-    console.log("Message sent:", newMessage)
     
     // Clear the input
     setNewMessage("")
@@ -254,10 +250,6 @@ export default function Messages() {
 
   const handleCreateNewConversation = () => {
     if (!newConversationName.trim()) return
-
-    // We would normally send this to an API
-    // For now, we'll just log it
-    console.log("New conversation created:", newConversationName)
     
     // Clear the input and close the dialog
     setNewConversationName("")

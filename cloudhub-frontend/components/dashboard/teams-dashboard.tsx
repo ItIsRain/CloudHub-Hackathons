@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -251,18 +251,6 @@ export default function TeamsDashboard() {
 
   // Create new team
   const handleCreateTeam = () => {
-    // Here you would typically make an API call to create the team
-    console.log("Creating team:", {
-      name: teamName,
-      description: teamDescription,
-      hackathon: selectedHackathon,
-      maxSize: maxTeamSize,
-      isLookingForMembers,
-      isPublic,
-      members: selectedMembers,
-      emailInvites
-    })
-    
     // Reset form and close dialog
     setTeamName("")
     setTeamDescription("")
@@ -311,6 +299,39 @@ export default function TeamsDashboard() {
     );
   });
   
+  // Memoize search handler
+  const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  }, []);
+
+  // Memoize filtered teams
+  const filteredTeams = useMemo(() => {
+    return myTeamsData.filter(team => 
+      team.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      team.hackathon.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      team.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      team.projectName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [myTeamsData, searchTerm]);
+
+  // Memoize dialog handlers
+  const handleDialogOpen = useCallback(() => {
+    setIsCreateDialogOpen(true);
+  }, []);
+
+  const handleDialogClose = useCallback(() => {
+    setIsCreateDialogOpen(false);
+    // Reset form state
+    setTeamName("");
+    setTeamDescription("");
+    setSelectedHackathon("");
+    setMaxTeamSize("5");
+    setIsLookingForMembers(true);
+    setIsPublic(true);
+    setSelectedMembers([]);
+    setEmailInvites([]);
+  }, []);
+
   return (
     <div className="space-y-8 pb-10 px-6 mt-6">
       {/* Header Section */}
@@ -428,7 +449,7 @@ export default function TeamsDashboard() {
               placeholder="Search teams..." 
               className="pl-10 pr-12 bg-white border-slate-200 rounded-full focus-visible:ring-blue-500 w-full"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearch}
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setIsSearchFocused(false)}
               onKeyDown={handleSearchKeyDown}
@@ -470,7 +491,7 @@ export default function TeamsDashboard() {
         )}
 
         <TabsContent value="myTeams" className="mt-0 space-y-6 px-2">
-          {filteredMyTeams.length === 0 ? (
+          {filteredTeams.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
                 <Search className="h-6 w-6 text-slate-400" />
@@ -483,7 +504,7 @@ export default function TeamsDashboard() {
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2">
-              {filteredMyTeams.map((team) => (
+              {filteredTeams.map((team) => (
                 <Card key={team.id} className="overflow-hidden border-slate-200 hover:shadow-md transition-all group">
                   <CardContent className="p-0">
                     <div className="flex flex-col sm:flex-row">

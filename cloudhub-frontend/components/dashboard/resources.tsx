@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -284,21 +284,41 @@ export default function Resources() {
   const [showMarketplace, setShowMarketplace] = useState(false);
   const [aiToolsFilter, setAIToolsFilter] = useState("all");
   
-  // Filter resources based on search and category
-  const filteredResources = resourcesData.flatMap(category => 
-    category.resources.filter(resource => 
-      (selectedCategory === "all" || category.category === selectedCategory) &&
-      (resource.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-       resource.description.toLowerCase().includes(searchTerm.toLowerCase()))
-    )
-  );
+  // Memoize handlers
+  const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  }, []);
 
-  // Filter AI tools based on search and category
-  const filteredAITools = aiToolsData.filter(tool =>
-    (aiToolsFilter === "all" || tool.category === aiToolsFilter) &&
-    (tool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-     tool.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const handleResetFilters = useCallback(() => {
+    setSearchTerm('');
+    setAIToolsFilter('all');
+  }, []);
+
+  // Memoize filtered resources
+  const filteredResources = useMemo(() => {
+    const searchLower = searchTerm.toLowerCase();
+    return resourcesData.flatMap(category => 
+      category.resources.filter(resource => 
+        (selectedCategory === "all" || category.category === selectedCategory) &&
+        (resource.name.toLowerCase().includes(searchLower) || 
+         resource.description.toLowerCase().includes(searchLower))
+      )
+    );
+  }, [searchTerm, selectedCategory]);
+
+  // Memoize filtered AI tools
+  const filteredAITools = useMemo(() => {
+    const searchLower = searchTerm.toLowerCase();
+    return aiToolsData.filter(tool => {
+      const matchesSearch = 
+        tool.name.toLowerCase().includes(searchLower) ||
+        tool.description.toLowerCase().includes(searchLower) ||
+        tool.category.toLowerCase().includes(searchLower);
+      
+      if (aiToolsFilter === 'all') return matchesSearch;
+      return matchesSearch && tool.category === aiToolsFilter;
+    });
+  }, [aiToolsFilter, searchTerm]);
 
   // Animate resources appearing
   useEffect(() => {
@@ -475,14 +495,14 @@ export default function Resources() {
           <Input 
             placeholder="Search resources..." 
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={handleSearch}
             className="pl-10 border-slate-200/80 bg-gradient-to-r from-white to-slate-50/80 rounded-lg py-2 h-10 text-sm focus-visible:ring-violet-400 focus-visible:ring-opacity-25 shadow-sm transition-all hover:border-slate-300 focus-visible:border-violet-300"
           />
           {searchTerm && (
             <Button
               variant="ghost"
               className="absolute inset-y-0 right-0 h-full px-3 text-slate-400 hover:text-slate-600"
-              onClick={() => setSearchTerm("")}
+              onClick={handleResetFilters}
             >
               <X className="h-4 w-4" />
             </Button>
@@ -677,7 +697,7 @@ export default function Resources() {
                   <Button
                     variant="ghost"
                     className="absolute inset-y-0 right-0 h-full px-3 text-slate-400 hover:text-slate-600"
-                    onClick={() => setSearchTerm("")}
+                    onClick={handleResetFilters}
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -745,10 +765,7 @@ export default function Resources() {
                   variant="outline" 
                   size="sm" 
                   className="text-sm border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-violet-700 hover:border-violet-200"
-                  onClick={() => {
-                    setSearchTerm('');
-                    setAIToolsFilter('all');
-                  }}
+                  onClick={handleResetFilters}
                 >
                   <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
                   Reset filters

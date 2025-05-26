@@ -5,23 +5,87 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Code, Award, Shield, Sparkles } from "lucide-react"
 
-// Throttle function to limit the rate of function calls
-function throttle(callback: Function, delay: number) {
+// Improved throttle function with proper types and cleanup
+function throttle<T extends (...args: any[]) => void>(
+  callback: T,
+  delay: number,
+  options: { leading?: boolean; trailing?: boolean } = { leading: true, trailing: true }
+): (...args: Parameters<T>) => void {
   let lastCall = 0;
-  return function (...args: any[]) {
-    const now = new Date().getTime();
+  let timeoutId: NodeJS.Timeout | null = null;
+
+  return (...args: Parameters<T>) => {
+    const now = Date.now();
+    
     if (now - lastCall < delay) {
+      // If we're throttling and trailing edge execution is enabled
+      if (options.trailing && timeoutId === null) {
+        timeoutId = setTimeout(() => {
+          lastCall = now;
+          timeoutId = null;
+          callback(...args);
+        }, delay);
+      }
       return;
     }
-    lastCall = now;
-    return callback(...args);
+
+    // If leading edge execution is enabled or this is the first call
+    if (options.leading || lastCall === 0) {
+      lastCall = now;
+      callback(...args);
+    }
+
+    // Clear any pending timeout
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
   };
 }
 
 export default function HeroSection() {
   const [mounted, setMounted] = useState(false)
   const heroRef = useRef<HTMLDivElement>(null)
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+  const [mousePosition, setMousePosition] = useState({ x: 0.5, y: 0.5 })
+  const throttledSetMousePosition = useRef<(x: number, y: number) => void>()
+
+  // Initialize throttled function only once
+  useEffect(() => {
+    throttledSetMousePosition.current = throttle(
+      (x: number, y: number) => {
+        setMousePosition({ x, y });
+      },
+      50,
+      { leading: true, trailing: true }
+    );
+  }, []);
+
+  // Handle mounting
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Optimized mouse move handler
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!heroRef.current || !throttledSetMousePosition.current) return
+    
+    const rect = heroRef.current.getBoundingClientRect()
+    const x = (e.clientX - rect.left) / rect.width
+    const y = (e.clientY - rect.top) / rect.height
+    
+    throttledSetMousePosition.current(x, y)
+  }, [])
+
+  // Attach/detach mouse move listener with cleanup
+  useEffect(() => {
+    if (!mounted) return
+
+    window.addEventListener('mousemove', handleMouseMove, { passive: true })
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+    }
+  }, [mounted, handleMouseMove])
 
   // Memoize the particles data so it doesn't get recreated on each render
   const particles = useMemo(() => [
@@ -47,42 +111,13 @@ export default function HeroSection() {
     { width: 2.9, height: 3.5, top: 7.0, left: 64.9, opacity: 0.58, duration: 13.6, delay: 1.02 }
   ], []);
 
-  // Throttled mouse move handler to prevent excessive updates
-  const handleMouseMove = useCallback(
-    throttle((e: MouseEvent) => {
-      if (!heroRef.current) return
-      const rect = heroRef.current.getBoundingClientRect()
-      const x = (e.clientX - rect.left) / rect.width
-      const y = (e.clientY - rect.top) / rect.height
-      setMousePosition({ x, y })
-    }, 50), // 50ms throttle
-    []
-  );
-
-  useEffect(() => {
-    setMounted(true)
-
-    const heroElement = heroRef.current
-    if (heroElement) {
-      heroElement.addEventListener("mousemove", handleMouseMove)
-    }
-
-    return () => {
-      if (heroElement) {
-        heroElement.removeEventListener("mousemove", handleMouseMove)
-      }
-    }
-  }, [handleMouseMove])
-
-  // Calculate transform values based on mouse position
-  const calcTransform = useCallback((factor = 1) => {
-    if (!mounted) return {}
-    const moveX = (mousePosition.x - 0.5) * factor
-    const moveY = (mousePosition.y - 0.5) * factor
-    return {
-      transform: `translate(${moveX}px, ${moveY}px)`,
-    }
-  }, [mounted, mousePosition.x, mousePosition.y])
+  // Memoize transform calculation
+  const transformStyle = useMemo(() => {
+    const factor = 15;
+    const moveX = (mousePosition.x - 0.5) * factor;
+    const moveY = (mousePosition.y - 0.5) * factor;
+    return { transform: `translate(${moveX}px, ${moveY}px)` };
+  }, [mousePosition]);
 
   return (
     <section
@@ -95,11 +130,11 @@ export default function HeroSection() {
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-600/20 via-transparent to-transparent"></div>
         <div
           className="absolute top-0 right-0 w-1/2 h-1/2 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-600/20 via-transparent to-transparent blur-2xl"
-          style={calcTransform(20)}
+          style={transformStyle}
         ></div>
         <div
           className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-violet-600/10 via-transparent to-transparent blur-2xl"
-          style={calcTransform(15)}
+          style={transformStyle}
         ></div>
 
         {/* Grid Pattern */}
@@ -107,10 +142,10 @@ export default function HeroSection() {
 
         {/* Animated Particles */}
         <div className="absolute inset-0">
-          {particles.map((particle, i) => (
+          {particles.map((particle, index) => (
             <div
-              key={i}
-              className="absolute rounded-full bg-white/20 blur-sm"
+              key={index}
+              className="absolute rounded-full bg-white/30 blur-sm"
               style={{
                 width: `${particle.width}px`,
                 height: `${particle.height}px`,
@@ -118,7 +153,8 @@ export default function HeroSection() {
                 left: `${particle.left}%`,
                 opacity: particle.opacity,
                 animation: `float ${particle.duration}s linear infinite`,
-                animationDelay: `${particle.delay}s`
+                animationDelay: `${particle.delay}s`,
+                ...transformStyle
               }}
             ></div>
           ))}
@@ -182,7 +218,7 @@ export default function HeroSection() {
               <div className="relative mx-auto w-full max-w-lg mt-12 lg:mt-0">
                 <div
                   className="absolute -inset-4 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 opacity-30 blur-xl"
-                  style={calcTransform(10)}
+                  style={transformStyle}
                 ></div>
                 <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm shadow-2xl transition-transform duration-500 hover:scale-[1.02]">
                   <div className="absolute top-0 left-0 right-0 h-10 sm:h-14 bg-gradient-to-r from-violet-950/80 to-slate-900/80 backdrop-blur-sm border-b border-white/10 flex items-center px-4">
@@ -207,22 +243,22 @@ export default function HeroSection() {
                   {/* Floating Elements */}
                   <div
                     className="absolute top-1/4 right-8 h-16 w-16 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-500 shadow-lg opacity-80 blur-[1px]"
-                    style={calcTransform(-15)}
+                    style={transformStyle}
                   ></div>
                   <div
                     className="absolute bottom-1/4 left-8 h-12 w-12 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-500 shadow-lg opacity-60 blur-[1px]"
-                    style={calcTransform(-10)}
+                    style={transformStyle}
                   ></div>
                 </div>
 
                 {/* Decorative Elements */}
                 <div
                   className="absolute -bottom-6 -right-6 h-24 w-24 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 opacity-20 blur-xl"
-                  style={calcTransform(5)}
+                  style={transformStyle}
                 ></div>
                 <div
                   className="absolute -top-10 -left-10 h-32 w-32 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 opacity-10 blur-xl"
-                  style={calcTransform(8)}
+                  style={transformStyle}
                 ></div>
               </div>
             )}

@@ -75,9 +75,17 @@ axiosInstance.interceptors.response.use(
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user');
         
+        // Clear cookies
+        document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+        document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+        document.cookie = 'user=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+
+        // Dispatch a custom event to notify the app of authentication failure
+        window.dispatchEvent(new CustomEvent('auth:failed'));
+        
         // Only redirect if we're not already on the login page
         if (!window.location.pathname.includes('/login')) {
-          window.location.href = '/login';
+          window.location.href = '/login?error=session_expired';
         }
         return Promise.reject(refreshError);
       }

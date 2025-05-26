@@ -55,19 +55,46 @@ const countryCodes = [
   { value: "+64", label: "+64 (New Zealand)" }
 ];
 
+interface LoginResponse {
+  access_token: string;
+  refresh_token: string;
+  user: {
+    id: string;
+    email: string;
+    full_name: string;
+    role: string;
+    avatar?: string;
+  };
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const { theme, systemTheme } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
-  const [loginMethod, setLoginMethod] = useState("email");
-  const [countryCode, setCountryCode] = useState("+971");
+  const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
+  const [countryCode, setCountryCode] = useState('+1');
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shouldRedirect, setShouldRedirect] = useState(false);
+
+  // Check for session expired error in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const errorParam = params.get('error');
+    if (errorParam === 'session_expired') {
+      toast.error('Your session has expired. Please log in again.', {
+        duration: 5000,
+        position: 'bottom-center',
+      });
+      // Remove the error parameter from the URL without refreshing the page
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, []);
 
   // Memoize the logo source to prevent unnecessary rerenders
   const logoSrc = useMemo(() => {
@@ -126,8 +153,7 @@ export default function LoginPage() {
 
       const response = await authAPI.login({
         username,
-        password,
-        remember_me: rememberMe
+        password
       });
 
       // Check if we have both tokens before proceeding
@@ -139,30 +165,34 @@ export default function LoginPage() {
       localStorage.setItem('access_token', response.access_token);
       localStorage.setItem('refresh_token', response.refresh_token);
       
-      // Store user data
-      const userData = {
-        id: response.user.id,
-        email: response.user.email,
-        full_name: response.user.full_name,
-        role: response.user.role,
-        avatar: response.user.avatar || null
-      };
-      localStorage.setItem('user', JSON.stringify(userData));
+      if (response.user) {
+        // Store user data
+        const userData = {
+          id: response.user.id,
+          email: response.user.email,
+          full_name: response.user.full_name,
+          role: response.user.role,
+          avatar: response.user.avatar || null
+        };
+        localStorage.setItem('user', JSON.stringify(userData));
 
-      // Set cookies for server-side access
-      document.cookie = `access_token=${response.access_token}; path=/`;
-      document.cookie = `refresh_token=${response.refresh_token}; path=/`;
-      document.cookie = `user=${JSON.stringify(userData)}; path=/`;
+        // Set cookies for server-side access
+        document.cookie = `access_token=${response.access_token}; path=/`;
+        document.cookie = `refresh_token=${response.refresh_token}; path=/`;
+        document.cookie = `user=${JSON.stringify(userData)}; path=/`;
 
-      // Show success message
-      toast.success("Successfully logged in!");
+        // Show success message
+        toast.success("Successfully logged in!");
 
-      // Check for redirect parameter
-      const params = new URLSearchParams(window.location.search);
-      const redirectPath = params.get('redirect') || '/dashboard';
-      
-      // Use router.push to redirect
-      router.push(redirectPath);
+        // Check for redirect parameter
+        const params = new URLSearchParams(window.location.search);
+        const redirectPath = params.get('redirect') || '/dashboard';
+        
+        // Use router.push to redirect
+        router.push(redirectPath);
+      } else {
+        throw new Error('User data not received');
+      }
     } catch (err: any) {
       setIsLoading(false);
       let errorMessage = 'Invalid email/phone or password';
@@ -197,7 +227,7 @@ export default function LoginPage() {
       });
       return; // Return early to prevent further execution
     }
-  }, [loginMethod, email, phone, countryCode, password, rememberMe, router]);
+  }, [loginMethod, email, phone, countryCode, password, router]);
 
   // Memoize tab switcher to prevent rerenders when other state changes
   const TabSwitcher = useMemo(() => (

@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { authAPI } from '@/lib/api/auth';
 import { User } from '@/types/user';
+import { toast } from 'sonner';
 
 interface AuthContextType {
   user: User | null;
@@ -22,6 +23,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
+  // Handle authentication failures
+  useEffect(() => {
+    const handleAuthFailure = () => {
+      setUser(null);
+      setError('Your session has expired. Please log in again.');
+      toast.error('Your session has expired. Please log in again.');
+      router.push('/login?error=session_expired');
+    };
+
+    window.addEventListener('auth:failed', handleAuthFailure);
+    return () => window.removeEventListener('auth:failed', handleAuthFailure);
+  }, [router]);
+
   useEffect(() => {
     const initializeAuth = async () => {
       try {
@@ -35,7 +49,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const freshUser = await authAPI.getCurrentUser();
             setUser(freshUser);
             localStorage.setItem('user', JSON.stringify(freshUser));
-          } catch (error) {
+          } catch (error: any) {
+            if (error.response?.status === 401) {
+              // Clear everything if the session is invalid
+              setUser(null);
+              localStorage.removeItem('access_token');
+              localStorage.removeItem('refresh_token');
+              localStorage.removeItem('user');
+              
+              // Clear cookies
+              document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+              document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+              document.cookie = 'user=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+            }
             console.error('Error fetching fresh user data:', error);
           }
         }
@@ -68,6 +94,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await authAPI.logout();
       setUser(null);
+      // Clear all storage
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
+      
+      // Clear cookies
+      document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+      document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+      document.cookie = 'user=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+      
       router.push('/login');
     } catch (err: any) {
       const errorMessage = err.response?.data?.detail || err.message || 'Failed to logout';

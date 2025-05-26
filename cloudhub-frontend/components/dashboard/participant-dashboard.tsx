@@ -26,19 +26,20 @@ import {
   Sparkles,
 } from "lucide-react"
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area } from "recharts"
-import { useRef, useEffect, useState } from "react"
+import { useRef, useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 
-const hackathonData = [
+// Move static data outside component
+const INITIAL_HACKATHON_DATA = [
   { month: "Jan", participants: 120, submissions: 45 },
   { month: "Feb", participants: 150, submissions: 60 },
   { month: "Mar", participants: 200, submissions: 80 },
   { month: "Apr", participants: 180, submissions: 70 },
   { month: "May", participants: 250, submissions: 100 },
   { month: "Jun", participants: 300, submissions: 120 },
-]
+];
 
-const activityData = [
+const INITIAL_ACTIVITY_DATA = [
   { day: "Mon", value: 40 },
   { day: "Tue", value: 30 },
   { day: "Wed", value: 45 },
@@ -46,15 +47,15 @@ const activityData = [
   { day: "Fri", value: 60 },
   { day: "Sat", value: 75 },
   { day: "Sun", value: 65 },
-]
+];
 
 // Skills data with only first 4 skills shown
-const skillsData = [
+const INITIAL_SKILLS_DATA = [
   { name: "React.js", level: 85 },
   { name: "AI/ML", level: 70 },
   { name: "Node.js", level: 75 },
   { name: "Web3", level: 60 },
-]
+];
 
 // Full skills data (hidden by default)
 const allSkillsData = [
@@ -69,6 +70,25 @@ const allSkillsData = [
 ]
 
 export default function ParticipantDashboard() {
+  // Memoize chart data
+  const hackathonData = useMemo(() => INITIAL_HACKATHON_DATA, []);
+  const activityData = useMemo(() => INITIAL_ACTIVITY_DATA, []);
+  const skillsData = useMemo(() => INITIAL_SKILLS_DATA, []);
+
+  // Memoize chart configurations
+  const chartConfig = useMemo(() => ({
+    hackathon: {
+      width: "100%",
+      height: 300,
+      margin: { top: 20, right: 30, left: 20, bottom: 5 },
+    },
+    activity: {
+      width: "100%",
+      height: 200,
+      margin: { top: 10, right: 30, left: 0, bottom: 0 },
+    }
+  }), []);
+
   // Simulate loading state
   const [isLoading, setIsLoading] = useState(true)
   
@@ -620,15 +640,10 @@ export default function ParticipantDashboard() {
           </CardHeader>
           <CardContent>
             <div className="h-[280px]">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width={chartConfig.activity.width} height={chartConfig.activity.height}>
                 <AreaChart
                   data={activityData}
-                  margin={{
-                    top: 5,
-                    right: 30,
-                    left: 20,
-                    bottom: 5,
-                  }}
+                  margin={chartConfig.activity.margin}
                 >
                   <defs>
                     <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">

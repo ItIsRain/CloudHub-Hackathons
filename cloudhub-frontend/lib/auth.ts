@@ -1,6 +1,6 @@
 import { useRouter } from 'next/navigation';
-import { UserRole } from './api/auth';
-import { useState, useEffect } from 'react';
+import { UserRole } from '@/types/user';
+import { useEffect, useState } from 'react';
 
 // Type for user data stored in localStorage
 export interface StoredUserData {

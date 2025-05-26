@@ -63,9 +63,11 @@ export default function DashboardHeader() {
   const handleJoinHackathon = () => {
     // Here you can implement the actual logic to join the hackathon
     if (inviteCode) {
-      console.log("Joining with code:", inviteCode)
+      // Remove this line:
+      // console.log("Joining with code:", inviteCode)
     } else if (inviteLink) {
-      console.log("Joining with link:", inviteLink)
+      // Remove this line:
+      // console.log("Joining with link:", inviteLink)
     }
     setJoinDialogOpen(false)
   }

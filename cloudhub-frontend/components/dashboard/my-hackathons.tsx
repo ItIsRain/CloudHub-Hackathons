@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback, useMemo } from "react"
 import { 
   Calendar, Trophy, Users, Clock, Globe, CalendarDays, 
   MapPin, Code, Rocket, Bell, GitPullRequest, PlusCircle, Sparkles, ExternalLink, Star
@@ -123,7 +123,34 @@ const registeredHackathons: HackathonData[] = [
 // For demonstration, let's create a state to toggle between having registered hackathons or not
 export default function MyHackathons() {
   const [hasRegistered, setHasRegistered] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   
+  // Memoize handlers
+  const handleRegister = useCallback(() => {
+    setHasRegistered(true);
+  }, []);
+
+  const handleUnregister = useCallback(() => {
+    setHasRegistered(false);
+  }, []);
+
+  // Memoize filtered hackathons
+  const filteredHackathons = useMemo(() => {
+    return registeredHackathons.filter(hackathon => {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        hackathon.title.toLowerCase().includes(searchLower) ||
+        hackathon.description.toLowerCase().includes(searchLower) ||
+        hackathon.organizer.toLowerCase().includes(searchLower)
+      );
+    });
+  }, [registeredHackathons, searchTerm]);
+
+  // Memoize search handler
+  const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  }, []);
+
   // Format date helpers
   const formatDate = (dateString: string): string => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -264,7 +291,7 @@ export default function MyHackathons() {
 
             <TabsContent value="active" className="space-y-6 mt-6">
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {registeredHackathons.map((hackathon) => (
+                {filteredHackathons.map((hackathon) => (
                   <Card key={hackathon.id} className="group overflow-hidden flex flex-col border-slate-200 hover:shadow-lg transition-all duration-300 hover:border-violet-200">
                     <div className="relative h-40">
                       <div 

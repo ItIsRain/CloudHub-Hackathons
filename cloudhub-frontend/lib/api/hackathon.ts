@@ -165,8 +165,6 @@ export const hackathonApi = {
       is_private: data.isPrivate || false
     };
 
-    console.log('Sending hackathon data:', JSON.stringify(backendData, null, 2));
-
     const response = await axiosInstance.post('/hackathons', backendData);
     return response.data;
   },
