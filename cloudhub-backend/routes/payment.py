@@ -5,7 +5,8 @@ from typing import Dict, Any
 from pydantic import BaseModel
 import json
 from models.hackathon import Hackathon
-from datetime import datetime
+from models.pending_hackathon import PendingHackathon
+from datetime import datetime, timedelta
 import uuid
 import logging
 from slugify import slugify
@@ -25,9 +26,6 @@ PACKAGE_PRICES = {
     "Scale": 20000    # AED 20,000
 }
 
-# Store pending hackathon data temporarily
-pending_hackathons = {}
-
 class CheckoutSessionRequest(BaseModel):
     package: str
     hackathon_data: Dict[str, Any]
@@ -43,15 +41,16 @@ async def create_checkout_session(request: CheckoutSessionRequest):
             
         price_in_aed = PACKAGE_PRICES[package_name]
         
-        # Generate a unique ID for this hackathon
-        hackathon_id = str(uuid.uuid4())
-        logger.info(f"Generated hackathon ID: {hackathon_id}")
+        # Calculate expiration time (30 minutes from now)
+        current_time = datetime.utcnow()
+        expiration_time = current_time + timedelta(minutes=30)
+        expires_at = int(expiration_time.timestamp())
         
-        # Store the hackathon data temporarily
-        pending_hackathons[hackathon_id] = request.hackathon_data
-        logger.info(f"Stored hackathon data for ID: {hackathon_id}")
+        logger.info(f"Current time: {current_time.isoformat()}")
+        logger.info(f"Expiration time: {expiration_time.isoformat()}")
+        logger.info(f"Expires at timestamp: {expires_at}")
         
-        # Create Stripe session with just the ID in metadata
+        # Create Stripe session without expiration
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
             line_items=[{
@@ -67,13 +66,20 @@ async def create_checkout_session(request: CheckoutSessionRequest):
             }],
             mode='payment',
             success_url='http://localhost:3000/dashboard/organizer/my-hackathons?payment=success',
-            cancel_url='http://localhost:3000/dashboard/organizer/my-hackathons?payment=cancelled',
-            metadata={
-                'hackathon_id': hackathon_id
-            }
+            cancel_url='http://localhost:3000/dashboard/organizer/my-hackathons?payment=cancelled'
         )
         
         logger.info(f"Created Stripe session: {session.id}")
+        
+        # Store pending hackathon data in database
+        pending_hackathon = PendingHackathon(
+            checkout_id=session.id,
+            hackathon_data=request.hackathon_data,
+            expires_at=expiration_time
+        )
+        await pending_hackathon.create()
+        logger.info(f"Stored pending hackathon data with checkout ID: {session.id}")
+        
         return {
             'sessionId': session.id,
             'url': session.url
@@ -108,21 +114,22 @@ async def webhook(request: Request):
         logger.info(f"Processing completed checkout session: {session.id}")
         
         try:
-            # Get the hackathon ID from metadata
-            hackathon_id = session.metadata.get('hackathon_id')
-            if not hackathon_id:
-                logger.error("No hackathon ID found in metadata")
-                raise HTTPException(status_code=400, detail="No hackathon ID found in metadata")
+            # Get the payment intent ID
+            payment_intent_id = session.payment_intent
+            logger.info(f"Payment intent ID: {payment_intent_id}")
             
-            logger.info(f"Retrieved hackathon ID from metadata: {hackathon_id}")
+            # Get the pending hackathon data from database
+            pending_hackathon = await PendingHackathon.find_one(
+                PendingHackathon.checkout_id == session.id,
+                PendingHackathon.is_processed == False
+            )
             
-            # Get the stored hackathon data
-            hackathon_data = pending_hackathons.get(hackathon_id)
-            if not hackathon_data:
-                logger.error(f"No hackathon data found for ID: {hackathon_id}")
-                raise HTTPException(status_code=400, detail="No hackathon data found for this ID")
+            if not pending_hackathon:
+                logger.error(f"No pending hackathon found for checkout ID: {session.id}")
+                raise HTTPException(status_code=400, detail="No pending hackathon found for this checkout session")
             
-            logger.info(f"Retrieved hackathon data for ID: {hackathon_id}")
+            hackathon_data = pending_hackathon.hackathon_data
+            logger.info(f"Retrieved hackathon data for checkout ID: {session.id}")
             
             # Generate a unique slug from the title
             slug = slugify(hackathon_data['title'])
@@ -145,7 +152,10 @@ async def webhook(request: Request):
                 "currency": "AED",
                 "pricing_tier": hackathon_data.get('package', 'starter').lower(),
                 "base_price": PACKAGE_PRICES[hackathon_data.get('package', 'starter')],
-                "total_amount": PACKAGE_PRICES[hackathon_data.get('package', 'starter')]
+                "total_amount": PACKAGE_PRICES[hackathon_data.get('package', 'starter')],
+                "is_paid": True,
+                "payment_date": datetime.utcnow(),
+                "invoice_id": payment_intent_id
             }
             
             # Create complete hackathon data
@@ -184,8 +194,10 @@ async def webhook(request: Request):
             hackathon = Hackathon(**complete_hackathon_data)
             await hackathon.create()
             
-            # Clean up the temporary data
-            del pending_hackathons[hackathon_id]
+            # Mark pending hackathon as processed
+            pending_hackathon.is_processed = True
+            pending_hackathon.processed_at = datetime.utcnow()
+            await pending_hackathon.save()
             
             logger.info(f"Successfully created hackathon after payment. Session ID: {session.id}")
             

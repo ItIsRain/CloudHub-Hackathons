@@ -8,6 +8,7 @@ import traceback
 from time import time
 from bson import ObjectId
 from bson.errors import InvalidId
+import asyncio
 
 from config.config import settings
 from utils.error_handlers import APIError, setup_logging
@@ -26,6 +27,7 @@ from models.message import Message, GroupMessage, Group
 from models.project import Project
 from models.team import Team
 from models.hackathon import Hackathon
+from models.pending_hackathon import PendingHackathon
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -69,7 +71,8 @@ async def lifespan(app: FastAPI):
             Group,
             Project,
             Team,
-            Hackathon
+            Hackathon,
+            PendingHackathon
         ]
         
         try:
@@ -89,6 +92,11 @@ async def lifespan(app: FastAPI):
             except Exception as oid_err:
                 logger.error(f"Error testing ObjectId handling: {str(oid_err)}")
                 raise
+            
+            # Start background tasks
+            from tasks.scheduler import run_periodic_tasks
+            asyncio.create_task(run_periodic_tasks())
+            logger.info("Background tasks started")
             
         except Exception as init_error:
             logger.error(f"Error during Beanie initialization: {str(init_error)}")
