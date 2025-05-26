@@ -7,6 +7,7 @@ from pydantic import ValidationError
 import re
 import logging
 import json
+from utils.code_generator import generate_access_code
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -267,6 +268,10 @@ async def create_hackathon(
                                "Your Organization"
         logger.debug(f"Organization name resolved to: {organization_name}")
         
+        # Generate initial access code
+        initial_access_code = generate_access_code()
+        logger.debug(f"Generated initial access code: {initial_access_code}")
+
         # Create hackathon object
         logger.debug("Creating hackathon object")
         try:
@@ -291,15 +296,15 @@ async def create_hackathon(
                 timeline=timeline,
                 requirements=data.requirements or [],
                 rules=data.rules or "",
-                judging_criteria=judging_criteria,  # Now using correct model objects
-                challenges=challenges,  # Now using correct model objects
+                judging_criteria=judging_criteria,
+                challenges=challenges,
                 resources=data.resources or [],
                 submission_template=data.submission_template,
                 billing=billing,
                 tags=data.tags or [],
                 is_featured=False,
                 is_private=data.is_private or False,
-                access_code=data.access_code if (hasattr(data, 'access_code') and data.is_private) else None
+                access_code=initial_access_code  # Set initial access code
             )
             logger.debug("Hackathon object created successfully")
         except ValidationError as e:
@@ -582,4 +587,33 @@ async def get_hackathon_participants(
     
     return {
         'participants': participants
+    }
+
+@router.post("/admin/fix-access-codes")
+async def fix_access_codes(
+    current_user: User = Depends(get_current_user),
+    db: AsyncIOMotorClient = Depends(get_db)
+):
+    """Fix missing access codes for all hackathons."""
+    # Check if user is admin
+    if not current_user.role == 'admin':
+        raise HTTPException(
+            status_code=403,
+            detail="Only administrators can perform this operation"
+        )
+    
+    # Find all hackathons without access codes
+    hackathons = await Hackathon.find(
+        {"access_code": None}
+    ).to_list()
+    
+    updated_count = 0
+    for hackathon in hackathons:
+        hackathon.generate_access_code_if_needed()
+        await hackathon.save()
+        updated_count += 1
+    
+    return {
+        "message": f"Updated {updated_count} hackathons with new access codes",
+        "updated_count": updated_count
     }

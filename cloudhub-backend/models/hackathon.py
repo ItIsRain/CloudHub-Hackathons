@@ -6,6 +6,7 @@ from models.base import BaseModel as BaseDBModel
 from enum import Enum
 from pymongo import ASCENDING, DESCENDING, TEXT, IndexModel
 from bson import ObjectId
+from utils.code_generator import generate_access_code
 
 class HackathonStatus(str, Enum):
     DRAFT = "draft"
@@ -214,12 +215,20 @@ class Hackathon(Document):
         }
         return base_dict
 
+    def generate_access_code_if_needed(self):
+        """Generate access code if not already set."""
+        if not self.access_code:
+            self.access_code = generate_access_code()
+
     @before_event([Replace, Insert])
     def update_timestamps(self):
-        """Update timestamps before saving."""
+        """Update timestamps and ensure access code before saving."""
         if not self.created_at:
             self.created_at = datetime.utcnow()
         self.updated_at = datetime.utcnow()
+        
+        # Always ensure there is an access code
+        self.generate_access_code_if_needed()
 
     async def update_counts(self):
         """Update participant counts."""
