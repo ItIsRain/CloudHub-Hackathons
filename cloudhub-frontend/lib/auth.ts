@@ -1,15 +1,10 @@
 import { useRouter } from 'next/navigation';
-import { UserRole } from '@/types/user';
+import { User, UserRole } from '@/types/user';
 import { useEffect, useState } from 'react';
+import { authAPI } from '@/lib/api/auth';
 
 // Type for user data stored in localStorage
-export interface StoredUserData {
-    id: string;
-    email: string;
-    full_name: string;
-    role: UserRole;
-    avatar?: string;
-}
+export type StoredUserData = User;
 
 // Function to get stored tokens
 export const getStoredTokens = () => {
@@ -38,36 +33,14 @@ export const getStoredUser = (): StoredUserData | null => {
 
 // Function to handle logout
 export const handleLogout = async () => {
-    try {
-        const { refreshToken } = getStoredTokens();
-        
-        if (refreshToken) {
-            try {
-                await fetch('/api/auth/logout', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ refresh_token: refreshToken }),
-                });
-            } catch (error) {
-                console.error('Logout API call failed:', error);
-            }
-        }
-    } finally {
-        // Clear localStorage
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
-        
-        // Clear cookies
-        document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
-        document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
-        document.cookie = 'user=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
-        
-        // Redirect to login page
-        window.location.href = '/login';
-    }
+    if (typeof window === 'undefined') return;
+    
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user');
+    
+    // Redirect to login page
+    window.location.href = '/login';
 };
 
 // Hook for handling auth-related actions
@@ -82,12 +55,27 @@ export const useAuth = () => {
     const logout = async () => {
         await handleLogout();
     };
+
+    const updateUser = async (data: Partial<User>) => {
+        try {
+            const response = await authAPI.updateUser(data);
+            if (response) {
+                setUser(response);
+                localStorage.setItem('user', JSON.stringify(response));
+            }
+            return response;
+        } catch (error: any) {
+            console.error('Update user error:', error);
+            throw error;
+        }
+    };
     
     const { accessToken } = getStoredTokens();
     
     return {
         user,
         logout,
+        updateUser,
         isAuthenticated: !!accessToken
     };
 }; 

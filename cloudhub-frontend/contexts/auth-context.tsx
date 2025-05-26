@@ -1,130 +1,174 @@
+// @/lib/auth.tsx - Complete useAuth hook implementation
+
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { authAPI } from '@/lib/api/auth';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User } from '@/types/user';
-import { toast } from 'sonner';
-
-interface LoginCredentials {
-  username: string;
-  password: string;
-}
+import { authAPI, LoginCredentials, RegisterData } from '@/lib/api/auth';
+import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
   user: User | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  loading: boolean;
+  login: (credentials: LoginCredentials) => Promise<void>;
+  register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
-  error: string | null;
+  updateUser: (data: Partial<User>) => Promise<User>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const handleLogout = async () => {
-    try {
-      setUser(null);
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      router.push('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
-
-  const handleUnauthorizedError = async () => {
-    if (!window.location.pathname.includes('login')) {
-      toast.error('Please log in to continue');
-    }
-    await handleLogout();
-  };
-
-  const initializeAuth = async () => {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-      setIsLoading(false);
-      if (!window.location.pathname.includes('login')) {
-        router.push('/login');
-      }
-      return;
-    }
-
-    try {
-      const currentUser = await authAPI.getCurrentUser();
-      if (currentUser) {
-        setUser(currentUser);
-      }
-    } catch (error: any) {
-      if (error?.response?.status === 401 || error?.message?.includes('Not authenticated')) {
-        await handleUnauthorizedError();
-      } else {
-        console.error('Auth initialization error:', error);
-        setError(error?.message || 'Authentication failed');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // Initialize auth state
   useEffect(() => {
     initializeAuth();
   }, []);
 
-  const login = async (username: string, password: string) => {
+  const initializeAuth = async () => {
     try {
-      setIsLoading(true);
-      setError(null);
-      const response = await authAPI.login({ username, password });
-      
-      if (response.access_token) {
-        localStorage.setItem('access_token', response.access_token);
-        if (response.refresh_token) {
-          localStorage.setItem('refresh_token', response.refresh_token);
+      const storedUser = localStorage.getItem('user');
+      const accessToken = localStorage.getItem('access_token');
+
+      if (storedUser && accessToken) {
+        // Try to get fresh user data
+        try {
+          const freshUser = await authAPI.getCurrentUser();
+          setUser(freshUser);
+          localStorage.setItem('user', JSON.stringify(freshUser));
+        } catch (error) {
+          // If getting fresh data fails, use stored data
+          console.warn('Failed to fetch fresh user data, using cached:', error);
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+          
+          // If it's a network error, try to refresh the token
+          if (error instanceof Error && error.message.includes('aborted')) {
+            try {
+              await authAPI.refreshTokens();
+              // Retry getting fresh user data
+              const retryUser = await authAPI.getCurrentUser();
+              setUser(retryUser);
+              localStorage.setItem('user', JSON.stringify(retryUser));
+            } catch (refreshError) {
+              console.error('Failed to refresh token:', refreshError);
+            }
+          }
         }
-        if (response.user) {
-          setUser(response.user);
-        }
-        router.push('/dashboard');
       }
-    } catch (error: any) {
-      console.error('Login error:', error);
-      const errorMessage = error?.response?.data?.detail || error?.message || 'Login failed';
-      setError(errorMessage);
-      toast.error(errorMessage);
+    } catch (error) {
+      console.error('Failed to initialize auth:', error);
+      // Clear invalid data
+      authAPI.clearTokens();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const login = async (credentials: LoginCredentials) => {
+    setLoading(true);
+    try {
+      const response = await authAPI.login(credentials);
+      if (response.user) {
+        setUser(response.user);
+        localStorage.setItem('user', JSON.stringify(response.user));
+      }
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Login failed:', error);
       throw error;
     } finally {
-      setIsLoading(false);
+      setLoading(false);
+    }
+  };
+
+  const register = async (data: RegisterData) => {
+    setLoading(true);
+    try {
+      const response = await authAPI.register(data);
+      if (response.user) {
+        setUser(response.user);
+        localStorage.setItem('user', JSON.stringify(response.user));
+      }
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Registration failed:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateUser = async (data: Partial<User>) => {
+    if (!user) {
+      throw new Error('No user logged in');
+    }
+
+    try {
+      console.log('Updating user with data:', data);
+      
+      // Call the API to update user
+      const updatedUser = await authAPI.updateUser(data);
+      
+      console.log('User updated successfully:', updatedUser);
+      
+      // Update local state and storage
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      return updatedUser;
+    } catch (error) {
+      console.error('Failed to update user:', error);
+      throw error;
+    }
+  };
+
+  const refreshUser = async () => {
+    if (!user) return;
+    
+    try {
+      const freshUser = await authAPI.getCurrentUser();
+      setUser(freshUser);
+      localStorage.setItem('user', JSON.stringify(freshUser));
+    } catch (error) {
+      console.error('Failed to refresh user:', error);
+      throw error;
     }
   };
 
   const logout = async () => {
+    setLoading(true);
     try {
       await authAPI.logout();
+      setUser(null);
+      router.push('/login');
     } catch (error) {
-      console.error('Logout API error:', error);
+      console.error('Logout failed:', error);
+      // Even if logout API fails, clear local state
+      setUser(null);
+      authAPI.clearTokens();
+      router.push('/login');
     } finally {
-      await handleLogout();
+      setLoading(false);
     }
   };
 
-  const value = {
-    user,
-    isLoading,
-    isAuthenticated: !!user,
-    login,
-    logout,
-    error,
-  };
-
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        register,
+        logout,
+        updateUser,
+        refreshUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -136,4 +180,4 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-} 
+}

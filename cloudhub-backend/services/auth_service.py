@@ -16,6 +16,7 @@ from models.auth import (
 )
 from models.token import RefreshToken
 from models.user import User
+from auth.utils import get_password_hash
 
 class AuthService:
     def __init__(self, db: AsyncIOMotorClient):
@@ -27,90 +28,71 @@ class AuthService:
         self.MAX_LOGIN_ATTEMPTS = settings.MAX_LOGIN_ATTEMPTS
 
     async def create_user(self, user_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Create a new user with proper password hashing and validation."""
-        # Check if email already exists
-        existing_user = await self.db.users.find_one({"email": user_data["email"]})
-        if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email already registered"
+        """Create a new user."""
+        try:
+            # Check if email already exists
+            existing_user = await User.find_one(User.email == user_data["email"])
+            if existing_user:
+                raise ValueError("Email already registered")
+
+            # Hash password
+            password_hash = get_password_hash(user_data["password"])
+            
+            # Handle name field
+            name = user_data.get("name") or user_data.get("full_name")
+            if not name:
+                raise ValueError("Name is required")
+            
+            # Create user document with all fields
+            user = User(
+                email=user_data["email"],
+                password_hash=password_hash,
+                name=name,
+                role=user_data["role"],
+                phone=user_data.get("phone"),
+                country=user_data.get("country"),
+                bio=user_data.get("bio"),
+                social_links=user_data.get("social_links", {}),
+                organization_name=user_data.get("organization_name"),
+                organization_website=user_data.get("organization_website"),
+                organization_size=user_data.get("organization_size"),
+                industry=user_data.get("industry"),
+                specializations=user_data.get("specializations", []),
+                mentorship_areas=user_data.get("mentorship_areas", []),
+                skills=user_data.get("skills", []),
+                languages=user_data.get("languages", []),
+                certifications=user_data.get("certifications", []),
+                preferences=user_data.get("preferences", {}),
+                communication_preferences=user_data.get("communication_preferences", {}),
+                notification_settings=user_data.get("notification_settings", {}),
+                availability=user_data.get("availability", {}),
+                permissions=user_data.get("permissions", []),
+                accepted_terms=user_data.get("accepted_terms", False),
+                accepted_privacy_policy=user_data.get("accepted_privacy_policy", False),
+                created_at=datetime.utcnow(),
+                last_login=datetime.utcnow(),
+                email_verified=False,
+                phone_verified=False,
+                is_online=True,
+                last_seen=datetime.utcnow()
             )
-
-        # Hash password
-        password_hash = bcrypt.hashpw(
-            user_data["password"].encode(),
-            bcrypt.gensalt(rounds=settings.BCRYPT_ROUNDS)
-        ).decode()
-
-        # Generate verification token
-        verification_token = str(uuid.uuid4())
-        verification_expires = datetime.utcnow() + timedelta(hours=24)
-
-        # Create user document
-        user = {
-            # Basic Information
-            "email": user_data["email"],
-            "password_hash": password_hash,
-            "name": user_data["full_name"],
-            "role": user_data["role"],
-            "phone": user_data.get("phone"),
-            "timezone": user_data.get("timezone"),
             
-            # Profile Information
-            "bio": user_data.get("bio"),
-            "avatar": user_data.get("avatar"),
-            "skills": user_data.get("skills", []),
-            "languages": user_data.get("languages", []),
-            "certifications": user_data.get("certifications", []),
-            "social_links": user_data.get("social_links", {}),
+            # Save user to database
+            await user.save()
             
-            # Role-specific Information
-            "organization_name": user_data.get("organization_name"),
-            "organization_website": user_data.get("organization_website"),
-            "organization_size": user_data.get("organization_size"),
-            "industry": user_data.get("industry"),
-            "specializations": user_data.get("specializations", []),
-            "mentorship_areas": user_data.get("mentorship_areas", []),
+            # Return user data without password
+            user_dict = user.dict()
+            del user_dict["password_hash"]
             
-            # Preferences
-            "communication_preferences": user_data.get("communication_preferences", {}),
-            "notification_settings": user_data.get("notification_settings", {}),
-            "availability": user_data.get("availability", {}),
+            # Add full_name field for frontend compatibility
+            user_dict["full_name"] = user_dict["name"]
             
-            # Security and Verification
-            "verification_token": verification_token,
-            "verification_expires": verification_expires,
-            "email_verified": False,
-            "phone_verified": False,
+            return user_dict
             
-            # Terms and Conditions
-            "accepted_terms": user_data.get("accepted_terms", False),
-            "accepted_privacy_policy": user_data.get("accepted_privacy_policy", False),
-            
-            # Additional fields with default values
-            "is_online": False,
-            "last_seen": datetime.utcnow(),
-            "is_team_lead": False,
-            "permissions": [],
-            "active_hackathons": [],
-            "completed_hackathons": [],
-            "active_teams": [],
-            "rating": 0.0,
-            "achievement_count": 0,
-            "reputation_score": 0,
-            "failed_login_attempts": 0,
-            "account_locked": False,
-            "account_locked_until": None,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
-        }
-        
-        result = await self.db.users.insert_one(user)
-        user["_id"] = result.inserted_id
-        
-        # TODO: Send verification email
-        
-        return user
+        except ValueError as e:
+            raise ValueError(str(e))
+        except Exception as e:
+            raise Exception(f"Error creating user: {str(e)}")
 
     async def verify_email(self, token: str) -> bool:
         """Verify user's email address."""

@@ -39,11 +39,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { authAPI, RegisterData, UserRole, AuthResponse } from '@/lib/api/auth';
-import { debounce } from 'lodash';
+import { authAPI } from '@/lib/api/auth';
+import type { TokenResponse } from '@/lib/api/auth';
+import { toast } from 'sonner';
 import CountrySelect from '@/components/selects/CountrySelect';
 import CountryCodeSelect from '@/components/selects/CountryCodeSelect';
 import ExperienceLevelSelect from '@/components/selects/ExperienceLevelSelect';
+
+type UserRole = 'participant' | 'organizer';
 
 // Constants moved outside component
 const STEPS = [
@@ -395,7 +398,6 @@ export default function RegisterPage() {
     phoneNumber: "",
     countryCode: "+971",
     country: "",
-    nationality: "",
     city: "",
     company: "",
     jobTitle: "",
@@ -422,7 +424,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [user, setUser] = useState<AuthResponse['user'] | null>(null);
+  const [user, setUser] = useState<TokenResponse['user'] | null>(null);
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, feedback: '' });
   const { theme } = useTheme();
 
@@ -507,109 +509,88 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!formData.country) {
+      setError('Please select your country');
+      return;
+    }
+
     const role: UserRole = formData.accountType === "organizer" ? "organizer" : "participant";
+    setIsLoading(true);
+    setError(null);
 
-    // Additional validation for organizers
-    if (role === "organizer") {
-      if (!formData.organization) {
-        setError('Please enter your organization name');
-        return;
-      }
-      if (!formData.website) {
-        setError('Please enter your organization website');
-        return;
-      }
-      if (!formData.industry) {
-        setError('Please select your industry');
-        return;
-      }
+    try {
+      // Common registration data for both participant and organizer
+      const registerData = {
+        email: formData.email,
+        password: formData.password,
+        name: formData.name,  // Use name directly
+        role,
+        phone: formData.phoneNumber || undefined,
+        country: formData.country,  // Always include country
+        bio: formData.bio || undefined,
+        social_links: {
+          github: formData.github || '',
+          linkedin: formData.linkedin || '',
+        },
+        accepted_terms: formData.acceptTerms,
+        accepted_privacy_policy: formData.acceptTerms
+      };
 
-      // Validate website format
-      try {
-        new URL(formData.website);
-      } catch (e) {
-        setError('Please enter a valid website URL (e.g., https://example.com)');
-        return;
-      }
-      
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        // Construct the registration data exactly matching the backend model
-        const registerData: RegisterData = {
-          email: formData.email,
-          password: formData.password,
-          full_name: formData.name,
-          role: "organizer",
-          phone: formData.phoneNumber || undefined,
-          country: formData.country || undefined,
-          bio: formData.bio || undefined,
+      // Add organizer-specific fields
+      if (role === "organizer") {
+        if (!formData.organization) {
+          setError('Please enter your organization name');
+          return;
+        }
+        if (!formData.website) {
+          setError('Please enter your organization website');
+          return;
+        }
+        if (!formData.industry) {
+          setError('Please select your industry');
+          return;
+        }
+
+        // Validate website format
+        try {
+          new URL(formData.website);
+        } catch (e) {
+          setError('Please enter a valid website URL (e.g., https://example.com)');
+          return;
+        }
+
+        Object.assign(registerData, {
           organization_name: formData.organization,
           organization_website: formData.website,
           organization_size: formData.organizationSize || undefined,
           industry: formData.industry,
           specializations: formData.specializations ? formData.specializations.split(',').map(s => s.trim()) : undefined,
-          social_links: {
-            github: formData.github || '',
-            linkedin: formData.linkedin || '',
-            website: formData.website || ''
-          },
-          accepted_terms: formData.acceptTerms,
-          accepted_privacy_policy: formData.acceptTerms
-        };
+        });
+      }
 
-        const response = await authAPI.register(registerData);
-        setUser(response.user);
-        localStorage.setItem('access_token', response.access_token);
-        localStorage.setItem('refresh_token', response.refresh_token);
-        setCurrentStep(3);
-      } catch (err: any) {
-        console.error('Registration error:', err);
-        if (err.response?.data?.errors) {
-          // Handle validation errors
-          const errors = err.response.data.errors;
-          const errorMessage = errors.map((e: any) => e.msg).join(', ');
-          setError(errorMessage);
-        } else {
-          setError(err.response?.data?.detail || err.message || 'Failed to create account');
-        }
-      } finally {
-        setIsLoading(false);
+      const response = await authAPI.register(registerData);
+      setUser(response.user);
+      localStorage.setItem('access_token', response.access_token);
+      localStorage.setItem('refresh_token', response.refresh_token);
+      setCurrentStep(3);
+    } catch (err: any) {
+      console.error('Registration error:', err);
+      let errorMessage = err.message || 'Failed to create account';
+
+      if (err.response?.data?.errors) {
+        // Handle validation errors
+        const errors = err.response.data.errors;
+        errorMessage = errors.map((e: any) => `${e.msg} for ${e.loc[1]}`).join(', ');
+      } else if (err.response?.data?.detail) {
+        errorMessage = err.response.data.detail;
       }
-    } else {
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        const registerData: RegisterData = {
-          email: formData.email,
-          password: formData.password,
-          full_name: formData.name,
-          role,
-          phone: formData.phoneNumber || undefined,
-          country: formData.country || undefined,
-          bio: formData.bio || undefined,
-          accepted_terms: formData.acceptTerms,
-          accepted_privacy_policy: formData.acceptTerms,
-          skills: formData.skills ? formData.skills.split(',').map(s => s.trim()) : undefined,
-          social_links: {
-            github: formData.github || '',
-            linkedin: formData.linkedin || '',
-          },
-        };
-        
-        const response = await authAPI.register(registerData);
-        setUser(response.user);
-        localStorage.setItem('access_token', response.access_token);
-        localStorage.setItem('refresh_token', response.refresh_token);
-        setCurrentStep(3);
-      } catch (err: any) {
-        console.error('Registration error:', err);
-        setError(err.response?.data?.detail || err.message || 'Failed to create account');
-      } finally {
-        setIsLoading(false);
-      }
+
+      setError(errorMessage);
+      toast.error(errorMessage, {
+        duration: 5000,
+      });
+    } finally {
+      setIsLoading(false);
     }
   }, [formData, passwordStrength.score]);
 
@@ -994,17 +975,6 @@ export default function RegisterPage() {
                               value={formData.country} 
                               onValueChange={(value: string) => handleSelectChange(value, 'country')}
                               placeholder="Select your country"
-                            />
-                          </div>
-                          
-                          <div className="space-y-1.5">
-                            <Label htmlFor="nationality" className="text-sm font-medium flex items-center">
-                              Nationality <Globe className="h-3.5 w-3.5 ml-1 text-muted-foreground" />
-                            </Label>
-                            <CountrySelect 
-                              value={formData.nationality} 
-                              onValueChange={(value: string) => handleSelectChange(value, 'nationality')}
-                              placeholder="Select your nationality"
                             />
                           </div>
                         </div>

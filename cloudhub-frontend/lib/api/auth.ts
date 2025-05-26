@@ -41,12 +41,42 @@ export interface PasswordResetConfirmData {
 export interface RegisterData {
   email: string;
   password: string;
-  full_name: string;
+  name?: string;
+  full_name?: string;
   role: UserRole;
   phone?: string;
   country?: string;
   timezone?: string;
   organization_name?: string;
+  organization_website?: string;
+  organization_size?: string;
+  industry?: string;
+  bio?: string;
+  social_links?: {
+    github?: string;
+    linkedin?: string;
+  };
+  accepted_terms: boolean;
+  accepted_privacy_policy: boolean;
+}
+
+interface BackendRegisterData {
+  email: string;
+  password: string;
+  name: string;  // Backend expects 'name'
+  role: UserRole;
+  phone?: string;
+  country?: string;
+  timezone?: string;
+  organization_name?: string;
+  organization_website?: string;
+  organization_size?: string;
+  industry?: string;
+  bio?: string;
+  social_links?: {
+    github?: string;
+    linkedin?: string;
+  };
   accepted_terms: boolean;
   accepted_privacy_policy: boolean;
 }
@@ -60,12 +90,20 @@ const TOKEN_STORAGE = {
 export class AuthAPI {
   private api: typeof axiosInstance;
 
-  constructor() {
-    this.api = axiosInstance;
+  constructor(api: typeof axiosInstance) {
+    this.api = api;
   }
 
   private handleError(error: any): never {
     // Handle specific error cases
+    if (error.response?.status === 422) {
+      const validationErrors = error.response.data.errors;
+      if (validationErrors && Array.isArray(validationErrors)) {
+        const errorMessage = validationErrors.map(err => `${err.msg} for ${err.loc[1]}`).join(', ');
+        throw new Error(`Validation error: ${errorMessage}`);
+      }
+    }
+
     if (error.response?.status === 401) {
       if (error.response?.data?.detail) {
         throw new Error(error.response.data.detail);
@@ -160,8 +198,34 @@ export class AuthAPI {
   }
 
   async register(data: RegisterData): Promise<TokenResponse> {
-    const response = await this.api.post<TokenResponse>('/auth/register', data);
-    return response.data;
+    try {
+      if (!data.name && !data.full_name) {
+        throw new Error('Name is required');
+      }
+
+      // Map frontend data to backend format
+      const backendData: BackendRegisterData = {
+        email: data.email,
+        password: data.password,
+        name: data.name || data.full_name || '', // Ensure we have a non-null value
+        role: data.role,
+        phone: data.phone,
+        country: data.country,
+        bio: data.bio,
+        social_links: data.social_links,
+        accepted_terms: data.accepted_terms,
+        accepted_privacy_policy: data.accepted_privacy_policy,
+        organization_name: data.organization_name,
+        organization_website: data.organization_website,
+        organization_size: data.organization_size,
+        industry: data.industry
+      };
+
+      const response = await this.api.post<TokenResponse>('/auth/register', backendData);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
   }
 
   async logout(): Promise<void> {
@@ -214,6 +278,15 @@ export class AuthAPI {
     await this.api.post(`/auth/verify-email/${token}`);
   }
 
+  async updateUser(data: Partial<User>): Promise<User> {
+    try {
+      const response = await this.api.put<User>('/users/me', data);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   clearTokens(): void {
     localStorage.removeItem(TOKEN_STORAGE.ACCESS_TOKEN);
     localStorage.removeItem(TOKEN_STORAGE.REFRESH_TOKEN);
@@ -235,8 +308,7 @@ export class AuthAPI {
   }
 }
 
-// Export a single instance of the AuthAPI
-export const authAPI = new AuthAPI();
+export const authAPI = new AuthAPI(axiosInstance);
 
 export interface ErrorResponse {
   detail?: string;

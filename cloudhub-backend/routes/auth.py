@@ -18,7 +18,7 @@ from services.auth_service import AuthService
 from database.dependencies import get_database
 from config.config import settings
 from auth.jwt_manager import TokenManager, get_current_user
-from auth.password import get_password_hash, verify_password
+from auth.utils import get_password_hash, verify_password
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -56,67 +56,114 @@ async def get_current_user(
 
     return user
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register(
     user_data: UserCreate,
     request: Request,
     auth_service: AuthService = Depends(get_auth_service)
 ):
     """Register a new user."""
-    user = await auth_service.create_user(user_data.dict())
+    try:
+        # Convert Pydantic model to dict
+        user_dict = user_data.dict()
+        
+        # Create the user
+        user_doc = await auth_service.create_user(user_dict)
+        
+        # Log security event
+        await auth_service.log_security_event(
+            user_id=str(user_doc["id"]),
+            event_type="user_registration",
+            event_data={"email": user_doc["email"]},
+            ip_address=request.client.host if request.client else "unknown",
+            user_agent=request.headers.get("user-agent", "")
+        )
+        
+        # Get the created user from database
+        user_obj = await User.get(user_doc["id"])
+        if not user_obj:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to retrieve created user"
+            )
+        
+        # Create tokens for immediate login
+        tokens = await TokenManager.create_tokens(user_obj, request)
+        
+        # Map user data to response format (matching UserResponse model)
+        user_response_data = {
+            "id": str(user_obj.id),
+            "email": user_obj.email,
+            "name": user_obj.name,  # Keep name as is
+            "full_name": user_obj.name,  # Add full_name as a copy of name
+            "role": user_obj.role,
+            "status": UserStatus.ACTIVE.value,
+            "created_at": user_obj.created_at,
+            "last_login": user_obj.last_login,
+            "is_verified": user_obj.email_verified,
+            "phone": user_obj.phone,
+            "country": user_obj.country,
+            "timezone": user_obj.timezone,
+            "bio": user_obj.bio,
+            "avatar": user_obj.avatar,
+            "skills": user_obj.skills,
+            "languages": user_obj.languages,
+            "certifications": user_obj.certifications,
+            "social_links": user_obj.social_links,
+            "organization_name": user_obj.organization_name,
+            "organization_website": user_obj.organization_website,
+            "organization_size": user_obj.organization_size,
+            "industry": user_obj.industry,
+            "specializations": user_obj.specializations,
+            "mentorship_areas": user_obj.mentorship_areas,
+            "is_online": user_obj.is_online,
+            "last_seen": user_obj.last_seen,
+            "is_team_lead": user_obj.is_team_lead,
+            "permissions": user_obj.permissions,
+            "active_hackathons": [str(h) for h in user_obj.active_hackathons],
+            "completed_hackathons": [str(h) for h in user_obj.completed_hackathons],
+            "active_teams": [str(t) for t in user_obj.active_teams],
+            "rating": user_obj.rating,
+            "achievement_count": user_obj.achievement_count,
+            "reputation_score": user_obj.reputation_score,
+            "communication_preferences": user_obj.communication_preferences,
+            "notification_settings": user_obj.notification_settings,
+            "availability": user_obj.availability,
+            "phone_verified": user_obj.phone_verified,
+            # Add full_context for frontend
+            "full_context": {
+                "id": str(user_obj.id),
+                "email": user_obj.email,
+                "name": user_obj.name,
+                "organization_name": user_obj.organization_name or ""
+            }
+        }
+        
+        # Return response with tokens and complete user data
+        return TokenResponse(
+            access_token=tokens["access_token"],
+            refresh_token=tokens["refresh_token"],
+            token_type=tokens["token_type"],
+            expires_in=tokens["expires_in"],
+            user=user_response_data
+        )
+        
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        # Log the full error for debugging
+        import traceback
+        print(f"Registration error: {str(e)}")
+        print(f"Traceback: {traceback.format_exc()}")
+        
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Registration failed: {str(e)}"
+        )
     
-    # Log security event
-    await auth_service.log_security_event(
-        user_id=str(user["_id"]),
-        event_type="user_registration",
-        event_data={"email": user["email"]},
-        ip_address=request.client.host,
-        user_agent=request.headers.get("user-agent", "")
-    )
-    
-    # Map the user document to UserResponse fields
-    user_response = {
-        "id": str(user["_id"]),
-        "email": user["email"],
-        "full_name": user["name"],
-        "role": user["role"],
-        "status": UserStatus.ACTIVE,  # Default status for new users
-        "created_at": user["created_at"],
-        "last_login": user.get("last_login"),
-        "is_verified": user["email_verified"],
-        "phone": user.get("phone"),
-        "country": user.get("timezone"),  # Using timezone as country for now
-        "timezone": user.get("timezone"),
-        "bio": user.get("bio"),
-        "avatar": user.get("avatar"),
-        "skills": user.get("skills", []),
-        "languages": user.get("languages", []),
-        "certifications": user.get("certifications", []),
-        "social_links": user.get("social_links", {}),
-        "organization_name": user.get("organization_name"),
-        "organization_website": user.get("organization_website"),
-        "organization_size": user.get("organization_size"),
-        "industry": user.get("industry"),
-        "specializations": user.get("specializations", []),
-        "mentorship_areas": user.get("mentorship_areas", []),
-        "is_online": user.get("is_online", False),
-        "last_seen": user.get("last_seen"),
-        "is_team_lead": user.get("is_team_lead", False),
-        "permissions": user.get("permissions", []),
-        "active_hackathons": user.get("active_hackathons", []),
-        "completed_hackathons": user.get("completed_hackathons", []),
-        "active_teams": user.get("active_teams", []),
-        "rating": user.get("rating", 0.0),
-        "achievement_count": user.get("achievement_count", 0),
-        "reputation_score": user.get("reputation_score", 0),
-        "communication_preferences": user.get("communication_preferences", {}),
-        "notification_settings": user.get("notification_settings", {}),
-        "availability": user.get("availability", {}),
-        "phone_verified": user.get("phone_verified", False)
-    }
-    
-    return UserResponse(**user_response)
-
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
@@ -139,7 +186,7 @@ async def login(
         user = await User.find_one(User.email == username)
         if not user:
             raise HTTPException(
-                status_code=401,
+                status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect email or password"
             )
         
@@ -148,30 +195,72 @@ async def login(
             is_valid = verify_password(password, user.password_hash)
             if not is_valid:
                 raise HTTPException(
-                    status_code=401,
+                    status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Incorrect email or password"
                 )
+        except HTTPException as he:
+            raise he
         except Exception as e:
             print(f"Password verification error: {str(e)}")
             raise HTTPException(
-                status_code=500,
-                detail=f"Error verifying password: {str(e)}"
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect email or password"
             )
+        
+        # Update last login
+        user.last_login = datetime.utcnow()
+        await user.save()
         
         # Create tokens
         tokens = await TokenManager.create_tokens(user, request)
         
-        # Convert user data to response format
+        # Convert user data to response format with ALL fields
         user_data = {
             "id": str(user.id),
             "email": user.email,
-            "name": user.name,
+            "name": user.name,  # Keep name as is
+            "full_name": user.name,  # Add full_name as a copy of name
             "role": user.role,
-            "status": UserStatus.ACTIVE.value,
-            "email_verified": user.email_verified,
+            "status": UserStatus.ACTIVE.value if not user.is_deleted else UserStatus.INACTIVE.value,
             "created_at": user.created_at,
-            "updated_at": user.updated_at,
-            "organization_name": user.organization_name
+            "last_login": user.last_login,
+            "is_verified": user.email_verified,
+            "phone": user.phone,
+            "country": user.country,
+            "timezone": user.timezone,
+            "bio": user.bio,
+            "avatar": user.avatar,
+            "skills": user.skills,
+            "languages": user.languages,
+            "certifications": user.certifications,
+            "social_links": user.social_links,
+            "organization_name": user.organization_name,
+            "organization_website": user.organization_website,
+            "organization_size": user.organization_size,
+            "industry": user.industry,
+            "specializations": user.specializations,
+            "mentorship_areas": user.mentorship_areas,
+            "is_online": user.is_online,
+            "last_seen": user.last_seen,
+            "is_team_lead": user.is_team_lead,
+            "permissions": user.permissions,
+            "active_hackathons": [str(h) for h in user.active_hackathons],
+            "completed_hackathons": [str(h) for h in user.completed_hackathons],
+            "active_teams": [str(t) for t in user.active_teams],
+            "rating": user.rating,
+            "achievement_count": user.achievement_count,
+            "reputation_score": user.reputation_score,
+            "communication_preferences": user.communication_preferences,
+            "notification_settings": user.notification_settings,
+            "availability": user.availability,
+            "phone_verified": user.phone_verified,
+            # Add full_context for frontend
+            "full_context": {
+                "id": str(user.id),
+                "email": user.email,
+                "name": user.name,
+                "organization_name": user.organization_name or ""
+            }
         }
         
         # Return response with formatted user data
@@ -179,15 +268,15 @@ async def login(
             **tokens,
             "user": user_data
         }
-    except HTTPException as e:
-        raise e
+    except HTTPException as he:
+        raise he
     except Exception as e:
         print(f"Unexpected error during login: {str(e)}")
         raise HTTPException(
-            status_code=500,
-            detail=f"An error occurred during login: {str(e)}"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password"
         )
-
+    
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(
     refresh_request: RefreshRequest,
@@ -236,20 +325,48 @@ async def get_current_user_info(
             detail="User not found"
         )
 
-    # Convert user data to UserResponse format
-    user_data = {
+    # Convert user data to UserResponse format with ALL fields
+    user_response_data = {
         "id": str(user.id),
         "email": user.email,
-        "name": user.name,
+        "full_name": user.name,  # Map 'name' to 'full_name'
         "role": user.role,
-        "status": UserStatus.ACTIVE.value,  # Use the enum value directly
-        "email_verified": user.email_verified,
+        "status": UserStatus.ACTIVE.value if not user.is_deleted else UserStatus.INACTIVE.value,
         "created_at": user.created_at,
-        "updated_at": user.updated_at,
-        "organization_name": user.organization_name
+        "last_login": user.last_login,
+        "is_verified": user.email_verified,
+        "phone": user.phone,
+        "country": user.country,
+        "timezone": user.timezone,
+        "bio": user.bio,
+        "avatar": user.avatar,
+        "skills": user.skills,
+        "languages": user.languages,
+        "certifications": user.certifications,
+        "social_links": user.social_links,
+        "organization_name": user.organization_name,
+        "organization_website": user.organization_website,
+        "organization_size": user.organization_size,
+        "industry": user.industry,
+        "specializations": user.specializations,
+        "mentorship_areas": user.mentorship_areas,
+        "is_online": user.is_online,
+        "last_seen": user.last_seen,
+        "is_team_lead": user.is_team_lead,
+        "permissions": user.permissions,
+        "active_hackathons": [str(h) for h in user.active_hackathons],
+        "completed_hackathons": [str(h) for h in user.completed_hackathons],
+        "active_teams": [str(t) for t in user.active_teams],
+        "rating": user.rating,
+        "achievement_count": user.achievement_count,
+        "reputation_score": user.reputation_score,
+        "communication_preferences": user.communication_preferences,
+        "notification_settings": user.notification_settings,
+        "availability": user.availability,
+        "phone_verified": user.phone_verified
     }
     
-    return UserResponse(**user_data)
+    return UserResponse(**user_response_data)
 
 @router.get("/sessions")
 async def get_active_sessions(

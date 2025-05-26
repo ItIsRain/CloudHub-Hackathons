@@ -1,10 +1,11 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, ReactNode } from "react"
+import { useAuth } from "@/lib/auth"
 
-type UserRole = "participant" | "organizer"
+type UserRole = "organizer" | "participant" | "judge" | "mentor" | "media"
 
-interface UserRoleContextType {
+type UserRoleContextType = {
   userRole: UserRole
   isOrganizer: boolean
   isParticipant: boolean
@@ -12,18 +13,15 @@ interface UserRoleContextType {
 
 const UserRoleContext = createContext<UserRoleContextType | undefined>(undefined)
 
-// In a real application, this would be fetched from a backend API after authentication
-const MOCK_USER_ROLE: UserRole = "organizer"
-
 export function UserRoleProvider({ children }: { children: ReactNode }) {
-  const [userRole, setUserRole] = useState<UserRole>(MOCK_USER_ROLE)
+  const { user } = useAuth()
+  const [userRole, setUserRole] = useState<UserRole>("participant") // Default to participant
 
-  // In a real app, this would be an API call to fetch the user's role
   useEffect(() => {
-    // Simulating API call with a mock role
-    // In production, this would be replaced with actual authentication logic
-    setUserRole(MOCK_USER_ROLE)
-  }, [])
+    if (user?.role) {
+      setUserRole(user.role as UserRole)
+    }
+  }, [user])
 
   const value = {
     userRole,
