@@ -17,6 +17,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 # Import routes
 from routes import auth, user, hackathon, team, project, upload, message
+from routes.payment import router as payment_router
 
 # Import models
 from models.user import User
@@ -47,6 +48,7 @@ def register_routes(app: FastAPI):
     app.include_router(project.router, prefix="/api/projects", tags=["Projects"])
     app.include_router(upload.router, prefix="/api/upload", tags=["File Upload"])
     app.include_router(message.router, prefix="/api/messages", tags=["Messages"])
+    app.include_router(payment_router, prefix="/api/payment", tags=["Payments"])
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -197,10 +199,11 @@ register_routes(app)
 # Setup CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Add your frontend URL
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 # Add database connection check middleware

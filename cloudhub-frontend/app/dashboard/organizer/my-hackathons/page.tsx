@@ -49,6 +49,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { hackathonApi, HackathonFormData } from '@/lib/api/hackathon';
 import { useAuth } from '@/contexts/auth-context'
+import stripePromise from '@/lib/stripe';
 
 // Define interfaces for the criteria and challenges
 interface Criterion {
@@ -441,11 +442,6 @@ export default function OrganizerMyHackathonsPage() {
       errors.push("Description must be at least 10 characters long");
     }
 
-    // Remove organization name validation since it's already provided during registration
-    // if (!user?.organization_name) {
-    //   errors.push("Organization name is required. Please update your organization profile first.");
-    // }
-
     if (!dateRange.from || !dateRange.to) {
       errors.push("Please select a date range for your hackathon");
     }
@@ -496,13 +492,12 @@ export default function OrganizerMyHackathonsPage() {
       return;
     }
 
-    // If validation passes, proceed to payment step
-    setCreateStepIndex(2);
+    // If validation passes, proceed to payment
     setIsProcessingPayment(true);
 
     try {
-      // Create hackathon data object with all required fields
-      const hackathonData: HackathonFormData = {
+      // Prepare hackathon data
+      const hackathonData = {
         title: hackathonName,
         description,
         short_description: description.substring(0, 200),
@@ -519,7 +514,7 @@ export default function OrganizerMyHackathonsPage() {
         min_team_size: minTeamSize,
         max_team_size: maxTeamSize,
         is_team_required: isTeamRequired,
-        package: selectedPackage as 'starter' | 'growth' | 'scale',
+        package: selectedPackage,
         prizePool,
         prizes: prizes.map(prize => ({
           place: prize.place,
@@ -531,9 +526,12 @@ export default function OrganizerMyHackathonsPage() {
         judgingCriteria: criteriaWeights.map(criteria => ({
           name: criteria.name,
           weight: criteria.weight,
-          description: `${criteria.name} evaluation criteria`
+          description: criteria.description
         })),
-        challenges: [],
+        challenges: challenges.map(challenge => ({
+          title: challenge.title,
+          description: challenge.description
+        })),
         rules: rulesText,
         requirements: [],
         resources: resources,
@@ -542,71 +540,88 @@ export default function OrganizerMyHackathonsPage() {
         tags: []
       };
 
-      // Log user data and organization name for debugging
-      console.log("User data:", user);
-      console.log("Organization name being used:", user?.organization_name);
+      // Create Stripe checkout session
+      const response = await fetch('http://localhost:8000/api/payment/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          package: selectedPackage,
+          hackathon_data: hackathonData
+        }),
+      });
 
-      // Send request to create hackathon
-      const response = await hackathonApi.createHackathon(hackathonData);
-      
-      setIsProcessingPayment(false);
-      
-      // Show success message
-      toast({
-        title: "Hackathon created!",
-        description: "Your hackathon has been created successfully",
-        variant: "default"
+      const session = await response.json();
+
+      if (session.error) {
+        throw new Error(session.error);
+      }
+
+      // Redirect to Stripe Checkout
+      const stripe = await stripePromise;
+      if (!stripe) {
+        throw new Error('Failed to load Stripe');
+      }
+
+      // Redirect to Stripe checkout
+      const { error } = await stripe.redirectToCheckout({
+        sessionId: session.sessionId
       });
-      
-      // Reset form and close dialog
-      handleDialogOpenChange(false);
-      setCreateStepIndex(0);
-      
-      // Reset all form fields with default dates
-      setHackathonName("");
-      setDescription("");
-      setCoverImage(null);
-      setLogoImage(null);
-      setDateRange({
-        from: new Date(),
-        to: addDays(new Date(), 30),
-      });
-      setRegistrationDeadline(addDays(new Date(), 14));
-      setSelectedMaxParticipants(100);
-      setPrizePool("1000");
-      setSelectedPackage(null);
-      setCriteriaWeights([
-        { id: '1', name: 'Innovation', weight: 30, description: 'Evaluating the innovation and creativity of the solution' },
-        { id: '2', name: 'Technical Complexity', weight: 30, description: 'Assessing the technical sophistication and implementation' },
-        { id: '3', name: 'Impact', weight: 20, description: 'Measuring the potential real-world impact' },
-        { id: '4', name: 'Presentation', weight: 20, description: 'Quality of presentation and documentation' }
-      ]);
-      setPrizes([
-        { id: '1', place: '1st Place', position: 1, amount: 500, currency: 'AED', description: '1st Place' },
-        { id: '2', place: '2nd Place', position: 2, amount: 300, currency: 'AED', description: '2nd Place' },
-        { id: '3', place: '3rd Place', position: 3, amount: 200, currency: 'AED', description: '3rd Place' }
-      ]);
-      setResources([]);
-      setSubmissionTemplate(""); // Use empty string instead of null
-      setMinTeamSize(1);
-      // Don't reset maxTeamSize to keep user's selection
-      setIsTeamRequired(true);
-      setCoverImageUrl("");
-      setBannerImageUrl("");
-      setOrganizationLogo("");
+
+      if (error) {
+        throw error;
+      }
 
     } catch (error: any) {
       setIsProcessingPayment(false);
       toast({
-        title: "Error creating hackathon",
-        description: error.response?.data?.detail || "An unexpected error occurred",
+        title: "Error",
+        description: error.message || "Failed to process payment",
         variant: "destructive"
       });
     }
   };
 
+  // Add hackathonType state variable after the other useState declarations
+  const [hackathonType, setHackathonType] = useState("online");
+
+  // Add new state variables after existing ones
+  const [minTeamSize, setMinTeamSize] = useState<number>(1);
+  const [maxTeamSize, setMaxTeamSize] = useState<number>(6);
+  const [isTeamRequired, setIsTeamRequired] = useState(true);
+  const [coverImageUrl, setCoverImageUrl] = useState<string>("");
+  const [bannerImageUrl, setBannerImageUrl] = useState<string>("");
+  const [organizationLogo, setOrganizationLogo] = useState<string>("");
+  const [submissionTemplate, setSubmissionTemplate] = useState<string>("");
+  const [resources, setResources] = useState<string[]>([]);
+  const [organizationName, setOrganizationName] = useState<string>("");
+
+  // Update the state variables with proper types
+  const [maxParticipants, setMaxParticipants] = useState<number>(100);
+
   // Dummy data for hackathons
-  const hackathons = [
+  interface Hackathon {
+    id: number;
+    title: string;
+    description: string;
+    startDate: string;
+    endDate: string;
+    registrationDeadline: string;
+    participants: number;
+    maxParticipants: number;
+    submissionCount: number;
+    prizePool: string;
+    status: string;
+    progress: number;
+    bannerImage: string;
+    categories: string[];
+    featured: boolean;
+  }
+
+  const hackathons: Hackathon[] = [
     {
       id: 1,
       title: "AI Innovation Challenge",
@@ -675,69 +690,18 @@ export default function OrganizerMyHackathonsPage() {
       categories: ["iOS", "Android", "Cross-platform"],
       featured: false,
     },
-  ]
+  ];
 
   // Filter hackathons based on search query and status filter
   const filteredHackathons = hackathons.filter((hackathon) => {
     const matchesSearch = hackathon.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           hackathon.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          hackathon.categories.some(cat => cat.toLowerCase().includes(searchQuery.toLowerCase()))
+                          hackathon.categories.some(cat => cat.toLowerCase().includes(searchQuery.toLowerCase()));
     
-    const matchesStatus = statusFilter === "all" || hackathon.status.toLowerCase() === statusFilter.toLowerCase()
+    const matchesStatus = statusFilter === "all" || hackathon.status.toLowerCase() === statusFilter.toLowerCase();
     
-    return matchesSearch && matchesStatus
-  })
-
-  // Add hackathonType state variable after the other useState declarations
-  const [hackathonType, setHackathonType] = useState("online");
-
-  // Add new state variables after existing ones
-  const [minTeamSize, setMinTeamSize] = useState<number>(1);
-  const [maxTeamSize, setMaxTeamSize] = useState<number>(6);
-  const [isTeamRequired, setIsTeamRequired] = useState(true);
-  const [coverImageUrl, setCoverImageUrl] = useState<string>("");
-  const [bannerImageUrl, setBannerImageUrl] = useState<string>("");
-  const [organizationLogo, setOrganizationLogo] = useState<string>("");
-  const [submissionTemplate, setSubmissionTemplate] = useState<string>("");
-  const [resources, setResources] = useState<string[]>([]);
-  const [organizationName, setOrganizationName] = useState<string>("");
-
-  // Update the state variables with proper types
-  const [maxParticipants, setMaxParticipants] = useState<number>(100);
-
-  // Update the prize pool handler
-  const handlePrizePoolChange = (value: string) => {
-    setPrizePool(value);
-  };
-
-  // Update the team size handlers
-  const handleMinTeamSizeChange = (value: string) => {
-    setMinTeamSize(parseInt(value) || 1);
-  };
-
-  const handleMaxTeamSizeChange = (value: string) => {
-    setMaxTeamSize(parseInt(value) || 6);
-  };
-
-  const handleMaxParticipantsChange = (value: string) => {
-    setMaxParticipants(parseInt(value) || 100);
-  };
-
-  // Update the date change handlers
-  const handleDateRangeFromChange = (value: string) => {
-    const from = value ? new Date(value) : new Date();
-    setDateRange(prev => ({ ...prev, from }));
-  };
-
-  const handleDateRangeToChange = (value: string) => {
-    const to = value ? new Date(value) : addDays(new Date(), 30);
-    setDateRange(prev => ({ ...prev, to }));
-  };
-
-  const handleRegistrationDeadlineChange = (value: string) => {
-    const date = value ? new Date(value) : addDays(new Date(), 14);
-    setRegistrationDeadline(date);
-  };
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="space-y-8 pb-10 px-6">
@@ -1586,42 +1550,28 @@ export default function OrganizerMyHackathonsPage() {
                       </h3>
                     </div>
                     <div className="p-6 space-y-5">
+                      {/* Registration Deadline */}
                       <div className="grid gap-3">
-                        <Label className="font-medium text-sm">
-                          Date Range <span className="text-red-500">*</span>
-                        </Label>
+                        <Label className="font-medium text-sm">Registration Deadline <span className="text-red-500">*</span></Label>
+                        <div className="border border-slate-200 rounded-md p-3">
+                          <Input type="date" className="h-9 w-full" placeholder="Registration deadline" value={registrationDeadline.toISOString().split('T')[0]} onChange={(e) => { const newDeadline = new Date(e.target.value); const today = new Date(); today.setHours(0, 0, 0, 0); if (newDeadline < today) { toast({ title: "Invalid deadline", description: "Registration deadline cannot be in the past", variant: "destructive" }); return; } if (newDeadline > dateRange.from) { toast({ title: "Invalid deadline", description: "Registration deadline must be before the event start date", variant: "destructive" }); return; } if (newDeadline > dateRange.to) { toast({ title: "Invalid deadline", description: "Registration deadline must be before the event end date", variant: "destructive" }); return; } setRegistrationDeadline(newDeadline); }} min={new Date().toISOString().split('T')[0]} max={dateRange.from.toISOString().split('T')[0]} />
+                        </div>
+                        <p className="text-xs text-slate-500">Set registration deadline (must be before event start date)</p>
+                      </div>
+
+                      {/* Date Range */}
+                      <div className="grid gap-3">
+                        <Label className="font-medium text-sm">Date Range <span className="text-red-500">*</span></Label>
                         <div className="border border-slate-200 rounded-md p-3">
                           <div className="flex items-center gap-2">
-                            <Input 
-                              type="date" 
-                              className="h-9"
-                              placeholder="Start date"
-                            />
+                            <Input type="date" className="h-9" placeholder="Start date" value={dateRange.from.toISOString().split('T')[0]} onChange={(e) => { const newStartDate = new Date(e.target.value); const today = new Date(); today.setHours(0, 0, 0, 0); if (newStartDate < today) { toast({ title: "Invalid start date", description: "Start date cannot be in the past", variant: "destructive" }); return; } setDateRange(prev => ({ ...prev, from: newStartDate })); if (registrationDeadline > newStartDate) { setRegistrationDeadline(newStartDate); } }} min={new Date().toISOString().split('T')[0]} />
                             <span className="text-sm text-slate-500">to</span>
-                            <Input 
-                              type="date" 
-                              className="h-9"
-                              placeholder="End date"
-                            />
+                            <Input type="date" className="h-9" placeholder="End date" value={dateRange.to.toISOString().split('T')[0]} onChange={(e) => { const newEndDate = new Date(e.target.value); if (newEndDate < dateRange.from) { toast({ title: "Invalid end date", description: "End date must be after start date", variant: "destructive" }); return; } setDateRange(prev => ({ ...prev, to: newEndDate })); }} min={dateRange.from.toISOString().split('T')[0]} />
                           </div>
                         </div>
                         <p className="text-xs text-slate-500">Select start and end dates</p>
                       </div>
-
-                      <div className="grid gap-3">
-                        <Label className="font-medium text-sm">
-                          Registration Deadline <span className="text-red-500">*</span>
-                        </Label>
-                        <div className="border border-slate-200 rounded-md p-3">
-                          <Input 
-                            type="date" 
-                            className="h-9 w-full"
-                            placeholder="Registration deadline"
-                          />
-                        </div>
-                        <p className="text-xs text-slate-500">Set registration deadline</p>
-                      </div>
-
+                      
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="prize-split" className="text-sm font-medium block mb-2">Prize Distribution</Label>
@@ -1852,10 +1802,10 @@ export default function OrganizerMyHackathonsPage() {
                           className="min-h-[120px] w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
                           placeholder="Enter rules, guidelines, judging criteria, and submission requirements for your hackathon..."
                           defaultValue="1. Teams can consist of 1-4 members.
-2. All code must be written during the hackathon.
-3. You may use open-source libraries and frameworks.
-4. Projects will be judged on innovation, technical complexity, design, and impact.
-5. Each team must submit their code to GitHub and provide a 3-minute demo video."
+                                        2. All code must be written during the hackathon.
+                                        3. You may use open-source libraries and frameworks.
+                                        4. Projects will be judged on innovation, technical complexity, design, and impact.
+                                        5. Each team must submit their code to GitHub and provide a 3-minute demo video."
                         />
                       </div>
                     </div>

@@ -51,6 +51,17 @@ class BillingInfo(BaseDBModel):
     payment_date: Optional[datetime] = None
     invoice_id: Optional[str] = None
 
+class JudgingCriterion(BaseDBModel):
+    """Judging criterion schema."""
+    name: str = Field(..., min_length=1)
+    description: str = Field(..., min_length=1)
+    weight: float = Field(..., ge=0, le=100)
+
+class Challenge(BaseDBModel):
+    """Challenge schema."""
+    title: str = Field(..., min_length=1)
+    description: str = Field(..., min_length=1)
+
 class Hackathon(Document):
     """Hackathon model."""
     
@@ -82,8 +93,9 @@ class Hackathon(Document):
     
     # Requirements
     requirements: List[str] = Field(default_factory=list)
-    rules: List[str] = Field(default_factory=list)
-    judging_criteria: List[str] = Field(default_factory=list)
+    rules: str = Field(default="")
+    judging_criteria: List[JudgingCriterion] = Field(default_factory=list)
+    challenges: List[Challenge] = Field(default_factory=list)
     
     # Resources
     resources: List[HttpUrl] = Field(default_factory=list)
@@ -181,7 +193,8 @@ class Hackathon(Document):
             'timeline': timeline_dict,
             'requirements': self.requirements,
             'rules': self.rules,
-            'judging_criteria': self.judging_criteria,
+            'judging_criteria': [criterion.dict() for criterion in self.judging_criteria] if self.judging_criteria else [],
+            'challenges': [challenge.dict() for challenge in self.challenges] if self.challenges else [],
             'resources': [str(resource) for resource in self.resources] if self.resources else [],
             'submission_template': self.submission_template,
             'registered_participants': self.registered_participants,

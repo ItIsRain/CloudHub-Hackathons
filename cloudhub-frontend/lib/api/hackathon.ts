@@ -48,6 +48,9 @@ interface BackendHackathonData {
   description: string;
   short_description: string;
   organization_name: string;
+  cover_image?: string | null;
+  banner_image?: string | null;
+  organization_logo?: string | null;
   timeline: {
     registration_start: string;
     registration_end: string;
@@ -72,9 +75,19 @@ interface BackendHackathonData {
     description: string;
     currency: string;
   }>;
-  judging_criteria: string[];
+  judging_criteria: Array<{
+    name: string;
+    description: string;
+    weight: number;
+  }>;
+  challenges: Array<{
+    title: string;
+    description: string;
+  }>;
   requirements: string[];
-  rules: string[];
+  rules: string;
+  resources: string[];
+  submission_template?: string | null;
   tags: string[];
   is_private: boolean;
 }
@@ -107,6 +120,9 @@ export const hackathonApi = {
       description: data.description,
       short_description: data.short_description || data.description.substring(0, 200),
       organization_name: data.organization_name,
+      cover_image: data.cover_image || null,
+      banner_image: data.banner_image || null,
+      organization_logo: data.organization_logo || null,
       timeline: {
         registration_start: formatDate(new Date()),
         registration_end: formatDate(data.registrationDeadline),
@@ -131,9 +147,20 @@ export const hackathonApi = {
         description: prize.description || prize.place,
         currency: prize.currency || 'AED'
       })),
-      judging_criteria: data.judgingCriteria.map(criteria => criteria.name),
+      // Fix: Send full objects instead of just names
+      judging_criteria: data.judgingCriteria.map(criteria => ({
+        name: criteria.name,
+        description: criteria.description,
+        weight: criteria.weight
+      })),
+      challenges: data.challenges.map(challenge => ({
+        title: challenge.title,
+        description: challenge.description
+      })),
       requirements: data.requirements || [],
-      rules: data.rules ? [data.rules] : [],
+      rules: data.rules || "",
+      resources: data.resources || [],
+      submission_template: data.submission_template || null,
       tags: data.tags || [],
       is_private: data.isPrivate || false
     };

@@ -19,7 +19,9 @@ from models.hackathon import (
     BillingInfo,
     Technology,
     Prize,
-    PricingTier
+    PricingTier,
+    JudgingCriterion as ModelJudgingCriterion,  # Import from models
+    Challenge as ModelChallenge  # Import from models
 )
 from models.user import User
 from database.dependencies import get_db
@@ -27,7 +29,9 @@ from auth.jwt_manager import get_current_user
 from schemas.hackathon import (
     HackathonCreate,
     HackathonUpdate,
-    HackathonResponse
+    HackathonResponse,
+    JudgingCriterion as SchemaJudgingCriterion,  # Import from schemas with alias
+    Challenge as SchemaChallenge  # Import from schemas with alias
 )
 
 router = APIRouter()
@@ -156,6 +160,71 @@ async def create_hackathon(
                 detail=f"Invalid billing data: {str(e)}"
             )
         
+        # Create judging criteria list - USE MODEL CLASS, NOT SCHEMA CLASS
+        logger.debug("Creating judging criteria list")
+        try:
+            judging_criteria = [
+                ModelJudgingCriterion(  # Changed from JudgingCriterion to ModelJudgingCriterion
+                    name=criteria.name,
+                    description=criteria.description,
+                    weight=float(criteria.weight)
+                )
+                for criteria in (data.judging_criteria or [])
+            ]
+            logger.debug(f"Created {len(judging_criteria)} judging criteria")
+        except Exception as e:
+            logger.error(f"Error creating judging criteria: {str(e)}")
+            logger.error(f"Judging criteria data received: {data.judging_criteria}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid judging criteria data: {str(e)}"
+            )
+        
+        # Create challenges list - USE MODEL CLASS, NOT SCHEMA CLASS
+        logger.debug("Creating challenges list")
+        try:
+            challenges = [
+                ModelChallenge(  # Changed from Challenge to ModelChallenge
+                    title=challenge.title,
+                    description=challenge.description
+                )
+                for challenge in (data.challenges or [])
+            ]
+            logger.debug(f"Created {len(challenges)} challenges")
+        except Exception as e:
+            logger.error(f"Error creating challenges: {str(e)}")
+            logger.error(f"Challenges data received: {data.challenges}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid challenge data: {str(e)}"
+            )
+        
+        # Create prizes list
+        logger.debug("Creating prizes list")
+        try:
+            prizes = [
+                Prize(
+                    position=prize.position,
+                    amount=float(prize.amount),
+                    description=prize.description,
+                    currency=prize.currency
+                )
+                for prize in (data.prizes or [])
+            ]
+            logger.debug(f"Created {len(prizes)} prizes")
+            
+            # Calculate total prize pool
+            total_prize_pool = sum(prize.amount for prize in prizes)
+            logger.debug(f"Total prize pool: {total_prize_pool}")
+            
+        except Exception as e:
+            logger.error(f"Error creating prizes: {str(e)}")
+            logger.error(f"Prize data received: {data.prizes}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid prize data: {str(e)}"
+            )
+        
         # Create technologies list
         logger.debug("Creating technologies list")
         try:
@@ -170,45 +239,35 @@ async def create_hackathon(
             logger.debug(f"Created {len(technologies)} technologies")
         except Exception as e:
             logger.error(f"Error creating technologies: {str(e)}")
-            logger.error(f"Technologies data received: {data.technologies}")
+            logger.error(f"Technology data received: {data.technologies}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid technology data: {str(e)}"
             )
         
-        # Create prizes list
-        logger.debug("Creating prizes list")
+        # Convert organizer_id to ObjectId
         try:
-            prizes = [
-                Prize(
-                    position=prize.position,
-                    amount=float(prize.amount),
-                    currency=prize.currency,
-                    description=prize.description,
-                    sponsor=prize.sponsor if hasattr(prize, 'sponsor') else None
-                )
-                for prize in (data.prizes or [])
-            ]
-            logger.debug(f"Created {len(prizes)} prizes")
+            organizer_id = str(current_user.id)
+            logger.debug(f"Organizer ID after conversion: {organizer_id}")
         except Exception as e:
-            logger.error(f"Error creating prizes: {str(e)}")
-            logger.error(f"Prizes data received: {data.prizes}")
+            logger.error(f"Error converting organizer ID: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid prize data: {str(e)}"
+                detail=f"Invalid organizer ID: {str(e)}"
             )
         
-        # Calculate total prize pool
-        total_prize_pool = sum(prize.amount for prize in prizes)
-        logger.debug(f"Total prize pool: {total_prize_pool}")
+        # Get organization name from user data if not provided
+        organization_name = data.organization_name
+        if not organization_name or organization_name == "Default Organization":
+            # Try to get organization name from current user
+            organization_name = getattr(current_user, 'organization_name', None) or \
+                               getattr(current_user, 'company', None) or \
+                               getattr(current_user, 'organization', None) or \
+                               f"{current_user.first_name} {current_user.last_name}".strip() or \
+                               "Your Organization"
+        logger.debug(f"Organization name resolved to: {organization_name}")
         
-        # Ensure organizer_id is properly converted to string
-        organizer_id = str(current_user.id)
-        if isinstance(current_user.id, ObjectId):
-            organizer_id = str(current_user.id)
-        logger.debug(f"Organizer ID after conversion: {organizer_id}")
-        
-        # Create hackathon
+        # Create hackathon object
         logger.debug("Creating hackathon object")
         try:
             hackathon = Hackathon(
@@ -219,20 +278,21 @@ async def create_hackathon(
                 cover_image=data.cover_image,
                 banner_image=data.banner_image,
                 organizer_id=organizer_id,
-                organization_name=data.organization_name,
+                organization_name=organization_name,
                 organization_logo=data.organization_logo,
                 status=HackathonStatus.DRAFT,
                 max_participants=data.max_participants,
-                min_team_size=data.min_team_size,
-                max_team_size=data.max_team_size,
+                min_team_size=data.min_team_size or 1,
+                max_team_size=data.max_team_size or 4,
                 is_team_required=data.is_team_required if hasattr(data, 'is_team_required') else True,
                 technologies=technologies,
                 prizes=prizes,
                 total_prize_pool=total_prize_pool,
                 timeline=timeline,
                 requirements=data.requirements or [],
-                rules=data.rules or [],
-                judging_criteria=data.judging_criteria or [],
+                rules=data.rules or "",
+                judging_criteria=judging_criteria,  # Now using correct model objects
+                challenges=challenges,  # Now using correct model objects
                 resources=data.resources or [],
                 submission_template=data.submission_template,
                 billing=billing,

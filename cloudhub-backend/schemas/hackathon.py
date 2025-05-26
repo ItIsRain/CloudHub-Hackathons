@@ -49,6 +49,23 @@ class BillingInfo(BaseModel):
     currency: str = Field(default="AED")
     pricing_tiers: Optional[List[PricingTier]] = None
 
+class JudgingCriterion(BaseModel):
+    """Judging criterion schema."""
+    name: str = Field(..., min_length=1)
+    description: str = Field(..., min_length=1)
+    weight: float = Field(..., ge=0, le=100)
+
+    class Config:
+        from_attributes = True
+
+class Challenge(BaseModel):
+    """Challenge schema."""
+    title: str = Field(..., min_length=1)
+    description: str = Field(..., min_length=1)
+
+    class Config:
+        from_attributes = True
+
 class HackathonBase(BaseModel):
     """Base hackathon schema."""
     title: str = Field(..., min_length=3, max_length=100)
@@ -67,8 +84,9 @@ class HackathonBase(BaseModel):
     total_prize_pool: float = Field(default=0, ge=0)
     timeline: Timeline
     requirements: List[str] = Field(default_factory=list)
-    rules: List[str] = Field(default_factory=list)
-    judging_criteria: List[str] = Field(default_factory=list)
+    rules: str = Field(default="")
+    judging_criteria: List[JudgingCriterion] = Field(default_factory=list)
+    challenges: List[Challenge] = Field(default_factory=list)
     resources: List[HttpUrl] = Field(default_factory=list)
     submission_template: Optional[str] = None
     billing: BillingInfo
@@ -78,6 +96,7 @@ class HackathonBase(BaseModel):
     access_code: Optional[str] = None
 
     class Config:
+        from_attributes = True
         json_schema_extra = {
             "example": {
                 "title": "AI Innovation Hackathon",
@@ -123,8 +142,9 @@ class HackathonUpdate(BaseModel):
     total_prize_pool: Optional[float] = Field(None, ge=0)
     timeline: Optional[Timeline] = None
     requirements: Optional[List[str]] = None
-    rules: Optional[List[str]] = None
-    judging_criteria: Optional[List[str]] = None
+    rules: Optional[str] = None
+    judging_criteria: Optional[List[JudgingCriterion]] = None
+    challenges: Optional[List[Challenge]] = None
     resources: Optional[List[HttpUrl]] = None
     submission_template: Optional[str] = None
     billing: Optional[BillingInfo] = None
