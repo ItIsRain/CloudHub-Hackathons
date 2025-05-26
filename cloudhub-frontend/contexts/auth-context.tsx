@@ -41,7 +41,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(freshUser);
           localStorage.setItem('user', JSON.stringify(freshUser));
         } catch (error) {
-          // If getting fresh data fails, use stored data
+          // If getting fresh data fails, check if it's an auth error
+          if (error instanceof Error && 
+              (error.message.includes('Invalid authentication credentials') || 
+               error.message.includes('401') || 
+               error.message.includes('Unauthorized'))) {
+            console.warn('Authentication failed, logging out user');
+            // Clear invalid data and redirect to login
+            authAPI.clearTokens();
+            setUser(null);
+            router.push('/login');
+            return;
+          }
+          
+          // For other errors, use stored data
           console.warn('Failed to fetch fresh user data, using cached:', error);
           const parsedUser = JSON.parse(storedUser);
           setUser(parsedUser);
@@ -56,14 +69,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               localStorage.setItem('user', JSON.stringify(retryUser));
             } catch (refreshError) {
               console.error('Failed to refresh token:', refreshError);
+              // If refresh fails, log out
+              authAPI.clearTokens();
+              setUser(null);
+              router.push('/login');
             }
           }
         }
       }
     } catch (error) {
       console.error('Failed to initialize auth:', error);
-      // Clear invalid data
+      // Clear invalid data and redirect to login
       authAPI.clearTokens();
+      setUser(null);
+      router.push('/login');
     } finally {
       setLoading(false);
     }

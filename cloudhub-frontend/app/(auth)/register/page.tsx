@@ -323,11 +323,21 @@ const organizationSizes = [
 // Add industry options
 const industryTypes = [
   { value: "technology", label: "Technology" },
-  { value: "education", label: "Education" },
   { value: "healthcare", label: "Healthcare" },
   { value: "finance", label: "Finance" },
-  { value: "retail", label: "Retail" },
+  { value: "education", label: "Education" },
   { value: "manufacturing", label: "Manufacturing" },
+  { value: "retail", label: "Retail" },
+  { value: "media", label: "Media & Entertainment" },
+  { value: "transportation", label: "Transportation" },
+  { value: "energy", label: "Energy" },
+  { value: "construction", label: "Construction" },
+  { value: "agriculture", label: "Agriculture" },
+  { value: "telecommunications", label: "Telecommunications" },
+  { value: "hospitality", label: "Hospitality" },
+  { value: "real_estate", label: "Real Estate" },
+  { value: "legal", label: "Legal Services" },
+  { value: "consulting", label: "Consulting" },
   { value: "non_profit", label: "Non-Profit" },
   { value: "government", label: "Government" },
   { value: "other", label: "Other" }

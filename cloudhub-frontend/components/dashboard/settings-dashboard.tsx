@@ -157,6 +157,95 @@ const getCountryCodeFromName = (countryName: string): string => {
   return countryMapping[countryName] || countryName.toLowerCase();
 };
 
+const getCountryNameFromCode = (code: string): string => {
+  const countryMapping: { [key: string]: string } = {
+    'us': 'United States',
+    'gb': 'United Kingdom',
+    'ca': 'Canada',
+    'au': 'Australia',
+    'de': 'Germany',
+    'fr': 'France',
+    'jp': 'Japan',
+    'in': 'India',
+    'cn': 'China',
+    'br': 'Brazil',
+    'mx': 'Mexico',
+    'es': 'Spain',
+    'it': 'Italy',
+    'nl': 'Netherlands',
+    'se': 'Sweden',
+    'no': 'Norway',
+    'dk': 'Denmark',
+    'fi': 'Finland',
+    'ch': 'Switzerland',
+    'at': 'Austria',
+    'be': 'Belgium',
+    'pt': 'Portugal',
+    'ie': 'Ireland',
+    'nz': 'New Zealand',
+    'kr': 'South Korea',
+    'sg': 'Singapore',
+    'ae': 'United Arab Emirates',
+    'sa': 'Saudi Arabia',
+    'za': 'South Africa',
+    'ru': 'Russia',
+    'pl': 'Poland',
+    'cz': 'Czech Republic',
+    'hu': 'Hungary',
+    'gr': 'Greece',
+    'tr': 'Turkey',
+    'il': 'Israel',
+    'eg': 'Egypt',
+    'th': 'Thailand',
+    'my': 'Malaysia',
+    'id': 'Indonesia',
+    'ph': 'Philippines',
+    'vn': 'Vietnam',
+    'ar': 'Argentina',
+    'cl': 'Chile',
+    'co': 'Colombia',
+    'pe': 'Peru',
+    've': 'Venezuela',
+    'ng': 'Nigeria',
+    'ke': 'Kenya',
+    'gh': 'Ghana',
+    'ma': 'Morocco',
+    'tn': 'Tunisia',
+    'dz': 'Algeria',
+    'pk': 'Pakistan',
+    'bd': 'Bangladesh',
+    'lk': 'Sri Lanka',
+    'np': 'Nepal',
+    'mm': 'Myanmar',
+    'kh': 'Cambodia',
+    'la': 'Laos',
+    'mn': 'Mongolia',
+    'kz': 'Kazakhstan',
+    'uz': 'Uzbekistan',
+    'az': 'Azerbaijan',
+    'ge': 'Georgia',
+    'am': 'Armenia',
+    'ua': 'Ukraine',
+    'by': 'Belarus',
+    'md': 'Moldova',
+    'lt': 'Lithuania',
+    'lv': 'Latvia',
+    'ee': 'Estonia',
+    'ro': 'Romania',
+    'bg': 'Bulgaria',
+    'rs': 'Serbia',
+    'hr': 'Croatia',
+    'si': 'Slovenia',
+    'sk': 'Slovakia',
+    'ba': 'Bosnia and Herzegovina',
+    'me': 'Montenegro',
+    'mk': 'North Macedonia',
+    'al': 'Albania'
+  };
+  
+  return countryMapping[code.toLowerCase()] || code;
+};
+
 // Add export configuration
 export const config = {
   runtime: 'edge',
@@ -339,7 +428,7 @@ export default function SettingsDashboard() {
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsFormSchema),
     defaultValues: {
-      name: user?.name || user?.full_name || "",
+      name: user?.name || "",
       full_name: user?.full_name || user?.name || "",
       email: user?.email || "",
       phone: user?.phone || "",
@@ -359,39 +448,19 @@ export default function SettingsDashboard() {
         website: user?.social_links?.website || ""
       }
     }
-  })
+  });
 
   // Update form when user data changes
   useEffect(() => {
     if (user) {
-      console.log("User data for form initialization:", user);
-      console.log("Organization fields from user:", {
-        organization_name: user.organization_name,
-        organization_website: user.organization_website,
-        organization_size: user.organization_size,
-        industry: user.industry
-      });
-
-      // Handle country code
-      let countryCode = "";
-      if (user.country) {
-        countryCode = user.country.toLowerCase();
-        console.log("Using direct country code:", countryCode);
-      }
-
-      // Set organization size in local state
-      if (user.organization_size) {
-        console.log("Setting organization size state to:", user.organization_size);
-        setOrganizationSize(user.organization_size);
-      }
-
-      // Set form data with all fields
+      console.log("Updating form with user data:", user);
+      
       const formData = {
-        name: user.name || user.full_name || "", // Ensure name is set from full_name if empty
+        name: user.name || "",
         full_name: user.full_name || user.name || "",
         email: user.email || "",
         phone: user.phone || "",
-        country: countryCode,
+        country: user.country?.toLowerCase() || "",
         bio: user.bio || "",
         organization_name: user.organization_name || "",
         organization_website: user.organization_website || "",
@@ -408,10 +477,32 @@ export default function SettingsDashboard() {
         }
       };
 
-      console.log("Setting form data with values:", formData);
-      form.reset(formData);
+      // Reset form with new data
+      form.reset(formData, {
+        keepDirty: false,
+        keepTouched: false,
+        keepIsValid: false,
+        keepErrors: false
+      });
+
+      // Set organization size in local state
+      if (user.organization_size) {
+        setOrganizationSize(user.organization_size);
+      }
     }
   }, [user, form]);
+
+  // Add a separate effect to handle industry updates
+  useEffect(() => {
+    if (user?.industry) {
+      console.log('Setting industry to:', user.industry);
+      form.setValue('industry', user.industry, {
+        shouldDirty: false,
+        shouldTouch: false,
+        shouldValidate: false
+      });
+    }
+  }, [user?.industry, form]);
 
   useEffect(() => {
     if (user?.skills && JSON.stringify(user.skills) !== JSON.stringify(form.watch("skills"))) {
@@ -526,7 +617,7 @@ export default function SettingsDashboard() {
       setIsLoading(false);
     }
   }
-
+  
   // Memoized handlers
   const handleTabChange = useCallback((value: string) => {
     setActiveTab(value);
@@ -570,8 +661,8 @@ export default function SettingsDashboard() {
         });
         
         // Reset form and close dialog
-        setNewSkill("");
-        setIsSkillDialogOpen(false);
+      setNewSkill("");
+      setIsSkillDialogOpen(false);
         
         // Force a refresh of the user data
         if (result) {
@@ -633,7 +724,7 @@ export default function SettingsDashboard() {
         
         // Reset form and close dialog
         setNewCertification({ name: "", issuer: "", date: "" });
-        setIsCertificationDialogOpen(false);
+      setIsCertificationDialogOpen(false);
         
         // Force a refresh of the user data
         if (result) {
@@ -694,9 +785,9 @@ export default function SettingsDashboard() {
         });
         
         // Reset form and close dialog
-        setNewLanguage("");
+      setNewLanguage("");
         setNewLanguageLevel("Intermediate");
-        setIsLanguageDialogOpen(false);
+      setIsLanguageDialogOpen(false);
         
         // Force a refresh of the user data
         if (result) {
@@ -787,17 +878,17 @@ export default function SettingsDashboard() {
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="skillName">Skill Name</Label>
-          <Input 
-            id="skillName" 
-            value={newSkill} 
-            onChange={(e) => setNewSkill(e.target.value)} 
-            placeholder="e.g. React, Project Management, JavaScript..." 
+        <Input 
+          id="skillName" 
+          value={newSkill} 
+          onChange={(e) => setNewSkill(e.target.value)} 
+          placeholder="e.g. React, Project Management, JavaScript..." 
             className="bg-white border-slate-200"
-          />
-        </div>
+        />
+      </div>
       </div>
       <DialogFooter className="flex gap-3 border-t border-slate-100 mt-4 pt-4">
-        <Button
+        <Button 
           variant="outline"
           className="flex-1 border-slate-200 rounded-xl hover:bg-slate-50"
           onClick={() => toggleSkillDialog(false)}
@@ -859,7 +950,7 @@ export default function SettingsDashboard() {
         </div>
       </div>
       <DialogFooter className="flex gap-3 border-t border-slate-100 mt-4 pt-4">
-        <Button
+        <Button 
           variant="outline"
           className="flex-1 border-slate-200 rounded-xl hover:bg-slate-50"
           onClick={() => {
@@ -924,7 +1015,7 @@ export default function SettingsDashboard() {
       <DialogFooter className="flex gap-3 border-t border-slate-100 mt-4 pt-4">
         <Button
           variant="outline"
-          className="flex-1 border-slate-200 rounded-xl hover:bg-slate-50"
+          className="flex-1 border-slate-200 rounded-xl hover:bg-slate-50 transition-all duration-200"
           onClick={() => {
             setNewLanguage("");
             setNewLanguageLevel("Intermediate");
@@ -1153,38 +1244,38 @@ export default function SettingsDashboard() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6 px-6 pb-6">
       <div className="space-y-6">
-        {/* Background Pattern - Simplified */}
-        <div className="absolute inset-0 bg-grid-slate-200/40 pointer-events-none"></div>
-        
-        {/* Banner Card - Simplified */}
-        <div className="relative rounded-2xl overflow-hidden shadow-md z-10">
-          <div className="relative py-8 px-8 overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-violet-600"></div>
-            
-            <div className="relative z-10 flex flex-col max-w-3xl">
-              <div className="inline-flex items-center space-x-2 mb-6 px-3 py-1 rounded-full bg-white/10 border border-white/20 w-fit">
-                <Sparkles className="h-3.5 w-3.5 text-blue-100" />
-                <span className="text-xs font-medium text-blue-50">Personal Dashboard</span>
-              </div>
-              <h1 className="text-3xl md:text-5xl font-bold text-white">
-                Settings <span className="text-blue-200">& Preferences</span>
-              </h1>
-              <p className="text-blue-100 mt-2 max-w-2xl text-sm md:text-base mb-6">
-                Customize your profile, manage your skills, and update your personal information
-              </p>
+      {/* Background Pattern - Simplified */}
+      <div className="absolute inset-0 bg-grid-slate-200/40 pointer-events-none"></div>
+      
+      {/* Banner Card - Simplified */}
+      <div className="relative rounded-2xl overflow-hidden shadow-md z-10">
+        <div className="relative py-8 px-8 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-violet-600"></div>
+          
+          <div className="relative z-10 flex flex-col max-w-3xl">
+            <div className="inline-flex items-center space-x-2 mb-6 px-3 py-1 rounded-full bg-white/10 border border-white/20 w-fit">
+              <Sparkles className="h-3.5 w-3.5 text-blue-100" />
+              <span className="text-xs font-medium text-blue-50">Personal Dashboard</span>
             </div>
+            <h1 className="text-3xl md:text-5xl font-bold text-white">
+              Settings <span className="text-blue-200">& Preferences</span>
+            </h1>
+            <p className="text-blue-100 mt-2 max-w-2xl text-sm md:text-base mb-6">
+              Customize your profile, manage your skills, and update your personal information
+            </p>
           </div>
         </div>
+      </div>
 
-        <div className="flex flex-col space-y-8 z-10">
-          {/* Profile Card - Simplified */}
-          <Card className="border-none shadow-md rounded-3xl overflow-hidden bg-white/80">
-            <CardHeader className="border-b border-slate-100 bg-white px-8 py-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-2xl font-semibold text-blue-600">Profile</CardTitle>
-                  <CardDescription className="text-slate-600 mt-1">Your personal information and photo</CardDescription>
-                </div>
+      <div className="flex flex-col space-y-8 z-10">
+        {/* Profile Card - Simplified */}
+        <Card className="border-none shadow-md rounded-3xl overflow-hidden bg-white/80">
+          <CardHeader className="border-b border-slate-100 bg-white px-8 py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-2xl font-semibold text-blue-600">Profile</CardTitle>
+                <CardDescription className="text-slate-600 mt-1">Your personal information and photo</CardDescription>
+              </div>
                 <Button 
                   type="submit"
                   disabled={isLoading || !form.formState.isDirty}
@@ -1202,39 +1293,39 @@ export default function SettingsDashboard() {
                     </>
                   )}
                 </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-10 px-8 pb-8">
-              <div className="flex flex-col md:flex-row md:items-start gap-12">
-                <div className="flex flex-col items-center space-y-5">
-                  <div className="relative">
-                    <Avatar className="h-40 w-40 border-4 border-white shadow-md relative">
+            </div>
+          </CardHeader>
+          <CardContent className="pt-10 px-8 pb-8">
+            <div className="flex flex-col md:flex-row md:items-start gap-12">
+              <div className="flex flex-col items-center space-y-5">
+                <div className="relative">
+                  <Avatar className="h-40 w-40 border-4 border-white shadow-md relative">
                       <AvatarImage src={user?.avatar} alt="Profile" className="object-cover" />
-                      <AvatarFallback className="bg-blue-500 text-white text-6xl">
-                        JD
-                      </AvatarFallback>
-                    </Avatar>
-                    <Button
-                      size="icon"
-                      className="absolute bottom-1 right-1 rounded-full shadow-md border-2 border-white size-10 bg-white"
-                    >
-                      <Camera className="h-4 w-4 text-blue-600" />
-                    </Button>
-                  </div>
-                  <div className="text-center space-y-2.5">
+                    <AvatarFallback className="bg-blue-500 text-white text-6xl">
+                      JD
+                    </AvatarFallback>
+                  </Avatar>
+                  <Button
+                    size="icon"
+                    className="absolute bottom-1 right-1 rounded-full shadow-md border-2 border-white size-10 bg-white"
+                  >
+                    <Camera className="h-4 w-4 text-blue-600" />
+                  </Button>
+                </div>
+                <div className="text-center space-y-2.5">
                     <h3 className="text-2xl font-semibold text-blue-600">{user?.full_name || user?.name || 'No Name'}</h3>
                     <p className="text-sm text-slate-600">
                       {user?.role === 'organizer' && user?.organization_name 
                         ? user.organization_name 
                         : 'Full Stack Developer'}
                     </p>
-                    <Badge className="mt-2 bg-blue-500 text-white px-4 py-1 rounded-full shadow-sm">
+                  <Badge className="mt-2 bg-blue-500 text-white px-4 py-1 rounded-full shadow-sm">
                       {(user?.role && user.role.charAt(0).toUpperCase() + user.role.slice(1)) || 'User'}
-                    </Badge>
-                  </div>
+                  </Badge>
                 </div>
+              </div>
 
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 md:mt-0">
+              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 md:mt-0">
                   <ProfileInfoCard 
                     label="Email" 
                     value={user?.email || 'No email'} 
@@ -1247,7 +1338,7 @@ export default function SettingsDashboard() {
                   />
                   <ProfileInfoCard 
                     label="Location" 
-                    value={user?.country || 'No location'} 
+                    value={user?.country ? getCountryNameFromCode(user.country) : 'No location'} 
                     icon={<MapPin className="h-5 w-5" />} 
                   />
                   <ProfileInfoCard 
@@ -1257,7 +1348,7 @@ export default function SettingsDashboard() {
                   />
                   <ProfileInfoCard 
                     label="Website" 
-                    value={user?.social_links?.website || 'No website'} 
+                    value={user?.social_links?.website || user?.organization_website || 'No website'} 
                     icon={<Globe className="h-5 w-5" />} 
                   />
                   <ProfileInfoCard 
@@ -1265,52 +1356,52 @@ export default function SettingsDashboard() {
                     value={(user?.role && user.role.charAt(0).toUpperCase() + user.role.slice(1)) || 'No role'} 
                     icon={<UserCog className="h-5 w-5" />} 
                   />
-                </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Main Settings - Simplified */}
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="w-full bg-white/80 p-1.5 rounded-2xl border border-slate-200/70 shadow-md mb-6">
-              <TabsTrigger 
-                value="personal" 
-                className="flex items-center gap-2 flex-1 text-sm font-medium py-3 px-4 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-xl transition-colors"
-              >
-                <UserCog className="h-4 w-4" />
-                Personal Info
-              </TabsTrigger>
-              <TabsTrigger 
-                value="skills" 
-                className="flex items-center gap-2 flex-1 text-sm font-medium py-3 px-4 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-xl transition-colors"
-              >
-                <Award className="h-4 w-4" />
-                Skills
-              </TabsTrigger>
-              <TabsTrigger 
-                value="social" 
-                className="flex items-center gap-2 flex-1 text-sm font-medium py-3 px-4 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-xl transition-colors"
-              >
-                <Globe2 className="h-4 w-4" />
-                Social Links
-              </TabsTrigger>
-            </TabsList>
+        {/* Main Settings - Simplified */}
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+          <TabsList className="w-full bg-white/80 p-1.5 rounded-2xl border border-slate-200/70 shadow-md mb-6">
+            <TabsTrigger 
+              value="personal" 
+              className="flex items-center gap-2 flex-1 text-sm font-medium py-3 px-4 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-xl transition-colors"
+            >
+              <UserCog className="h-4 w-4" />
+              Personal Info
+            </TabsTrigger>
+            <TabsTrigger 
+              value="skills" 
+              className="flex items-center gap-2 flex-1 text-sm font-medium py-3 px-4 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-xl transition-colors"
+            >
+              <Award className="h-4 w-4" />
+              Skills
+            </TabsTrigger>
+            <TabsTrigger 
+              value="social" 
+              className="flex items-center gap-2 flex-1 text-sm font-medium py-3 px-4 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-xl transition-colors"
+            >
+              <Globe2 className="h-4 w-4" />
+              Social Links
+            </TabsTrigger>
+          </TabsList>
 
-            <div>
-              {/* Personal Info Tab */}
-              <TabsContent value="personal" className="space-y-6">
-                <Card className="border-none shadow-md rounded-3xl overflow-hidden bg-white/80">
-                  <CardHeader className="border-b border-slate-100 bg-white px-8 py-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-xl font-semibold text-blue-600">Personal Information</CardTitle>
-                        <CardDescription className="text-slate-600 mt-1">Update your personal details</CardDescription>
-                      </div>
+          <div>
+            {/* Personal Info Tab */}
+            <TabsContent value="personal" className="space-y-6">
+              <Card className="border-none shadow-md rounded-3xl overflow-hidden bg-white/80">
+                <CardHeader className="border-b border-slate-100 bg-white px-8 py-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-xl font-semibold text-blue-600">Personal Information</CardTitle>
+                      <CardDescription className="text-slate-600 mt-1">Update your personal details</CardDescription>
                     </div>
-                  </CardHeader>
-                  <CardContent className="px-8 py-6 space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
+                  </div>
+                </CardHeader>
+                <CardContent className="px-8 py-6 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
                         <Label htmlFor="full_name">Full Name</Label>
                         <Input
                           id="full_name"
@@ -1323,9 +1414,9 @@ export default function SettingsDashboard() {
                             {form.formState.errors.full_name.message}
                           </p>
                         )}
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
                         <Input
                           id="email"
                           {...form.register("email")}
@@ -1335,9 +1426,9 @@ export default function SettingsDashboard() {
                         <p className="text-xs text-slate-500">
                           Email cannot be changed
                         </p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="phone">Phone</Label>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Phone</Label>
                         <Input
                           id="phone"
                           {...form.register("phone")}
@@ -1359,8 +1450,8 @@ export default function SettingsDashboard() {
                             />
                           </div>
                         </div>
-                      </div>
-                      <div className="space-y-2 md:col-span-2">
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
                         <Label htmlFor="bio">Bio</Label>
                         <Textarea
                           id="bio"
@@ -1368,8 +1459,8 @@ export default function SettingsDashboard() {
                           placeholder="Tell us about yourself"
                           className="bg-white min-h-[100px] resize-none"
                         />
-                      </div>
-                      <div className="space-y-2">
+                    </div>
+                    <div className="space-y-2">
                         <Label htmlFor="organization_name">Organization Name</Label>
                         <Input
                           id="organization_name"
@@ -1377,8 +1468,8 @@ export default function SettingsDashboard() {
                           placeholder="Enter your organization name"
                           className="bg-white"
                         />
-                      </div>
-                      <div className="space-y-2">
+                    </div>
+                    <div className="space-y-2">
                         <Label htmlFor="organization_website">Organization Website</Label>
                         <Input
                           id="organization_website"
@@ -1386,8 +1477,8 @@ export default function SettingsDashboard() {
                           placeholder="Enter your organization website"
                           className="bg-white"
                         />
-                      </div>
-                      <div className="space-y-2">
+                    </div>
+                    <div className="space-y-2">
                         <Label htmlFor="organization_size">Organization Size</Label>
                         <div className="h-10">
                           <Select
@@ -1403,39 +1494,66 @@ export default function SettingsDashboard() {
                               <SelectValue>
                                 {organizationSize || user?.organization_size ? `${organizationSize || user?.organization_size} employees` : "Select size"}
                               </SelectValue>
-                            </SelectTrigger>
+                        </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="1-10">1-10 employees</SelectItem>
                               <SelectItem value="11-50">11-50 employees</SelectItem>
                               <SelectItem value="51-200">51-200 employees</SelectItem>
                               <SelectItem value="201-500">201-500 employees</SelectItem>
                               <SelectItem value="501+">501+ employees</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="industry">Industry</Label>
-                        <Input
-                          id="industry"
-                          {...form.register("industry")}
-                          className="bg-white"
-                        />
-                      </div>
+                        </SelectContent>
+                      </Select>
                     </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              
-              {/* Skills Tab */}
-              <TabsContent value="skills" className="space-y-6">
-                <Card className="border-none shadow-lg rounded-3xl overflow-hidden backdrop-blur-sm bg-white/80">
-                  <CardHeader className="border-b border-slate-100 bg-white/60 px-8 py-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Skills & Expertise</CardTitle>
-                        <CardDescription className="text-slate-600 mt-1">Add your skills and professional expertise</CardDescription>
-                      </div>
+                  </div>
+                  <div className="space-y-2">
+                        <Label htmlFor="industry">Industry</Label>
+                        <Select
+                          value={user?.industry || form.watch("industry") || ""}
+                          onValueChange={(value) => {
+                            console.log('Setting industry to:', value);
+                            form.setValue("industry", value, { shouldDirty: true });
+                          }}
+                        >
+                          <SelectTrigger className="h-10 bg-white border-slate-200">
+                            <SelectValue placeholder="Select your industry" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="technology">Technology</SelectItem>
+                            <SelectItem value="healthcare">Healthcare</SelectItem>
+                            <SelectItem value="finance">Finance</SelectItem>
+                            <SelectItem value="education">Education</SelectItem>
+                            <SelectItem value="manufacturing">Manufacturing</SelectItem>
+                            <SelectItem value="retail">Retail</SelectItem>
+                            <SelectItem value="media">Media & Entertainment</SelectItem>
+                            <SelectItem value="transportation">Transportation</SelectItem>
+                            <SelectItem value="energy">Energy</SelectItem>
+                            <SelectItem value="construction">Construction</SelectItem>
+                            <SelectItem value="agriculture">Agriculture</SelectItem>
+                            <SelectItem value="telecommunications">Telecommunications</SelectItem>
+                            <SelectItem value="hospitality">Hospitality</SelectItem>
+                            <SelectItem value="real_estate">Real Estate</SelectItem>
+                            <SelectItem value="legal">Legal Services</SelectItem>
+                            <SelectItem value="consulting">Consulting</SelectItem>
+                            <SelectItem value="non_profit">Non-Profit</SelectItem>
+                            <SelectItem value="government">Government</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                  </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            {/* Skills Tab */}
+            <TabsContent value="skills" className="space-y-6">
+              <Card className="border-none shadow-lg rounded-3xl overflow-hidden backdrop-blur-sm bg-white/80">
+                <CardHeader className="border-b border-slate-100 bg-white/60 px-8 py-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Skills & Expertise</CardTitle>
+                      <CardDescription className="text-slate-600 mt-1">Add your skills and professional expertise</CardDescription>
+                    </div>
                         <Button 
                           type="submit"
                           disabled={isLoading || !form.formState.isDirty}
@@ -1454,14 +1572,14 @@ export default function SettingsDashboard() {
                             </>
                           ) : (
                             <>
-                              <Save className="h-4 w-4 mr-2" />
-                              Save Changes
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Changes
                             </>
                           )}
-                        </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="px-8 py-6 space-y-6">
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="px-8 py-6 space-y-6">
                   <div className="space-y-4">
                     <Label className="text-sm font-medium text-slate-700">Technical Skills</Label>
                     <div className="flex flex-wrap gap-2">
@@ -1474,46 +1592,46 @@ export default function SettingsDashboard() {
                         />
                       ))}
                       <Dialog open={isSkillDialogOpen} onOpenChange={toggleSkillDialog}>
-                          <DialogTrigger asChild>
-                            <Button size="sm" variant="outline" className="rounded-lg h-8 gap-1 text-sm border-dashed border-slate-300 hover:border-blue-300 hover:text-blue-600 text-slate-500">
-                              <Plus className="h-3.5 w-3.5" />
-                              Add Skill
-                            </Button>
-                          </DialogTrigger>
+                        <DialogTrigger asChild>
+                          <Button size="sm" variant="outline" className="rounded-lg h-8 gap-1 text-sm border-dashed border-slate-300 hover:border-blue-300 hover:text-blue-600 text-slate-500">
+                            <Plus className="h-3.5 w-3.5" />
+                            Add Skill
+                          </Button>
+                        </DialogTrigger>
                           <DialogContent className="p-0 overflow-hidden border-none shadow-xl rounded-2xl bg-white">
-                            {skillDialogContent}
-                          </DialogContent>
-                        </Dialog>
-                      </div>
+                          {skillDialogContent}
+                        </DialogContent>
+                      </Dialog>
                     </div>
-                    
-                    <div className="space-y-4">
-                      <Label className="text-sm font-medium text-slate-700">Professional Certifications</Label>
-                      <div className="flex flex-wrap gap-2">
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <Label className="text-sm font-medium text-slate-700">Professional Certifications</Label>
+                    <div className="flex flex-wrap gap-2">
                         {(form.watch("certifications") || []).map((cert: any, index) => (
                           <CertificationBadge 
                             key={`${cert.name}-${index}`}
                             certification={cert} 
                             onRemove={handleCertificationRemove} 
                           />
-                        ))}
-                        <Dialog open={isCertificationDialogOpen} onOpenChange={toggleCertificationDialog}>
-                          <DialogTrigger asChild>
-                            <Button size="sm" variant="outline" className="rounded-lg h-8 gap-1 text-sm border-dashed border-slate-300 hover:border-blue-300 hover:text-blue-600 text-slate-500">
-                              <Plus className="h-3.5 w-3.5" />
-                              Add Certification
-                            </Button>
-                          </DialogTrigger>
+                      ))}
+                      <Dialog open={isCertificationDialogOpen} onOpenChange={toggleCertificationDialog}>
+                        <DialogTrigger asChild>
+                          <Button size="sm" variant="outline" className="rounded-lg h-8 gap-1 text-sm border-dashed border-slate-300 hover:border-blue-300 hover:text-blue-600 text-slate-500">
+                            <Plus className="h-3.5 w-3.5" />
+                            Add Certification
+                          </Button>
+                        </DialogTrigger>
                           <DialogContent className="p-0 overflow-hidden border-none shadow-xl rounded-2xl bg-white">
-                            {certificationDialogContent}
-                          </DialogContent>
-                        </Dialog>
-                      </div>
+                          {certificationDialogContent}
+                        </DialogContent>
+                      </Dialog>
                     </div>
-                    
-                    <div className="space-y-4">
-                      <Label className="text-sm font-medium text-slate-700">Languages</Label>
-                      <div className="flex flex-wrap gap-2">
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <Label className="text-sm font-medium text-slate-700">Languages</Label>
+                    <div className="flex flex-wrap gap-2">
                         {(form.watch("languages") || []).map((lang: any, index) => (
                           <Badge 
                             key={`${lang.language}-${index}`}
@@ -1532,9 +1650,9 @@ export default function SettingsDashboard() {
                               <X className="h-3 w-3" />
                             </button>
                           </Badge>
-                        ))}
-                        <Dialog open={isLanguageDialogOpen} onOpenChange={toggleLanguageDialog}>
-                          <DialogTrigger asChild>
+                      ))}
+                      <Dialog open={isLanguageDialogOpen} onOpenChange={toggleLanguageDialog}>
+                        <DialogTrigger asChild>
                             <Button size="sm" variant="outline" className="rounded-lg h-8 gap-1 text-sm border-dashed border-slate-300 hover:border-blue-300 hover:text-blue-600 text-slate-500">
                               <Plus className="h-3.5 w-3.5" />
                               Add Language
@@ -1542,279 +1660,279 @@ export default function SettingsDashboard() {
                           </DialogTrigger>
                           <DialogContent className="p-0 overflow-hidden border-none shadow-xl rounded-2xl bg-white">
                             {languageDialogContent}
-                          </DialogContent>
-                        </Dialog>
-                      </div>
+                        </DialogContent>
+                      </Dialog>
                     </div>
-                    
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <Label htmlFor="experience" className="text-sm font-medium text-slate-700">Work Experience</Label>
                     <div className="space-y-4">
-                      <Label htmlFor="experience" className="text-sm font-medium text-slate-700">Work Experience</Label>
-                      <div className="space-y-4">
-                        <div className="p-4 border border-slate-200 rounded-xl bg-white">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h4 className="font-medium text-slate-900">Senior Developer</h4>
-                              <p className="text-sm text-slate-500">Tech Corp Inc. • Full-time</p>
-                              <div className="flex items-center text-xs text-slate-500 mt-1.5">
-                                <Calendar className="h-3.5 w-3.5 mr-1" />
-                                Jan 2020 - Present • 3 years, 5 months
-                              </div>
+                      <div className="p-4 border border-slate-200 rounded-xl bg-white">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-medium text-slate-900">Senior Developer</h4>
+                            <p className="text-sm text-slate-500">Tech Corp Inc. • Full-time</p>
+                            <div className="flex items-center text-xs text-slate-500 mt-1.5">
+                              <Calendar className="h-3.5 w-3.5 mr-1" />
+                              Jan 2020 - Present • 3 years, 5 months
                             </div>
-                            <Button size="sm" variant="ghost" className="text-slate-500 hover:text-blue-600 p-2 h-8 w-8">
-                              <X className="h-4 w-4" />
-                            </Button>
                           </div>
+                          <Button size="sm" variant="ghost" className="text-slate-500 hover:text-blue-600 p-2 h-8 w-8">
+                            <X className="h-4 w-4" />
+                          </Button>
                         </div>
-                        <Dialog open={isExperienceDialogOpen} onOpenChange={toggleExperienceDialog}>
-                          <DialogTrigger asChild>
-                            <Button size="sm" variant="outline" className="w-full rounded-xl h-10 gap-1.5 text-sm border-dashed border-slate-300 hover:border-blue-300 hover:text-blue-600 text-slate-500">
-                              <Plus className="h-4 w-4" />
+                      </div>
+                      <Dialog open={isExperienceDialogOpen} onOpenChange={toggleExperienceDialog}>
+                        <DialogTrigger asChild>
+                          <Button size="sm" variant="outline" className="w-full rounded-xl h-10 gap-1.5 text-sm border-dashed border-slate-300 hover:border-blue-300 hover:text-blue-600 text-slate-500">
+                            <Plus className="h-4 w-4" />
+                            Add Work Experience
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[525px] p-0 overflow-hidden border-none shadow-xl rounded-2xl bg-white animate-in fade-in-0 zoom-in-95">
+                          <div className="relative py-4 px-6 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600">
+                            <DialogTitle className="text-xl font-bold text-white flex items-center">
+                              <Briefcase className="h-5 w-5 mr-2" />
                               Add Work Experience
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="sm:max-w-[525px] p-0 overflow-hidden border-none shadow-xl rounded-2xl bg-white animate-in fade-in-0 zoom-in-95">
-                            <div className="relative py-4 px-6 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600">
-                              <DialogTitle className="text-xl font-bold text-white flex items-center">
-                                <Briefcase className="h-5 w-5 mr-2" />
-                                Add Work Experience
-                              </DialogTitle>
-                              <DialogDescription className="text-blue-100 mt-1">
-                                Add your professional work experience
-                              </DialogDescription>
-                            </div>
-                            <div className="p-6">
-                              <div className="space-y-4">
-                                <div className="space-y-2">
-                                  <Label htmlFor="job-title">Job Title</Label>
-                                  <Input 
-                                    id="job-title" 
-                                    placeholder="e.g. Senior Developer" 
-                                    className="bg-white border-slate-200"
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="company">Company</Label>
-                                  <Input 
-                                    id="company" 
-                                    placeholder="e.g. Tech Corp Inc." 
-                                    className="bg-white border-slate-200"
-                                  />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div className="space-y-2">
-                                    <Label htmlFor="job-start-date">Start Date</Label>
-                                    <Input 
-                                      id="job-start-date" 
-                                      type="date"
-                                      className="bg-white border-slate-200"
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label htmlFor="job-end-date">End Date</Label>
-                                    <Input 
-                                      id="job-end-date" 
-                                      type="date"
-                                      className="bg-white border-slate-200"
-                                      disabled={currentlyWorking}
-                                    />
-                                  </div>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <Checkbox 
-                                    id="current-job" 
-                                    className="h-5 w-5 rounded-md border-slate-300 data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-blue-600 data-[state=checked]:to-indigo-600 data-[state=checked]:shadow-sm transition-all duration-200" 
-                                    checked={currentlyWorking}
-                                    onCheckedChange={(checked) => {
-                                      setCurrentlyWorking(checked === true);
-                                    }}
-                                  />
-                                  <Label 
-                                    htmlFor="current-job" 
-                                    className="text-sm text-slate-700 cursor-pointer hover:text-blue-600 transition-colors duration-200"
-                                  >
-                                    I currently work here
-                                  </Label>
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="job-type">Employment Type</Label>
-                                  <Select defaultValue="full-time">
-                                    <SelectTrigger className="bg-white border-slate-200">
-                                      <SelectValue placeholder="Select employment type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="full-time">Full-time</SelectItem>
-                                      <SelectItem value="part-time">Part-time</SelectItem>
-                                      <SelectItem value="contract">Contract</SelectItem>
-                                      <SelectItem value="freelance">Freelance</SelectItem>
-                                      <SelectItem value="internship">Internship</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="job-description">Description (Optional)</Label>
-                                  <Textarea 
-                                    id="job-description" 
-                                    placeholder="Describe your role and responsibilities"
-                                    className="resize-none bg-white border-slate-200 min-h-[100px]"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                            <DialogFooter className="p-6 pt-0 flex gap-3 border-t border-slate-100 mt-3">
-                              <Button
-                                variant="outline"
-                                className="flex-1 border-slate-200 rounded-xl hover:bg-slate-50 transition-all duration-200"
-                                onClick={() => {
-                                  setCurrentlyWorking(false);
-                                  toggleExperienceDialog(false);
-                                }}
-                              >
-                                Cancel
-                              </Button>
-                              <Button 
-                                className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all duration-200 rounded-xl"
-                                onClick={() => {
-                                  // Add work experience logic would go here
-                                  setCurrentlyWorking(false);
-                                  toggleExperienceDialog(false);
-                                }}
-                              >
-                                Add Experience
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <Label htmlFor="education" className="text-sm font-medium text-slate-700">Education</Label>
-                      <div className="space-y-4">
-                        <div className="p-4 border border-slate-200 rounded-xl bg-white">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h4 className="font-medium text-slate-900">MSc Computer Science</h4>
-                              <p className="text-sm text-slate-500">University of Technology</p>
-                              <div className="flex items-center text-xs text-slate-500 mt-1.5">
-                                <Calendar className="h-3.5 w-3.5 mr-1" />
-                                2016 - 2018
-                              </div>
-                            </div>
-                            <Button size="sm" variant="ghost" className="text-slate-500 hover:text-blue-600 p-2 h-8 w-8">
-                              <X className="h-4 w-4" />
-                            </Button>
+                            </DialogTitle>
+                            <DialogDescription className="text-blue-100 mt-1">
+                              Add your professional work experience
+                            </DialogDescription>
                           </div>
-                        </div>
-                        <Dialog open={isEducationDialogOpen} onOpenChange={toggleEducationDialog}>
-                          <DialogTrigger asChild>
-                            <Button size="sm" variant="outline" className="w-full rounded-xl h-10 gap-1.5 text-sm border-dashed border-slate-300 hover:border-blue-300 hover:text-blue-600 text-slate-500">
-                              <Plus className="h-4 w-4" />
-                              Add Education
+                          <div className="p-6">
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="job-title">Job Title</Label>
+                                <Input 
+                                  id="job-title" 
+                                  placeholder="e.g. Senior Developer" 
+                                  className="bg-white border-slate-200"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="company">Company</Label>
+                                <Input 
+                                  id="company" 
+                                  placeholder="e.g. Tech Corp Inc." 
+                                  className="bg-white border-slate-200"
+                                />
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <Label htmlFor="job-start-date">Start Date</Label>
+                                  <Input 
+                                    id="job-start-date" 
+                                    type="date"
+                                    className="bg-white border-slate-200"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="job-end-date">End Date</Label>
+                                  <Input 
+                                    id="job-end-date" 
+                                    type="date"
+                                    className="bg-white border-slate-200"
+                                    disabled={currentlyWorking}
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Checkbox 
+                                  id="current-job" 
+                                  className="h-5 w-5 rounded-md border-slate-300 data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-blue-600 data-[state=checked]:to-indigo-600 data-[state=checked]:shadow-sm transition-all duration-200" 
+                                  checked={currentlyWorking}
+                                  onCheckedChange={(checked) => {
+                                    setCurrentlyWorking(checked === true);
+                                  }}
+                                />
+                                <Label 
+                                  htmlFor="current-job" 
+                                  className="text-sm text-slate-700 cursor-pointer hover:text-blue-600 transition-colors duration-200"
+                                >
+                                  I currently work here
+                                </Label>
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="job-type">Employment Type</Label>
+                                <Select defaultValue="full-time">
+                                  <SelectTrigger className="bg-white border-slate-200">
+                                    <SelectValue placeholder="Select employment type" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="full-time">Full-time</SelectItem>
+                                    <SelectItem value="part-time">Part-time</SelectItem>
+                                    <SelectItem value="contract">Contract</SelectItem>
+                                    <SelectItem value="freelance">Freelance</SelectItem>
+                                    <SelectItem value="internship">Internship</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="job-description">Description (Optional)</Label>
+                                <Textarea 
+                                  id="job-description" 
+                                  placeholder="Describe your role and responsibilities"
+                                  className="resize-none bg-white border-slate-200 min-h-[100px]"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          <DialogFooter className="p-6 pt-0 flex gap-3 border-t border-slate-100 mt-3">
+                            <Button
+                              variant="outline"
+                              className="flex-1 border-slate-200 rounded-xl hover:bg-slate-50 transition-all duration-200"
+                              onClick={() => {
+                                setCurrentlyWorking(false);
+                                toggleExperienceDialog(false);
+                              }}
+                            >
+                              Cancel
                             </Button>
-                          </DialogTrigger>
-                          <DialogContent className="sm:max-w-[525px] p-0 overflow-hidden border-none shadow-xl rounded-2xl bg-white animate-in fade-in-0 zoom-in-95">
+                            <Button 
+                              className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all duration-200 rounded-xl"
+                              onClick={() => {
+                                // Add work experience logic would go here
+                                setCurrentlyWorking(false);
+                                toggleExperienceDialog(false);
+                              }}
+                            >
+                              Add Experience
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <Label htmlFor="education" className="text-sm font-medium text-slate-700">Education</Label>
+                    <div className="space-y-4">
+                      <div className="p-4 border border-slate-200 rounded-xl bg-white">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-medium text-slate-900">MSc Computer Science</h4>
+                            <p className="text-sm text-slate-500">University of Technology</p>
+                            <div className="flex items-center text-xs text-slate-500 mt-1.5">
+                              <Calendar className="h-3.5 w-3.5 mr-1" />
+                              2016 - 2018
+                            </div>
+                          </div>
+                          <Button size="sm" variant="ghost" className="text-slate-500 hover:text-blue-600 p-2 h-8 w-8">
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <Dialog open={isEducationDialogOpen} onOpenChange={toggleEducationDialog}>
+                        <DialogTrigger asChild>
+                          <Button size="sm" variant="outline" className="w-full rounded-xl h-10 gap-1.5 text-sm border-dashed border-slate-300 hover:border-blue-300 hover:text-blue-600 text-slate-500">
+                            <Plus className="h-4 w-4" />
+                            Add Education
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[525px] p-0 overflow-hidden border-none shadow-xl rounded-2xl bg-white animate-in fade-in-0 zoom-in-95">
                             <div className="p-4">
                               <div className="relative py-4 px-6 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 -m-4 mb-4">
-                                <DialogTitle className="text-xl font-bold text-white flex items-center">
-                                  <GraduationCap className="h-5 w-5 mr-2" />
-                                  Add Education
-                                </DialogTitle>
-                                <DialogDescription className="text-blue-100 mt-1">
-                                  Add your educational background
-                                </DialogDescription>
+                            <DialogTitle className="text-xl font-bold text-white flex items-center">
+                              <GraduationCap className="h-5 w-5 mr-2" />
+                              Add Education
+                            </DialogTitle>
+                            <DialogDescription className="text-blue-100 mt-1">
+                              Add your educational background
+                            </DialogDescription>
+                          </div>
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="degree">Degree / Certificate</Label>
+                                <Input 
+                                  id="degree" 
+                                  placeholder="e.g. Bachelor of Science in Computer Science" 
+                                  className="bg-white border-slate-200"
+                                />
                               </div>
-                              <div className="space-y-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="school">School / University</Label>
+                                <Input 
+                                  id="school" 
+                                  placeholder="e.g. University of Technology" 
+                                  className="bg-white border-slate-200"
+                                />
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                  <Label htmlFor="degree">Degree / Certificate</Label>
+                                  <Label htmlFor="edu-start-date">Start Year</Label>
                                   <Input 
-                                    id="degree" 
-                                    placeholder="e.g. Bachelor of Science in Computer Science" 
+                                    id="edu-start-date" 
+                                    type="number"
+                                    placeholder="e.g. 2016"
                                     className="bg-white border-slate-200"
                                   />
                                 </div>
                                 <div className="space-y-2">
-                                  <Label htmlFor="school">School / University</Label>
+                                  <Label htmlFor="edu-end-date">End Year (or expected)</Label>
                                   <Input 
-                                    id="school" 
-                                    placeholder="e.g. University of Technology" 
+                                    id="edu-end-date" 
+                                    type="number"
+                                    placeholder="e.g. 2020"
                                     className="bg-white border-slate-200"
-                                  />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div className="space-y-2">
-                                    <Label htmlFor="edu-start-date">Start Year</Label>
-                                    <Input 
-                                      id="edu-start-date" 
-                                      type="number"
-                                      placeholder="e.g. 2016"
-                                      className="bg-white border-slate-200"
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label htmlFor="edu-end-date">End Year (or expected)</Label>
-                                    <Input 
-                                      id="edu-end-date" 
-                                      type="number"
-                                      placeholder="e.g. 2020"
-                                      className="bg-white border-slate-200"
-                                    />
-                                  </div>
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="field-of-study">Field of Study (Optional)</Label>
-                                  <Input 
-                                    id="field-of-study" 
-                                    placeholder="e.g. Computer Science" 
-                                    className="bg-white border-slate-200"
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="edu-description">Description (Optional)</Label>
-                                  <Textarea 
-                                    id="edu-description" 
-                                    placeholder="Additional details about your education"
-                                    className="resize-none bg-white border-slate-200 min-h-[100px]"
                                   />
                                 </div>
                               </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="field-of-study">Field of Study (Optional)</Label>
+                                <Input 
+                                  id="field-of-study" 
+                                  placeholder="e.g. Computer Science" 
+                                  className="bg-white border-slate-200"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="edu-description">Description (Optional)</Label>
+                                <Textarea 
+                                  id="edu-description" 
+                                  placeholder="Additional details about your education"
+                                  className="resize-none bg-white border-slate-200 min-h-[100px]"
+                                />
+                              </div>
+                            </div>
                               <DialogFooter className="flex gap-3 border-t border-slate-100 mt-4 pt-4">
-                                <Button
+                            <Button
                                   type="button"
-                                  variant="outline"
-                                  className="flex-1 border-slate-200 rounded-xl hover:bg-slate-50 transition-all duration-200"
-                                  onClick={() => toggleEducationDialog(false)}
-                                >
-                                  Cancel
-                                </Button>
-                                <Button 
+                              variant="outline"
+                              className="flex-1 border-slate-200 rounded-xl hover:bg-slate-50 transition-all duration-200"
+                              onClick={() => toggleEducationDialog(false)}
+                            >
+                              Cancel
+                            </Button>
+                            <Button 
                                   type="button"
                                   className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md rounded-xl"
-                                  onClick={() => {
-                                    // Add education logic would go here
-                                    toggleEducationDialog(false);
-                                  }}
-                                >
-                                  Add Education
-                                </Button>
-                              </DialogFooter>
+                              onClick={() => {
+                                // Add education logic would go here
+                                toggleEducationDialog(false);
+                              }}
+                            >
+                              Add Education
+                            </Button>
+                          </DialogFooter>
                             </div>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
+                        </DialogContent>
+                      </Dialog>
                     </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              
-              {/* Social Links Tab */}
-              <TabsContent value="social" className="space-y-6">
-                <Card className="border-none shadow-lg rounded-3xl overflow-hidden backdrop-blur-sm bg-white/80">
-                  <CardHeader className="border-b border-slate-100 bg-white/60 px-8 py-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Social Profiles</CardTitle>
-                        <CardDescription className="text-slate-600 mt-1">Connect your social media accounts</CardDescription>
-                      </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            {/* Social Links Tab */}
+            <TabsContent value="social" className="space-y-6">
+              <Card className="border-none shadow-lg rounded-3xl overflow-hidden backdrop-blur-sm bg-white/80">
+                <CardHeader className="border-b border-slate-100 bg-white/60 px-8 py-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Social Profiles</CardTitle>
+                      <CardDescription className="text-slate-600 mt-1">Connect your social media accounts</CardDescription>
+                    </div>
                       <Button 
                         type="submit"
                         disabled={isLoading || !form.formState.isDirty}
@@ -1833,14 +1951,14 @@ export default function SettingsDashboard() {
                           </>
                         ) : (
                           <>
-                            <Save className="h-4 w-4 mr-2" />
-                            Save Changes
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Changes
                           </>
                         )}
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="px-8 py-6 space-y-6">
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="px-8 py-6 space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
@@ -1913,54 +2031,54 @@ export default function SettingsDashboard() {
                         </p>
                       )}
                     </div>
-                  </div>                    
-                    <Separator className="my-4" />
-                    
-                    <div className="space-y-4">
-                      <h3 className="font-medium text-slate-900">Profile Visibility</h3>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between bg-gradient-to-r from-slate-50 to-white p-3 rounded-xl border border-slate-100 hover:border-blue-100 transition-all duration-200">
-                          <div className="space-y-0.5">
-                            <div className="text-sm font-medium">Public profile</div>
-                            <div className="text-xs text-slate-500">Make your profile visible to everyone</div>
-                          </div>
-                          <Checkbox 
-                            id="public-profile" 
-                            className="h-5 w-5 rounded-md border-slate-300 data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-blue-600 data-[state=checked]:to-indigo-600 data-[state=checked]:shadow-sm transition-all duration-200"
-                            defaultChecked
-                          />
+                  </div>
+                  <Separator className="my-4" />
+                  
+                  <div className="space-y-4">
+                    <h3 className="font-medium text-slate-900">Profile Visibility</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between bg-gradient-to-r from-slate-50 to-white p-3 rounded-xl border border-slate-100 hover:border-blue-100 transition-all duration-200">
+                        <div className="space-y-0.5">
+                          <div className="text-sm font-medium">Public profile</div>
+                          <div className="text-xs text-slate-500">Make your profile visible to everyone</div>
                         </div>
-                        
-                        <div className="flex items-center justify-between bg-gradient-to-r from-slate-50 to-white p-3 rounded-xl border border-slate-100 hover:border-blue-100 transition-all duration-200">
-                          <div className="space-y-0.5">
-                            <div className="text-sm font-medium">Show email address</div>
-                            <div className="text-xs text-slate-500">Allow others to see your email</div>
-                          </div>
-                          <Checkbox 
-                            id="show-email" 
-                            className="h-5 w-5 rounded-md border-slate-300 data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-blue-600 data-[state=checked]:to-indigo-600 data-[state=checked]:shadow-sm transition-all duration-200"
-                          />
+                        <Checkbox 
+                          id="public-profile" 
+                          className="h-5 w-5 rounded-md border-slate-300 data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-blue-600 data-[state=checked]:to-indigo-600 data-[state=checked]:shadow-sm transition-all duration-200"
+                          defaultChecked
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between bg-gradient-to-r from-slate-50 to-white p-3 rounded-xl border border-slate-100 hover:border-blue-100 transition-all duration-200">
+                        <div className="space-y-0.5">
+                          <div className="text-sm font-medium">Show email address</div>
+                          <div className="text-xs text-slate-500">Allow others to see your email</div>
                         </div>
-                        
-                        <div className="flex items-center justify-between bg-gradient-to-r from-slate-50 to-white p-3 rounded-xl border border-slate-100 hover:border-blue-100 transition-all duration-200">
-                          <div className="space-y-0.5">
-                            <div className="text-sm font-medium">Show phone number</div>
-                            <div className="text-xs text-slate-500">Allow others to see your phone number</div>
-                          </div>
-                          <Checkbox 
-                            id="show-phone" 
-                            className="h-5 w-5 rounded-md border-slate-300 data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-blue-600 data-[state=checked]:to-indigo-600 data-[state=checked]:shadow-sm transition-all duration-200"
-                          />
+                        <Checkbox 
+                          id="show-email" 
+                          className="h-5 w-5 rounded-md border-slate-300 data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-blue-600 data-[state=checked]:to-indigo-600 data-[state=checked]:shadow-sm transition-all duration-200"
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between bg-gradient-to-r from-slate-50 to-white p-3 rounded-xl border border-slate-100 hover:border-blue-100 transition-all duration-200">
+                        <div className="space-y-0.5">
+                          <div className="text-sm font-medium">Show phone number</div>
+                          <div className="text-xs text-slate-500">Allow others to see your phone number</div>
                         </div>
+                        <Checkbox 
+                          id="show-phone" 
+                          className="h-5 w-5 rounded-md border-slate-300 data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-blue-600 data-[state=checked]:to-indigo-600 data-[state=checked]:shadow-sm transition-all duration-200"
+                        />
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </div>
-          </Tabs>
-        </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </div>
+        </Tabs>
       </div>
+    </div>
     </form>
   )
 } 
