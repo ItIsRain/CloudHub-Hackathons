@@ -39,7 +39,8 @@ import {
   Award,
   Calendar,
   Globe2,
-  Sparkles
+  Sparkles,
+  Loader2
 } from "lucide-react"
 import {
   Select,
@@ -58,7 +59,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox"
-import { useState, useCallback, memo, useMemo, useEffect } from "react"
+import { useState, useCallback, memo, useMemo, useEffect, useRef } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/components/ui/use-toast"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -426,6 +427,8 @@ export default function SettingsDashboard() {
   })
   const [newLanguage, setNewLanguage] = useState("")
   const [newLanguageLevel, setNewLanguageLevel] = useState("Intermediate")
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsFormSchema),
@@ -771,6 +774,86 @@ export default function SettingsDashboard() {
     }
   }, [newLanguage, newLanguageLevel, user, updateUser, toast, form])
 
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload a JPEG, PNG, GIF, or WebP image.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    if (file.size > maxSize) {
+      toast({
+        title: "File too large",
+        description: "Please upload an image smaller than 5MB.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      setIsUploading(true)
+
+      // Create FormData
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('folder', 'profile-pictures')
+
+      // Upload to backend
+      const accessToken = localStorage.getItem('access_token');
+      const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload`, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include', // Include cookies for authentication
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      })
+
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json()
+        throw new Error(errorData.detail || 'Upload failed')
+      }
+
+      const data = await uploadResponse.json()
+
+      if (data.file?.success) {
+        // Update user profile with new avatar URL
+        const result = await updateUser({ avatar: data.file.url })
+        
+        if (result) {
+          toast({
+            title: "Profile picture updated",
+            description: "Your profile picture has been updated successfully.",
+          })
+        }
+      } else {
+        throw new Error(data.file?.error || 'Upload failed')
+      }
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "Failed to upload image. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUploading(false)
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
   // Memoize dialog content to prevent re-rendering
   const skillDialogContent = useMemo(() => (
     <div className="p-4">
@@ -1018,31 +1101,45 @@ export default function SettingsDashboard() {
           </CardHeader>
           <CardContent className="pt-10 px-8 pb-8">
             <div className="flex flex-col md:flex-row md:items-start gap-12">
-              <div className="flex flex-col items-center space-y-5">
-                <div className="relative">
-                  <Avatar className="h-40 w-40 border-4 border-white shadow-md relative">
-                      <AvatarImage src={user?.avatar} alt="Profile" className="object-cover" />
-                    <AvatarFallback className="bg-blue-500 text-white text-6xl">
-                      JD
-                    </AvatarFallback>
+              {/* Profile Section - Updated Design */}
+              <div className="flex flex-col items-center text-center space-y-6">
+                <div className="relative group">
+                  <Avatar className="h-32 w-32 border-4 border-white shadow-lg">
+                    <AvatarImage src={user?.avatar || '/placeholder-avatar.png'} alt={user?.name || 'User'} />
+                    <AvatarFallback className="text-2xl">{user?.name?.charAt(0) || 'U'}</AvatarFallback>
                   </Avatar>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleImageUpload}
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    className="hidden"
+                  />
                   <Button
                     size="icon"
-                    className="absolute bottom-1 right-1 rounded-full shadow-md border-2 border-white size-10 bg-white"
+                    variant="secondary"
+                    className="absolute -bottom-2 -right-2 h-10 w-10 rounded-full bg-white shadow-md hover:shadow-lg transition-all duration-200 group-hover:scale-110"
+                    onClick={(e) => {
+                      e.preventDefault(); // Prevent form submission
+                      e.stopPropagation(); // Stop event bubbling
+                      fileInputRef.current?.click();
+                    }}
+                    disabled={isUploading}
+                    type="button" // Explicitly set type to button
                   >
-                    <Camera className="h-4 w-4 text-blue-600" />
+                    {isUploading ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <Camera className="h-5 w-5" />
+                    )}
                   </Button>
                 </div>
-                <div className="text-center space-y-2.5">
-                    <h3 className="text-2xl font-semibold text-blue-600">{user?.full_name || user?.name || 'No Name'}</h3>
-                    <p className="text-sm text-slate-600">
-                      {user?.role === 'organizer' && user?.organization_name 
-                        ? user.organization_name 
-                        : 'Full Stack Developer'}
-                    </p>
-                  <Badge className="mt-2 bg-blue-500 text-white px-4 py-1 rounded-full shadow-sm">
-                      {(user?.role && user.role.charAt(0).toUpperCase() + user.role.slice(1)) || 'User'}
-                  </Badge>
+                <div className="space-y-3">
+                  <h3 className="text-xl font-semibold text-slate-900">{user?.name}</h3>
+                  <p className="text-sm text-slate-500">{user?.full_name || user?.name}</p>
+                  <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-sm font-medium">
+                    {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'No role'}
+                  </div>
                 </div>
               </div>
 

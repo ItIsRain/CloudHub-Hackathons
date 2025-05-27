@@ -1,19 +1,30 @@
 import os
 import requests
 from werkzeug.utils import secure_filename
-from flask import current_app
 import hashlib
 import mimetypes
 from datetime import datetime
 import uuid
+import logging
+from config.config import Settings
+
+# Set up logger for this module
+logger = logging.getLogger(__name__)
 
 class BunnyNetService:
-    def __init__(self):
-        self.api_key = current_app.config['BUNNYNET_API_KEY']
-        self.storage_zone = current_app.config['BUNNYNET_STORAGE_ZONE']
-        self.cdn_url = current_app.config['BUNNYNET_CDN_URL']
-        self.base_url = f"https://storage.bunnycdn.com/{self.storage_zone}/"
+    def __init__(self, settings: Settings):
+        self.api_key = settings.BUNNYNET_API_KEY
+        self.storage_zone = settings.BUNNYNET_STORAGE_ZONE
+        self.cdn_url = settings.BUNNYNET_CDN_URL.rstrip('/')
+        
+        # Ensure storage URL has https:// scheme
+        storage_url = settings.BUNNYNET_STORAGE_URL.rstrip('/')
+        if not storage_url.startswith(('http://', 'https://')):
+            storage_url = f"https://{storage_url}"
+        
+        self.base_url = f"{storage_url}/{self.storage_zone}/"
         self._storage_password = None
+        self.allowed_extensions = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'txt'}
         
     def _get_storage_password(self):
         """Get the storage zone password needed for file operations."""
@@ -26,7 +37,7 @@ class BunnyNetService:
             
             try:
                 response = requests.get(api_url, headers=headers, timeout=30)
-                response.raise_for_status()  # Raises exception for 4xx/5xx status codes
+                response.raise_for_status()
                 
                 zones = response.json()
                 for zone in zones:
@@ -38,7 +49,7 @@ class BunnyNetService:
                     raise ValueError(f"Storage zone '{self.storage_zone}' not found")
                     
             except requests.RequestException as e:
-                current_app.logger.error(f"Failed to get storage password: {str(e)}")
+                logger.error(f"Failed to get storage password: {str(e)}")
                 raise ValueError("Could not retrieve storage zone password")
                 
         return self._storage_password
@@ -62,8 +73,7 @@ class BunnyNetService:
             return False
         
         ext = filename.rsplit('.', 1)[1].lower()
-        allowed_extensions = current_app.config.get('ALLOWED_EXTENSIONS', set())
-        return ext in allowed_extensions
+        return ext in self.allowed_extensions
     
     def _generate_safe_filename(self, original_filename):
         """Generate a safe, unique filename."""
@@ -81,29 +91,41 @@ class BunnyNetService:
         """Calculate SHA-256 hash of file data."""
         return hashlib.sha256(file_data).hexdigest()
     
-    def upload_file(self, file, folder_path=""):
+    def upload_file(self, file, filename=None, folder_path=""):
         """
         Upload a file to BunnyNet storage.
         
         Args:
-            file: FileStorage object from Flask request
+            file: File-like object (FastAPI UploadFile.file or similar)
+            filename: Original filename (required when using file stream)
             folder_path: Optional path within storage zone (no leading slash)
             
         Returns:
             dict: Upload result with CDN URL and file info
         """
         try:
-            if not file or not file.filename:
-                raise ValueError("No file provided or filename is empty")
+            # Determine filename
+            if filename:
+                # Use provided filename (from FastAPI UploadFile.filename)
+                original_filename = filename
+            elif hasattr(file, 'filename') and file.filename:
+                # Handle case where file object has filename attribute
+                original_filename = file.filename
+            elif hasattr(file, 'name') and file.name:
+                # Handle case where file object has name attribute
+                original_filename = os.path.basename(file.name)
+            else:
+                raise ValueError("No filename provided. Please provide filename parameter.")
             
-            # Validate file
-            filename = file.filename
-            if not self._is_allowed_file(filename):
-                allowed = current_app.config.get('ALLOWED_EXTENSIONS', set())
-                raise ValueError(f"File type not allowed. Allowed types: {', '.join(allowed)}")
+            if not original_filename:
+                raise ValueError("Filename cannot be empty")
+            
+            # Validate file extension
+            if not self._is_allowed_file(original_filename):
+                raise ValueError(f"File type not allowed. Allowed types: {', '.join(self.allowed_extensions)}")
             
             # Generate safe filename and full path
-            safe_filename = self._generate_safe_filename(filename)
+            safe_filename = self._generate_safe_filename(original_filename)
             
             # Clean up folder path (remove leading/trailing slashes)
             if folder_path:
@@ -113,6 +135,10 @@ class BunnyNetService:
                 upload_path = safe_filename
             
             # Read file data and get hash
+            # Reset file pointer to beginning if possible
+            if hasattr(file, 'seek'):
+                file.seek(0)
+            
             file_data = file.read()
             if not file_data:
                 raise ValueError("File is empty")
@@ -121,36 +147,41 @@ class BunnyNetService:
             
             # Get file size and type
             file_size = len(file_data)
-            content_type = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+            content_type = mimetypes.guess_type(original_filename)[0] or 'application/octet-stream'
             
             # Prepare upload URL and headers
             upload_url = f"{self.base_url}{upload_path}"
             headers = self._get_headers(use_storage_password=True)
             headers['Content-Type'] = content_type
             
+            # Debug logging
+            logger.info(f"Upload URL: {upload_url}")
+            logger.info(f"Base URL: {self.base_url}")
+            logger.info(f"Upload path: {upload_path}")
+            
             # Upload to BunnyNet with timeout
             response = requests.put(
                 upload_url,
                 data=file_data,
                 headers=headers,
-                timeout=60  # 60 second timeout for uploads
+                timeout=60
             )
             
             if response.status_code not in (200, 201):
                 error_msg = f"Upload failed with status {response.status_code}: {response.text}"
-                current_app.logger.error(error_msg)
+                logger.error(error_msg)
                 raise Exception(error_msg)
             
-            # Construct CDN URL (ensure no double slashes)
-            cdn_url = f"{self.cdn_url.rstrip('/')}/{upload_path}"
+            # Construct CDN URL
+            cdn_url = f"{self.cdn_url}/{upload_path}"
             
-            current_app.logger.info(f"File uploaded successfully: {safe_filename} ({file_size} bytes)")
+            logger.info(f"File uploaded successfully: {safe_filename} ({file_size} bytes)")
             
             return {
                 'success': True,
                 'url': cdn_url,
                 'filename': safe_filename,
-                'original_filename': filename,
+                'original_filename': original_filename,
                 'path': upload_path,
                 'size': file_size,
                 'content_type': content_type,
@@ -160,7 +191,7 @@ class BunnyNetService:
             
         except Exception as e:
             error_msg = f"File upload error: {str(e)}"
-            current_app.logger.error(error_msg)
+            logger.error(error_msg)
             return {
                 'success': False,
                 'error': str(e)
@@ -193,9 +224,9 @@ class BunnyNetService:
             success = response.status_code in (200, 204)
             
             if success:
-                current_app.logger.info(f"File deleted successfully: {file_path}")
+                logger.info(f"File deleted successfully: {file_path}")
             else:
-                current_app.logger.warning(f"File deletion failed: {file_path} (status: {response.status_code})")
+                logger.warning(f"File deletion failed: {file_path} (status: {response.status_code})")
             
             return {
                 'success': success,
@@ -205,7 +236,7 @@ class BunnyNetService:
             
         except Exception as e:
             error_msg = f"File deletion error: {str(e)}"
-            current_app.logger.error(error_msg)
+            logger.error(error_msg)
             return {
                 'success': False,
                 'error': str(e)
@@ -248,7 +279,7 @@ class BunnyNetService:
                 
         except Exception as e:
             error_msg = f"File listing error: {str(e)}"
-            current_app.logger.error(error_msg)
+            logger.error(error_msg)
             return {
                 'success': False,
                 'error': str(e)
@@ -257,8 +288,6 @@ class BunnyNetService:
     def get_file_info(self, file_path):
         """
         Get information about a file in BunnyNet storage.
-        Note: This might not work as expected since BunnyNet storage API 
-        doesn't provide detailed file info via GET requests.
         
         Args:
             file_path: Path to file within storage zone
@@ -274,7 +303,7 @@ class BunnyNetService:
             file_path = file_path.strip('/').replace('\\', '/')
             info_url = f"{self.base_url}{file_path}"
             
-            response = requests.head(  # Use HEAD instead of GET for file info
+            response = requests.head(
                 info_url,
                 headers=self._get_headers(use_storage_password=True),
                 timeout=30
@@ -303,7 +332,7 @@ class BunnyNetService:
                 
         except Exception as e:
             error_msg = f"File info error: {str(e)}"
-            current_app.logger.error(error_msg)
+            logger.error(error_msg)
             return {
                 'success': False,
                 'error': str(e)

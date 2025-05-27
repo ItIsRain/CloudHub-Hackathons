@@ -35,10 +35,11 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[str] = ["*"]
     
     # BunnyNet settings
-    BUNNYNET_API_KEY: SecretStr
-    BUNNYNET_STORAGE_ZONE: str
-    BUNNYNET_STORAGE_URL: AnyHttpUrl
-    BUNNYNET_PULL_ZONE: AnyHttpUrl
+    BUNNYNET_API_KEY: str = "your-api-key"
+    BUNNYNET_STORAGE_ZONE: str = "cloudhub"
+    BUNNYNET_STORAGE_URL: str = "https://storage.bunnycdn.com"
+    BUNNYNET_PULL_ZONE: str = "https://cdn.lynq.ae"
+    BUNNYNET_CDN_URL: str = "https://cdn.lynq.ae"
     
     # Rate limiting
     RATE_LIMIT_DEFAULT: str = "100/minute"
