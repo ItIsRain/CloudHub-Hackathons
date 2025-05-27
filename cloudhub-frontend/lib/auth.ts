@@ -47,9 +47,11 @@ export const handleLogout = async () => {
 export const useAuth = () => {
     const router = useRouter();
     const [user, setUser] = useState<StoredUserData | null>(null);
+    const [loading, setLoading] = useState(true);
     
     useEffect(() => {
         setUser(getStoredUser());
+        setLoading(false);
     }, []);
     
     const logout = async () => {
@@ -76,6 +78,7 @@ export const useAuth = () => {
         user,
         logout,
         updateUser,
-        isAuthenticated: !!accessToken
+        isAuthenticated: !!accessToken,
+        loading
     };
 }; 

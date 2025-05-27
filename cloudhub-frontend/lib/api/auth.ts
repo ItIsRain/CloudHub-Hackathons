@@ -81,6 +81,10 @@ interface BackendRegisterData {
   accepted_privacy_policy: boolean;
 }
 
+interface RefreshTokenResponse {
+  access_token: string;
+}
+
 const TOKEN_STORAGE = {
   ACCESS_TOKEN: 'access_token',
   REFRESH_TOKEN: 'refresh_token',
@@ -89,9 +93,67 @@ const TOKEN_STORAGE = {
 
 export class AuthAPI {
   private api: typeof axiosInstance;
+  private isRefreshing = false;
+  private refreshSubscribers: ((token: string) => void)[] = [];
 
-  constructor(api: typeof axiosInstance) {
-    this.api = api;
+  constructor() {
+    this.api = axiosInstance;
+    
+    // Add response interceptor for token refresh
+    this.api.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+        
+        // If error is not 401 or request has already been retried, reject
+        if (error.response?.status !== 401 || originalRequest._retry) {
+          return Promise.reject(error);
+        }
+
+        // If already refreshing, wait for the new token
+        if (this.isRefreshing) {
+          return new Promise((resolve) => {
+            this.refreshSubscribers.push((token: string) => {
+              originalRequest.headers['Authorization'] = `Bearer ${token}`;
+              resolve(this.api(originalRequest));
+            });
+          });
+        }
+
+        originalRequest._retry = true;
+        this.isRefreshing = true;
+
+        try {
+          const refreshToken = localStorage.getItem('refresh_token');
+          if (!refreshToken) {
+            throw new Error('No refresh token available');
+          }
+
+          const response = await this.api.post<RefreshTokenResponse>('/auth/refresh', {
+            refresh_token: refreshToken
+          });
+
+          const { access_token } = response.data;
+          
+          // Update tokens
+          localStorage.setItem('access_token', access_token);
+          this.api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+
+          // Retry all queued requests
+          this.refreshSubscribers.forEach(callback => callback(access_token));
+          this.refreshSubscribers = [];
+
+          return this.api(originalRequest);
+        } catch (refreshError) {
+          // If refresh fails, clear tokens and redirect to login
+          this.clearTokens();
+          window.location.href = '/login';
+          return Promise.reject(refreshError);
+        } finally {
+          this.isRefreshing = false;
+        }
+      }
+    );
   }
 
   private handleError(error: any): never {
@@ -282,7 +344,12 @@ export class AuthAPI {
     try {
       const response = await this.api.put<User>('/users/me', data);
       return response.data;
-    } catch (error) {
+    } catch (error: unknown) {
+      const err = error as { response?: { status?: number } };
+      if (err.response?.status === 401) {
+        // Token refresh will be handled by the interceptor
+        throw new Error('Session expired. Please log in again.');
+      }
       throw this.handleError(error);
     }
   }
@@ -308,7 +375,7 @@ export class AuthAPI {
   }
 }
 
-export const authAPI = new AuthAPI(axiosInstance);
+export const authAPI = new AuthAPI();
 
 export interface ErrorResponse {
   detail?: string;

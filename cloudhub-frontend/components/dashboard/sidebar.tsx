@@ -112,6 +112,8 @@ export default function DashboardSidebar() {
               alt="CloudHub Logo" 
               width={200} 
               height={64}
+              priority
+              style={{ width: 'auto', height: 'auto' }}
             />
           </Link>
           <div className="md:hidden absolute right-4">

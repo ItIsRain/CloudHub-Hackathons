@@ -66,6 +66,7 @@ import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { User as UserType } from "@/types/user"
 import CountrySelect from '@/components/selects/CountrySelect'
+import { useRouter } from 'next/navigation'
 
 const getCountryCodeFromName = (countryName: string): string => {
   const countryMapping: { [key: string]: string } = {
@@ -404,14 +405,17 @@ const settingsFormSchema = z.object({
 type SettingsFormValues = z.infer<typeof settingsFormSchema>
 
 export default function SettingsDashboard() {
-  const { user, updateUser } = useAuth()
+  const { user, updateUser, loading: authLoading } = useAuth()
   const { toast } = useToast()
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [isFormInitialized, setIsFormInitialized] = useState(false)  
+  const [isExperienceDialogOpen, setIsExperienceDialogOpen] = useState(false)
+  const [isEducationDialogOpen, setIsEducationDialogOpen] = useState(false)
+  const [currentlyWorking, setCurrentlyWorking] = useState(false)
   const [isSkillDialogOpen, setIsSkillDialogOpen] = useState(false)
   const [isCertificationDialogOpen, setIsCertificationDialogOpen] = useState(false)
   const [isLanguageDialogOpen, setIsLanguageDialogOpen] = useState(false)
-  const [isExperienceDialogOpen, setIsExperienceDialogOpen] = useState(false)
-  const [isEducationDialogOpen, setIsEducationDialogOpen] = useState(false)
   const [newSkill, setNewSkill] = useState("")
   const [newCertification, setNewCertification] = useState({
     name: "",
@@ -420,82 +424,124 @@ export default function SettingsDashboard() {
   })
   const [newLanguage, setNewLanguage] = useState("")
   const [newLanguageLevel, setNewLanguageLevel] = useState("Intermediate")
-  const [currentlyWorking, setCurrentlyWorking] = useState(false)
   const [activeTab, setActiveTab] = useState("personal")
   const [organizationSize, setOrganizationSize] = useState("")
   
-  // Initialize form with user data
-  const form = useForm<SettingsFormValues>({
-    resolver: zodResolver(settingsFormSchema),
-    defaultValues: {
-      name: user?.name || "",
-      full_name: user?.full_name || user?.name || "",
-      email: user?.email || "",
-      phone: user?.phone || "",
-      country: user?.country?.toLowerCase() || "",
-      bio: user?.bio || "",
-      organization_name: user?.organization_name || "",
-      organization_website: user?.organization_website || "",
-      organization_size: user?.organization_size || "",
-      industry: user?.industry || "",
-      skills: user?.skills || [],
-      certifications: user?.certifications || [],
-      languages: user?.languages || [],
-      social_links: {
-        github: user?.social_links?.github || "",
-        linkedin: user?.social_links?.linkedin || "",
-        twitter: user?.social_links?.twitter || "",
-        website: user?.social_links?.website || ""
-      }
-    }
-  });
-
-  // Update form when user data changes
-  useEffect(() => {
-    if (user) {
-      console.log("Updating form with user data:", user);
-      
-      const formData = {
-        name: user.name || "",
-        full_name: user.full_name || user.name || "",
-        email: user.email || "",
-        phone: user.phone || "",
-        country: user.country?.toLowerCase() || "",
-        bio: user.bio || "",
-        organization_name: user.organization_name || "",
-        organization_website: user.organization_website || "",
-        organization_size: user.organization_size || "",
-        industry: user.industry || "",
-        skills: user.skills || [],
-        certifications: user.certifications || [],
-        languages: user.languages || [],
+  const defaultValues = useMemo(() => {
+    // Return empty defaults if user is not available yet
+    if (!user) {
+      return {
+        name: "",
+        full_name: "",
+        email: "",
+        phone: "",
+        country: "",
+        bio: "",
+        organization_name: "",
+        organization_website: "",
+        organization_size: "",
+        industry: "",
+        skills: [],
+        certifications: [],
+        languages: [],
         social_links: {
-          github: user.social_links?.github || "",
-          linkedin: user.social_links?.linkedin || "",
-          twitter: user.social_links?.twitter || "",
-          website: user.social_links?.website || ""
+          github: "",
+          linkedin: "",
+          twitter: "",
+          website: ""
         }
       };
-
-      // Reset form with new data
-      form.reset(formData, {
-        keepDirty: false,
-        keepTouched: false,
-        keepIsValid: false,
-        keepErrors: false
-      });
-
-      // Set organization size in local state
-      if (user.organization_size) {
-        setOrganizationSize(user.organization_size);
-      }
     }
-  }, [user, form]);
 
+    // Only return actual user data when user is available
+    return {
+      name: user.name || "",
+      full_name: user.full_name || user.name || "",
+      email: user.email || "",
+      phone: user.phone || "",
+      country: user.country?.toLowerCase() || "",
+      bio: user.bio || "",
+      organization_name: user.organization_name || "",
+      organization_website: user.organization_website || "",
+      organization_size: user.organization_size || "",
+      industry: user.industry || "",
+      skills: user.skills || [],
+      certifications: user.certifications || [],
+      languages: user.languages || [],
+      social_links: {
+        github: user.social_links?.github || "",
+        linkedin: user.social_links?.linkedin || "",
+        twitter: user.social_links?.twitter || "",
+        website: user.social_links?.website || ""
+      }
+    };
+  }, [user]);
+
+  const form = useForm<SettingsFormValues>({
+    resolver: zodResolver(settingsFormSchema),
+    defaultValues
+  });
+
+  // Better initialization effect with proper dependencies
+  useEffect(() => {
+    // Only proceed if auth is done loading and we have user data
+    if (authLoading || !user) {
+      return;
+    }
+
+    // Only initialize once per user session
+    if (isFormInitialized) {
+      return;
+    }
+    
+    const formData = {
+      name: user.name || "",
+      full_name: user.full_name || user.name || "",
+      email: user.email || "",
+      phone: user.phone || "",
+      country: user.country?.toLowerCase() || "",
+      bio: user.bio || "",
+      organization_name: user.organization_name || "",
+      organization_website: user.organization_website || "",
+      organization_size: user.organization_size || "",
+      industry: user.industry || "",
+      skills: user.skills || [],
+      certifications: user.certifications || [],
+      languages: user.languages || [],
+      social_links: {
+        github: user.social_links?.github || "",
+        linkedin: user.social_links?.linkedin || "",
+        twitter: user.social_links?.twitter || "",
+        website: user.social_links?.website || ""
+      }
+    };
+
+    // Reset form with user data
+    form.reset(formData, {
+      keepDirty: false,
+      keepTouched: false,
+      keepIsValid: false,
+      keepErrors: false
+    });
+
+    // Set organization size in local state
+    if (user.organization_size) {
+      setOrganizationSize(user.organization_size);
+    }
+
+    setIsFormInitialized(true);
+  }, [user, authLoading, form, isFormInitialized]);
+
+  // Reset initialization when user changes (logout/login)
+  useEffect(() => {
+    if (!user && !authLoading) {
+      setIsFormInitialized(false);
+    }
+  }, [user, authLoading]);
+  
   // Add a separate effect to handle industry updates
   useEffect(() => {
     if (user?.industry) {
-      console.log('Setting industry to:', user.industry);
       form.setValue('industry', user.industry, {
         shouldDirty: false,
         shouldTouch: false,
@@ -506,7 +552,6 @@ export default function SettingsDashboard() {
 
   useEffect(() => {
     if (user?.skills && JSON.stringify(user.skills) !== JSON.stringify(form.watch("skills"))) {
-      console.log('Syncing skills from user data:', user.skills);
       form.setValue('skills', user.skills, { 
         shouldDirty: false,
         shouldTouch: false,
@@ -515,45 +560,21 @@ export default function SettingsDashboard() {
     }
   }, [user?.skills, form]);
 
-  // Log form values when they change
-  useEffect(() => {
-    const subscription = form.watch((value, { name, type }) => {
-      if (name && type === 'change') {  // Only log actual field changes
-        console.log('Form value changed:', name, value);
-        if (name.startsWith('organization_') || name === 'industry') {
-          console.log(`Organization field ${name} changed to:`, value);
-        }
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form.watch]);
-
   // Add a submit handler function
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submit event triggered');
     
     // Get current form values
     const formValues = form.getValues();
-    console.log('Form values before validation:', formValues);
     
     // Ensure name is set from full_name if empty
     if (!formValues.name && formValues.full_name) {
       form.setValue('name', formValues.full_name, { shouldValidate: true });
     }
     
-    console.log('Form is dirty:', form.formState.isDirty);
-    
-    // Log validation errors if any
-    const formErrors = form.formState.errors;
-    if (Object.keys(formErrors).length > 0) {
-      console.log('Form validation errors:', formErrors);
-    }
-    
     // Validate form before submission
     const isValid = await form.trigger();
     if (!isValid) {
-      console.log('Form validation failed');
       return;
     }
     
@@ -564,7 +585,6 @@ export default function SettingsDashboard() {
   async function onSubmit(data: SettingsFormValues) {
     try {
       setIsLoading(true);
-      console.log('Form submission started with data:', data);
       
       // Map frontend data to backend format
       const updateData = {
@@ -582,16 +602,11 @@ export default function SettingsDashboard() {
         social_links: data.social_links
       };
       
-      // Log the data being sent
-      console.log('Updating user with:', updateData);
-      
       // Call updateUser from auth context
       const updatedUser = await updateUser(updateData);
-      console.log('User updated successfully:', updatedUser);
       
       // Update local state with the new user data
       if (updatedUser) {
-        console.log('Updating local state with new user data');
         // Map backend response to frontend format
         const frontendUserData = {
           ...updatedUser,
@@ -607,7 +622,6 @@ export default function SettingsDashboard() {
         description: "Your settings have been updated successfully.",
       });
     } catch (error) {
-      console.error('Error updating settings:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to update settings. Please try again.",
@@ -626,17 +640,11 @@ export default function SettingsDashboard() {
   const handleAddSkill = useCallback(async () => {
     if (newSkill.trim()) {
       try {
-        console.log('Adding new skill:', newSkill.trim());
-        console.log('Current user:', user);
-        console.log('Current skills:', user?.skills);
-        
         // Get current skills or initialize empty array
         const currentSkills = user?.skills || [];
-        console.log('Current skills array:', currentSkills);
         
         // Check if skill already exists
         if (currentSkills.includes(newSkill.trim())) {
-          console.log('Skill already exists');
           toast({
             title: "Skill already exists",
             description: "This skill has already been added to your profile.",
@@ -647,12 +655,9 @@ export default function SettingsDashboard() {
         
         // Add new skill to the array
         const updatedSkills = [...currentSkills, newSkill.trim()];
-        console.log('Updated skills array:', updatedSkills);
         
         // Update user profile with new skills
-        console.log('Calling updateUser with:', { skills: updatedSkills });
         const result = await updateUser({ skills: updatedSkills });
-        console.log('Update result:', result);
         
         // Show success message
         toast({
@@ -661,8 +666,8 @@ export default function SettingsDashboard() {
         });
         
         // Reset form and close dialog
-      setNewSkill("");
-      setIsSkillDialogOpen(false);
+        setNewSkill("");
+        setIsSkillDialogOpen(false);
         
         // Force a refresh of the user data
         if (result) {
@@ -675,7 +680,6 @@ export default function SettingsDashboard() {
           form.reset(updatedUser, { keepDirty: false });
         }
       } catch (error) {
-        console.error('Error adding skill:', error);
         toast({
           title: "Error",
           description: "Failed to add skill. Please try again.",
@@ -688,17 +692,11 @@ export default function SettingsDashboard() {
   const handleAddCertification = useCallback(async () => {
     if (newCertification.name.trim() && newCertification.issuer.trim() && newCertification.date) {
       try {
-        console.log('Adding new certification:', newCertification);
-        console.log('Current user:', user);
-        console.log('Current certifications:', user?.certifications);
-        
         // Get current certifications or initialize empty array
         const currentCertifications = user?.certifications || [];
-        console.log('Current certifications array:', currentCertifications);
         
         // Check if certification already exists
         if (currentCertifications.some(cert => cert.name === newCertification.name.trim())) {
-          console.log('Certification already exists');
           toast({
             title: "Certification already exists",
             description: "This certification has already been added to your profile.",
@@ -709,12 +707,9 @@ export default function SettingsDashboard() {
         
         // Add new certification to the array
         const updatedCertifications = [...currentCertifications, newCertification];
-        console.log('Updated certifications array:', updatedCertifications);
         
         // Update user profile with new certifications
-        console.log('Calling updateUser with:', { certifications: updatedCertifications });
         const result = await updateUser({ certifications: updatedCertifications });
-        console.log('Update result:', result);
         
         // Show success message
         toast({
@@ -724,7 +719,7 @@ export default function SettingsDashboard() {
         
         // Reset form and close dialog
         setNewCertification({ name: "", issuer: "", date: "" });
-      setIsCertificationDialogOpen(false);
+        setIsCertificationDialogOpen(false);
         
         // Force a refresh of the user data
         if (result) {
@@ -737,7 +732,6 @@ export default function SettingsDashboard() {
           form.reset(updatedUser, { keepDirty: false });
         }
       } catch (error) {
-        console.error('Error adding certification:', error);
         toast({
           title: "Error",
           description: "Failed to add certification. Please try again.",
@@ -750,17 +744,11 @@ export default function SettingsDashboard() {
   const handleAddLanguage = useCallback(async () => {
     if (newLanguage.trim()) {
       try {
-        console.log('Adding new language:', newLanguage.trim());
-        console.log('Current user:', user);
-        console.log('Current languages:', user?.languages);
-        
         // Get current languages or initialize empty array
         const currentLanguages = user?.languages || [];
-        console.log('Current languages array:', currentLanguages);
         
         // Check if language already exists
         if (currentLanguages.some(lang => lang.language === newLanguage.trim())) {
-          console.log('Language already exists');
           toast({
             title: "Language already exists",
             description: "This language has already been added to your profile.",
@@ -771,12 +759,9 @@ export default function SettingsDashboard() {
         
         // Add new language to the array
         const updatedLanguages = [...currentLanguages, { language: newLanguage.trim(), level: newLanguageLevel }];
-        console.log('Updated languages array:', updatedLanguages);
         
         // Update user profile with new languages
-        console.log('Calling updateUser with:', { languages: updatedLanguages });
         const result = await updateUser({ languages: updatedLanguages });
-        console.log('Update result:', result);
         
         // Show success message
         toast({
@@ -785,9 +770,9 @@ export default function SettingsDashboard() {
         });
         
         // Reset form and close dialog
-      setNewLanguage("");
+        setNewLanguage("");
         setNewLanguageLevel("Intermediate");
-      setIsLanguageDialogOpen(false);
+        setIsLanguageDialogOpen(false);
         
         // Force a refresh of the user data
         if (result) {
@@ -800,7 +785,6 @@ export default function SettingsDashboard() {
           form.reset(updatedUser, { keepDirty: false });
         }
       } catch (error) {
-        console.error('Error adding language:', error);
         toast({
           title: "Error",
           description: "Failed to add language. Please try again.",
@@ -809,7 +793,167 @@ export default function SettingsDashboard() {
       }
     }
   }, [newLanguage, newLanguageLevel, user, updateUser, toast, form]);
+
+  const handleSkillRemove = async (removedSkill: string) => {
+    try {
+      if (!user?.skills) return;
+      
+      // Filter out the removed skill
+      const filteredSkills = user.skills.filter(s => s !== removedSkill);
+      
+      // Show loading state immediately
+      setIsLoading(true);
+      
+      // Update user profile with filtered skills
+      const result = await updateUser({ skills: filteredSkills });
+      
+      // Show success message
+      toast({
+        title: "Skill removed",
+        description: "The skill has been removed from your profile.",
+      });
   
+      // Force immediate local state update
+      // This ensures the UI updates immediately regardless of the server response
+      if (result && result.skills) {
+        // Update form with server response
+        form.setValue('skills', result.skills, { 
+          shouldDirty: false,
+          shouldTouch: false,
+          shouldValidate: false
+        });
+      } else {
+        // Fallback: use our filtered skills if server doesn't return updated skills
+        form.setValue('skills', filteredSkills, { 
+          shouldDirty: false,
+          shouldTouch: false,
+          shouldValidate: false
+        });
+      }
+  
+      // Additional safeguard: trigger a form re-render
+      form.trigger('skills');
+      
+    } catch (error) {
+      // Revert the UI state on error by resetting form
+      if (user?.skills) {
+        form.setValue('skills', user.skills, { 
+          shouldDirty: false,
+          shouldTouch: false,
+          shouldValidate: false
+        });
+      }
+      
+      toast({
+        title: "Error",
+        description: "Failed to remove skill. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCertificationRemove = async (removedCert: any) => {
+    try {
+      if (!user?.certifications) return;
+      
+      const filteredCerts = user.certifications.filter(c => c.name !== removedCert.name);
+      
+      setIsLoading(true);
+      
+      const result = await updateUser({ certifications: filteredCerts });
+      
+      toast({
+        title: "Certification removed",
+        description: "The certification has been removed from your profile.",
+      });
+      
+      if (result && result.certifications) {
+        form.setValue('certifications', result.certifications, { 
+          shouldDirty: false,
+          shouldTouch: false,
+          shouldValidate: false
+        });
+      } else {
+        form.setValue('certifications', filteredCerts, { 
+          shouldDirty: false,
+          shouldTouch: false,
+          shouldValidate: false
+        });
+      }
+      
+      form.trigger('certifications');
+      
+    } catch (error) {
+      if (user?.certifications) {
+        form.setValue('certifications', user.certifications, { 
+          shouldDirty: false,
+          shouldTouch: false,
+          shouldValidate: false
+        });
+      }
+      
+      toast({
+        title: "Error",
+        description: "Failed to remove certification. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLanguageRemove = async (removedLang: any) => {
+    try {
+      if (!user?.languages) return;
+            
+      const filteredLangs = user.languages.filter(l => l.language !== removedLang.language);
+      
+      setIsLoading(true);
+      
+      const result = await updateUser({ languages: filteredLangs });
+      
+      toast({
+        title: "Language removed",
+        description: "The language has been removed from your profile.",
+      });
+      
+      if (result && result.languages) {
+        form.setValue('languages', result.languages, { 
+          shouldDirty: false,
+          shouldTouch: false,
+          shouldValidate: false
+        });
+      } else {
+        form.setValue('languages', filteredLangs, { 
+          shouldDirty: false,
+          shouldTouch: false,
+          shouldValidate: false
+        });
+      }
+      
+      form.trigger('languages');
+      
+    } catch (error) {
+      if (user?.languages) {
+        form.setValue('languages', user.languages, { 
+          shouldDirty: false,
+          shouldTouch: false,
+          shouldValidate: false
+        });
+      }
+      
+      toast({
+        title: "Error",
+        description: "Failed to remove language. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const toggleSkillDialog = useCallback((isOpen: boolean) => {
     setIsSkillDialogOpen(isOpen);
     if (!isOpen) setNewSkill("");
@@ -836,33 +980,7 @@ export default function SettingsDashboard() {
   const toggleEducationDialog = useCallback((isOpen: boolean) => {
     setIsEducationDialogOpen(isOpen);
   }, []);
-  
-  // Mock data - memoized to prevent recreation on each render
-  const profileInfo = useMemo(() => [
-    { label: "Email", value: "john.doe@example.com", icon: <Mail className="h-5 w-5" /> },
-    { label: "Phone", value: "+1 (555) 123-4567", icon: <Phone className="h-5 w-5" /> },
-    { label: "Location", value: "San Francisco, CA", icon: <MapPin className="h-5 w-5" /> },
-    { label: "Company", value: "Tech Corp Inc.", icon: <Building2 className="h-5 w-5" /> },
-    { label: "Experience", value: "5+ years experience", icon: <Briefcase className="h-5 w-5" /> },
-    { label: "Website", value: "johndoe.dev", icon: <Globe className="h-5 w-5" /> }
-  ], []);
-  
-  const skills = useMemo(() => [
-    "React", "JavaScript", "TypeScript", "Node.js", "Next.js", "TailwindCSS", "GraphQL", "AWS"
-  ], []);
-  
-  const languages = useMemo(() => [
-    { language: "English", level: "Native" },
-    { language: "Spanish", level: "Intermediate" },
-    { language: "French", level: "Basic" }
-  ], []);
-  
-  const certifications = useMemo(() => [
-    { name: "AWS Certified Solutions Architect", issuer: "Amazon Web Services", date: "2022" },
-    { name: "Professional Scrum Master I", issuer: "Scrum.org", date: "2021" },
-    { name: "Google Cloud Professional Developer", issuer: "Google", date: "2020" }
-  ], []);
-  
+
   // Memoize dialog content to prevent re-rendering
   const skillDialogContent = useMemo(() => (
     <div className="p-4">
@@ -878,14 +996,14 @@ export default function SettingsDashboard() {
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="skillName">Skill Name</Label>
-        <Input 
-          id="skillName" 
-          value={newSkill} 
-          onChange={(e) => setNewSkill(e.target.value)} 
-          placeholder="e.g. React, Project Management, JavaScript..." 
+          <Input 
+            id="skillName" 
+            value={newSkill} 
+            onChange={(e) => setNewSkill(e.target.value)} 
+            placeholder="e.g. React, Project Management, JavaScript..." 
             className="bg-white border-slate-200"
-        />
-      </div>
+          />
+        </div>
       </div>
       <DialogFooter className="flex gap-3 border-t border-slate-100 mt-4 pt-4">
         <Button 
@@ -1059,187 +1177,43 @@ export default function SettingsDashboard() {
     );
   }, []);
 
-  // Fix the linter errors by adding null checks
-  const handleSkillRemove = async (removedSkill: string) => {
-    try {
-      if (!user?.skills) return;
-      
-      console.log('Removing skill:', removedSkill);
-      console.log('Current skills before removal:', user.skills);
-      
-      // Filter out the removed skill
-      const filteredSkills = user.skills.filter(s => s !== removedSkill);
-      console.log('Filtered skills:', filteredSkills);
-      
-      // Show loading state immediately
-      setIsLoading(true);
-      
-      // Update user profile with filtered skills
-      const result = await updateUser({ skills: filteredSkills });
-      console.log('Update result:', result);
-      
-      // Show success message
-      toast({
-        title: "Skill removed",
-        description: "The skill has been removed from your profile.",
-      });
-  
-      // Force immediate local state update
-      // This ensures the UI updates immediately regardless of the server response
-      if (result && result.skills) {
-        // Update form with server response
-        form.setValue('skills', result.skills, { 
-          shouldDirty: false,
-          shouldTouch: false,
-          shouldValidate: false
-        });
-      } else {
-        // Fallback: use our filtered skills if server doesn't return updated skills
-        form.setValue('skills', filteredSkills, { 
-          shouldDirty: false,
-          shouldTouch: false,
-          shouldValidate: false
-        });
-      }
-  
-      // Additional safeguard: trigger a form re-render
-      form.trigger('skills');
-      
-    } catch (error) {
-      console.error('Error removing skill:', error);
-      
-      // Revert the UI state on error by resetting form
-      if (user?.skills) {
-        form.setValue('skills', user.skills, { 
-          shouldDirty: false,
-          shouldTouch: false,
-          shouldValidate: false
-        });
-      }
-      
-      toast({
-        title: "Error",
-        description: "Failed to remove skill. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  if (authLoading || !user || !isFormInitialized) {
+    return (
+      <div className="flex items-center justify-center min-h-[600px] px-6">
+        <div className="text-center space-y-6">
+          <div className="relative">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <div className="absolute inset-0 rounded-full border-2 border-blue-100"></div>
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold text-slate-700">Loading Settings</h3>
+            <p className="text-slate-500">
+              {authLoading ? "Authenticating..." : 
+               !user ? "Loading user data..." : 
+               "Initializing form..."}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  const handleCertificationRemove = async (removedCert: any) => {
-    try {
-      if (!user?.certifications) return;
-      
-      console.log('Removing certification:', removedCert);
-      console.log('Current certifications before removal:', user.certifications);
-      
-      const filteredCerts = user.certifications.filter(c => c.name !== removedCert.name);
-      console.log('Filtered certifications:', filteredCerts);
-      
-      setIsLoading(true);
-      
-      const result = await updateUser({ certifications: filteredCerts });
-      console.log('Update result:', result);
-      
-      toast({
-        title: "Certification removed",
-        description: "The certification has been removed from your profile.",
-      });
-      
-      if (result && result.certifications) {
-        form.setValue('certifications', result.certifications, { 
-          shouldDirty: false,
-          shouldTouch: false,
-          shouldValidate: false
-        });
-      } else {
-        form.setValue('certifications', filteredCerts, { 
-          shouldDirty: false,
-          shouldTouch: false,
-          shouldValidate: false
-        });
-      }
-      
-      form.trigger('certifications');
-      
-    } catch (error) {
-      console.error('Error removing certification:', error);
-      
-      if (user?.certifications) {
-        form.setValue('certifications', user.certifications, { 
-          shouldDirty: false,
-          shouldTouch: false,
-          shouldValidate: false
-        });
-      }
-      
-      toast({
-        title: "Error",
-        description: "Failed to remove certification. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleLanguageRemove = async (removedLang: any) => {
-    try {
-      if (!user?.languages) return;
-      
-      console.log('Removing language:', removedLang);
-      console.log('Current languages before removal:', user.languages);
-      
-      const filteredLangs = user.languages.filter(l => l.language !== removedLang.language);
-      console.log('Filtered languages:', filteredLangs);
-      
-      setIsLoading(true);
-      
-      const result = await updateUser({ languages: filteredLangs });
-      console.log('Update result:', result);
-      
-      toast({
-        title: "Language removed",
-        description: "The language has been removed from your profile.",
-      });
-      
-      if (result && result.languages) {
-        form.setValue('languages', result.languages, { 
-          shouldDirty: false,
-          shouldTouch: false,
-          shouldValidate: false
-        });
-      } else {
-        form.setValue('languages', filteredLangs, { 
-          shouldDirty: false,
-          shouldTouch: false,
-          shouldValidate: false
-        });
-      }
-      
-      form.trigger('languages');
-      
-    } catch (error) {
-      console.error('Error removing language:', error);
-      
-      if (user?.languages) {
-        form.setValue('languages', user.languages, { 
-          shouldDirty: false,
-          shouldTouch: false,
-          shouldValidate: false
-        });
-      }
-      
-      toast({
-        title: "Error",
-        description: "Failed to remove language. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Show access denied only if auth is complete but no user
+  if (!user && !authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[600px] px-6">
+        <div className="text-center space-y-6">
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold text-slate-700">Access Denied</h3>
+            <p className="text-slate-500">Please log in to access your settings.</p>
+          </div>
+          <Button onClick={() => router.push('/login')} className="bg-blue-600 hover:bg-blue-700">
+            Go to Login
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 px-6 pb-6">
@@ -1443,7 +1417,6 @@ export default function SettingsDashboard() {
                             <CountrySelect 
                               value={form.watch("country") || ""}
                               onValueChange={(value) => {
-                                console.log('Selected country:', value);
                                 form.setValue('country', value, { shouldDirty: true });
                               }}
                               placeholder="Select your country"
