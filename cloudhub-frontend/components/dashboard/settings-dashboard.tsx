@@ -68,6 +68,8 @@ import * as z from "zod"
 import { User as UserType } from "@/types/user"
 import CountrySelect from '@/components/selects/CountrySelect'
 import { useRouter } from 'next/navigation'
+import ReactCrop, { Crop } from 'react-image-crop'
+import 'react-image-crop/dist/ReactCrop.css'
 
 const getCountryCodeFromName = (countryName: string): string => {
   const countryMapping: { [key: string]: string } = {
@@ -429,6 +431,17 @@ export default function SettingsDashboard() {
   const [newLanguageLevel, setNewLanguageLevel] = useState("Intermediate")
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [crop, setCrop] = useState<Crop>({
+    unit: '%',
+    width: 90,
+    height: 90,
+    x: 5,
+    y: 5
+  })
+  const [imageSrc, setImageSrc] = useState<string | null>(null)
+  const [isCropping, setIsCropping] = useState(false)
+  const [croppedImage, setCroppedImage] = useState<File | null>(null)
+  const imageRef = useRef<HTMLImageElement>(null)
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsFormSchema),
@@ -774,32 +787,99 @@ export default function SettingsDashboard() {
     }
   }, [newLanguage, newLanguageLevel, user, updateUser, toast, form])
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0]
+      
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload a JPEG, PNG, GIF, or WebP image.",
+          variant: "destructive",
+        })
+        return
+      }
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
-    if (!allowedTypes.includes(file.type)) {
-      toast({
-        title: "Invalid file type",
-        description: "Please upload a JPEG, PNG, GIF, or WebP image.",
-        variant: "destructive",
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024 // 5MB
+      if (file.size > maxSize) {
+        toast({
+          title: "File too large",
+          description: "Please upload an image smaller than 5MB.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Create a URL for the image
+      const reader = new FileReader()
+      reader.addEventListener('load', () => {
+        setImageSrc(reader.result as string)
+        setIsCropping(true)
       })
-      return
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const getCroppedImg = async (image: HTMLImageElement, crop: Crop): Promise<File> => {
+    const canvas = document.createElement('canvas')
+    const scaleX = image.naturalWidth / image.width
+    const scaleY = image.naturalHeight / image.height
+    canvas.width = crop.width
+    canvas.height = crop.height
+    const ctx = canvas.getContext('2d')
+
+    if (!ctx) {
+      throw new Error('No 2d context')
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024 // 5MB
-    if (file.size > maxSize) {
-      toast({
-        title: "File too large",
-        description: "Please upload an image smaller than 5MB.",
-        variant: "destructive",
-      })
-      return
-    }
+    ctx.drawImage(
+      image,
+      crop.x * scaleX,
+      crop.y * scaleY,
+      crop.width * scaleX,
+      crop.height * scaleY,
+      0,
+      0,
+      crop.width,
+      crop.height
+    )
 
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error('Canvas is empty'))
+          return
+        }
+        const file = new File([blob], 'cropped-image.jpg', { type: 'image/jpeg' })
+        resolve(file)
+      }, 'image/jpeg')
+    })
+  }
+
+  const handleCropComplete = async () => {
+    if (imageRef.current && crop) {
+      try {
+        const croppedImageFile = await getCroppedImg(imageRef.current, crop)
+        setCroppedImage(croppedImageFile)
+        setIsCropping(false)
+        setImageSrc(null)
+        
+        // Now upload the cropped image
+        await handleImageUpload(croppedImageFile)
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to crop image. Please try again.",
+          variant: "destructive",
+        })
+      }
+    }
+  }
+
+  const handleImageUpload = async (file: File) => {
     try {
       setIsUploading(true)
 
@@ -813,7 +893,7 @@ export default function SettingsDashboard() {
       const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload`, {
         method: 'POST',
         body: formData,
-        credentials: 'include', // Include cookies for authentication
+        credentials: 'include',
         headers: {
           'Authorization': `Bearer ${accessToken}`
         }
@@ -1111,7 +1191,7 @@ export default function SettingsDashboard() {
                   <input
                     type="file"
                     ref={fileInputRef}
-                    onChange={handleImageUpload}
+                    onChange={onFileChange}
                     accept="image/jpeg,image/png,image/gif,image/webp"
                     className="hidden"
                   />
@@ -1885,7 +1965,63 @@ export default function SettingsDashboard() {
           </div>
         </Tabs>
       </div>
-    </div>
+      
+      {/* Add the cropping modal */}
+      <Dialog open={isCropping} onOpenChange={setIsCropping}>
+        <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden border-none shadow-xl rounded-2xl bg-white">
+          <div className="p-4">
+            <div className="relative py-4 px-6 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 -m-4 mb-4">
+              <DialogTitle className="text-xl font-bold text-white flex items-center">
+                <Camera className="h-5 w-5 mr-2" />
+                Crop Profile Picture
+              </DialogTitle>
+              <DialogDescription className="text-blue-100 mt-1">
+                Adjust the crop area to get the perfect profile picture
+              </DialogDescription>
+            </div>
+            
+            <div className="space-y-4">
+              {imageSrc && (
+                <div className="max-h-[400px] overflow-auto">
+                  <ReactCrop
+                    crop={crop}
+                    onChange={(c) => setCrop(c)}
+                    aspect={1}
+                    className="max-w-full"
+                  >
+                    <img
+                      ref={imageRef}
+                      src={imageSrc}
+                      alt="Crop preview"
+                      className="max-w-full"
+                    />
+                  </ReactCrop>
+                </div>
+              )}
+            </div>
+            
+            <DialogFooter className="flex gap-3 border-t border-slate-100 mt-4 pt-4">
+              <Button
+                variant="outline"
+                className="flex-1 border-slate-200 rounded-xl hover:bg-slate-50"
+                onClick={() => {
+                  setIsCropping(false)
+                  setImageSrc(null)
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md rounded-xl"
+                onClick={handleCropComplete}
+              >
+                Apply Crop
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+      </div>
     </form>
   )
 } 
