@@ -59,7 +59,7 @@ import {
 } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useState, useCallback, memo, useMemo, useEffect } from "react"
-import { useAuth } from "@/lib/auth"
+import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/components/ui/use-toast"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -405,17 +405,19 @@ const settingsFormSchema = z.object({
 type SettingsFormValues = z.infer<typeof settingsFormSchema>
 
 export default function SettingsDashboard() {
-  const { user, updateUser, loading: authLoading } = useAuth()
+  const { user, updateUser } = useAuth()
   const { toast } = useToast()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
-  const [isFormInitialized, setIsFormInitialized] = useState(false)  
-  const [isExperienceDialogOpen, setIsExperienceDialogOpen] = useState(false)
-  const [isEducationDialogOpen, setIsEducationDialogOpen] = useState(false)
-  const [currentlyWorking, setCurrentlyWorking] = useState(false)
+  const [isFormInitialized, setIsFormInitialized] = useState(false)
+  const [activeTab, setActiveTab] = useState("personal")
+  const [organizationSize, setOrganizationSize] = useState("")
   const [isSkillDialogOpen, setIsSkillDialogOpen] = useState(false)
   const [isCertificationDialogOpen, setIsCertificationDialogOpen] = useState(false)
   const [isLanguageDialogOpen, setIsLanguageDialogOpen] = useState(false)
+  const [isExperienceDialogOpen, setIsExperienceDialogOpen] = useState(false)
+  const [isEducationDialogOpen, setIsEducationDialogOpen] = useState(false)
+  const [currentlyWorking, setCurrentlyWorking] = useState(false)
   const [newSkill, setNewSkill] = useState("")
   const [newCertification, setNewCertification] = useState({
     name: "",
@@ -424,171 +426,191 @@ export default function SettingsDashboard() {
   })
   const [newLanguage, setNewLanguage] = useState("")
   const [newLanguageLevel, setNewLanguageLevel] = useState("Intermediate")
-  const [activeTab, setActiveTab] = useState("personal")
-  const [organizationSize, setOrganizationSize] = useState("")
-  
-  const defaultValues = useMemo(() => {
-    // Return empty defaults if user is not available yet
-    if (!user) {
-      return {
-        name: "",
-        full_name: "",
-        email: "",
-        phone: "",
-        country: "",
-        bio: "",
-        organization_name: "",
-        organization_website: "",
-        organization_size: "",
-        industry: "",
-        skills: [],
-        certifications: [],
-        languages: [],
-        social_links: {
-          github: "",
-          linkedin: "",
-          twitter: "",
-          website: ""
-        }
-      };
-    }
-
-    // Only return actual user data when user is available
-    return {
-      name: user.name || "",
-      full_name: user.full_name || user.name || "",
-      email: user.email || "",
-      phone: user.phone || "",
-      country: user.country?.toLowerCase() || "",
-      bio: user.bio || "",
-      organization_name: user.organization_name || "",
-      organization_website: user.organization_website || "",
-      organization_size: user.organization_size || "",
-      industry: user.industry || "",
-      skills: user.skills || [],
-      certifications: user.certifications || [],
-      languages: user.languages || [],
-      social_links: {
-        github: user.social_links?.github || "",
-        linkedin: user.social_links?.linkedin || "",
-        twitter: user.social_links?.twitter || "",
-        website: user.social_links?.website || ""
-      }
-    };
-  }, [user]);
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsFormSchema),
-    defaultValues
-  });
+    defaultValues: {
+      full_name: user?.full_name || "",
+      email: user?.email || "",
+      phone: user?.phone || "",
+      country: user?.country || "",
+      bio: user?.bio || "",
+      organization_name: user?.organization_name || "",
+      organization_website: user?.organization_website || "",
+      skills: user?.skills || [],
+      languages: user?.languages || [],
+      certifications: user?.certifications || [],
+      social_links: {
+        github: user?.social_links?.github || "",
+        linkedin: user?.social_links?.linkedin || "",
+        twitter: user?.social_links?.twitter || "",
+        website: user?.social_links?.website || user?.organization_website || ""
+      }
+    }
+  })
 
-  // Better initialization effect with proper dependencies
+  // Initialize form with user data
   useEffect(() => {
-    // Only proceed if auth is done loading and we have user data
-    if (authLoading || !user) {
-      return;
+    if (!user || isFormInitialized) {
+      return
     }
 
-    // Only initialize once per user session
-    if (isFormInitialized) {
-      return;
-    }
-    
-    const formData = {
-      name: user.name || "",
-      full_name: user.full_name || user.name || "",
+    form.reset({
+      full_name: user.full_name || "",
       email: user.email || "",
       phone: user.phone || "",
-      country: user.country?.toLowerCase() || "",
+      country: user.country || "",
       bio: user.bio || "",
       organization_name: user.organization_name || "",
       organization_website: user.organization_website || "",
-      organization_size: user.organization_size || "",
-      industry: user.industry || "",
       skills: user.skills || [],
-      certifications: user.certifications || [],
       languages: user.languages || [],
+      certifications: user.certifications || [],
       social_links: {
         github: user.social_links?.github || "",
         linkedin: user.social_links?.linkedin || "",
         twitter: user.social_links?.twitter || "",
-        website: user.social_links?.website || ""
+        website: user.social_links?.website || user.organization_website || ""
       }
-    };
+    })
 
-    // Reset form with user data
-    form.reset(formData, {
-      keepDirty: false,
-      keepTouched: false,
-      keepIsValid: false,
-      keepErrors: false
-    });
-
-    // Set organization size in local state
     if (user.organization_size) {
-      setOrganizationSize(user.organization_size);
+      setOrganizationSize(user.organization_size)
     }
 
-    setIsFormInitialized(true);
-  }, [user, authLoading, form, isFormInitialized]);
+    setIsFormInitialized(true)
+  }, [user, form, isFormInitialized])
 
   // Reset initialization when user changes (logout/login)
   useEffect(() => {
-    if (!user && !authLoading) {
-      setIsFormInitialized(false);
+    if (!user) {
+      setIsFormInitialized(false)
     }
-  }, [user, authLoading]);
-  
-  // Add a separate effect to handle industry updates
-  useEffect(() => {
-    if (user?.industry) {
-      form.setValue('industry', user.industry, {
-        shouldDirty: false,
-        shouldTouch: false,
-        shouldValidate: false
-      });
-    }
-  }, [user?.industry, form]);
+  }, [user])
 
-  useEffect(() => {
-    if (user?.skills && JSON.stringify(user.skills) !== JSON.stringify(form.watch("skills"))) {
-      form.setValue('skills', user.skills, { 
-        shouldDirty: false,
-        shouldTouch: false,
-        shouldValidate: false
-      });
-    }
-  }, [user?.skills, form]);
+  const handleTabChange = useCallback((value: string) => {
+    setActiveTab(value)
+  }, [])
 
-  // Add a submit handler function
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Get current form values
-    const formValues = form.getValues();
-    
-    // Ensure name is set from full_name if empty
-    if (!formValues.name && formValues.full_name) {
-      form.setValue('name', formValues.full_name, { shouldValidate: true });
-    }
-    
-    // Validate form before submission
-    const isValid = await form.trigger();
-    if (!isValid) {
-      return;
-    }
-    
-    await form.handleSubmit(onSubmit)();
-  };
-
-  // Handle form submission
-  async function onSubmit(data: SettingsFormValues) {
+  const handleSkillRemove = async (removedSkill: string) => {
     try {
-      setIsLoading(true);
+      if (!user?.skills) return
       
-      // Map frontend data to backend format
+      const filteredSkills = user.skills.filter(s => s !== removedSkill)
+      setIsLoading(true)
+      
+      const result = await updateUser({ skills: filteredSkills })
+      
+      toast({
+        title: "Skill removed",
+        description: "The skill has been removed from your profile.",
+      })
+      
+      if (result && result.skills) {
+        form.setValue('skills', result.skills)
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to remove skill. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleCertificationRemove = async (removedCert: any) => {
+    try {
+      if (!user?.certifications) return
+      
+      const filteredCerts = user.certifications.filter(c => c.name !== removedCert.name)
+      setIsLoading(true)
+      
+      const result = await updateUser({ certifications: filteredCerts })
+      
+      toast({
+        title: "Certification removed",
+        description: "The certification has been removed from your profile.",
+      })
+      
+      if (result && result.certifications) {
+        form.setValue('certifications', result.certifications)
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to remove certification. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleLanguageRemove = async (removedLang: any) => {
+    try {
+      if (!user?.languages) return
+      
+      const filteredLangs = user.languages.filter(l => l.language !== removedLang.language)
+      setIsLoading(true)
+      
+      const result = await updateUser({ languages: filteredLangs })
+      
+      toast({
+        title: "Language removed",
+        description: "The language has been removed from your profile.",
+      })
+      
+      if (result && result.languages) {
+        form.setValue('languages', result.languages)
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to remove language. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const toggleSkillDialog = useCallback((isOpen: boolean) => {
+    setIsSkillDialogOpen(isOpen)
+    if (!isOpen) setNewSkill("")
+  }, [])
+
+  const toggleCertificationDialog = useCallback((isOpen: boolean) => {
+    setIsCertificationDialogOpen(isOpen)
+    if (!isOpen) setNewCertification({ name: "", issuer: "", date: "" })
+  }, [])
+
+  const toggleLanguageDialog = useCallback((isOpen: boolean) => {
+    setIsLanguageDialogOpen(isOpen)
+    if (!isOpen) {
+      setNewLanguage("")
+      setNewLanguageLevel("Intermediate")
+    }
+  }, [])
+
+  const toggleExperienceDialog = useCallback((isOpen: boolean) => {
+    setIsExperienceDialogOpen(isOpen)
+    if (!isOpen) setCurrentlyWorking(false)
+  }, [])
+
+  const toggleEducationDialog = useCallback((isOpen: boolean) => {
+    setIsEducationDialogOpen(isOpen)
+  }, [])
+
+  const onSubmit = async (data: SettingsFormValues) => {
+    if (!user) return
+
+    try {
+      setIsLoading(true)
+      
       const updateData = {
-        name: data.full_name, // Map full_name to name for backend
+        name: data.full_name,
         phone: data.phone,
         country: data.country,
         bio: data.bio,
@@ -600,386 +622,154 @@ export default function SettingsDashboard() {
         certifications: data.certifications || [],
         languages: data.languages || [],
         social_links: data.social_links
-      };
+      }
       
-      // Call updateUser from auth context
-      const updatedUser = await updateUser(updateData);
+      const updatedUser = await updateUser(updateData)
       
-      // Update local state with the new user data
       if (updatedUser) {
-        // Map backend response to frontend format
         const frontendUserData = {
           ...updatedUser,
-          full_name: updatedUser.name, // Map name back to full_name for frontend
+          full_name: updatedUser.name,
           name: updatedUser.name
-        };
-        // Force a re-render by updating the form
-        form.reset(frontendUserData, { keepDirty: false });
+        }
+        form.reset(frontendUserData, { keepDirty: false })
       }
       
       toast({
         title: "Settings updated",
         description: "Your settings have been updated successfully.",
-      });
+      })
     } catch (error) {
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to update settings. Please try again.",
         variant: "destructive",
-      });
+      })
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
   }
-  
-  // Memoized handlers
-  const handleTabChange = useCallback((value: string) => {
-    setActiveTab(value);
-  }, []);
-  
-  const handleAddSkill = useCallback(async () => {
-    if (newSkill.trim()) {
-      try {
-        // Get current skills or initialize empty array
-        const currentSkills = user?.skills || [];
-        
-        // Check if skill already exists
-        if (currentSkills.includes(newSkill.trim())) {
-          toast({
-            title: "Skill already exists",
-            description: "This skill has already been added to your profile.",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        // Add new skill to the array
-        const updatedSkills = [...currentSkills, newSkill.trim()];
-        
-        // Update user profile with new skills
-        const result = await updateUser({ skills: updatedSkills });
-        
-        // Show success message
-        toast({
-          title: "Skill added",
-          description: "Your skill has been added successfully.",
-        });
-        
-        // Reset form and close dialog
-        setNewSkill("");
-        setIsSkillDialogOpen(false);
-        
-        // Force a refresh of the user data
-        if (result) {
-          // Update local state with the new user data
-          const updatedUser = {
-            ...user,
-            skills: result.skills
-          };
-          // Force a re-render by updating the form
-          form.reset(updatedUser, { keepDirty: false });
-        }
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to add skill. Please try again.",
-          variant: "destructive",
-        });
-      }
-    }
-  }, [newSkill, user, updateUser, toast, form]);
-  
-  const handleAddCertification = useCallback(async () => {
-    if (newCertification.name.trim() && newCertification.issuer.trim() && newCertification.date) {
-      try {
-        // Get current certifications or initialize empty array
-        const currentCertifications = user?.certifications || [];
-        
-        // Check if certification already exists
-        if (currentCertifications.some(cert => cert.name === newCertification.name.trim())) {
-          toast({
-            title: "Certification already exists",
-            description: "This certification has already been added to your profile.",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        // Add new certification to the array
-        const updatedCertifications = [...currentCertifications, newCertification];
-        
-        // Update user profile with new certifications
-        const result = await updateUser({ certifications: updatedCertifications });
-        
-        // Show success message
-        toast({
-          title: "Certification added",
-          description: "Your certification has been added successfully.",
-        });
-        
-        // Reset form and close dialog
-        setNewCertification({ name: "", issuer: "", date: "" });
-        setIsCertificationDialogOpen(false);
-        
-        // Force a refresh of the user data
-        if (result) {
-          // Update local state with the new user data
-          const updatedUser = {
-            ...user,
-            certifications: result.certifications
-          };
-          // Force a re-render by updating the form
-          form.reset(updatedUser, { keepDirty: false });
-        }
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to add certification. Please try again.",
-          variant: "destructive",
-        });
-      }
-    }
-  }, [newCertification, user, updateUser, toast, form]);
-  
-  const handleAddLanguage = useCallback(async () => {
-    if (newLanguage.trim()) {
-      try {
-        // Get current languages or initialize empty array
-        const currentLanguages = user?.languages || [];
-        
-        // Check if language already exists
-        if (currentLanguages.some(lang => lang.language === newLanguage.trim())) {
-          toast({
-            title: "Language already exists",
-            description: "This language has already been added to your profile.",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        // Add new language to the array
-        const updatedLanguages = [...currentLanguages, { language: newLanguage.trim(), level: newLanguageLevel }];
-        
-        // Update user profile with new languages
-        const result = await updateUser({ languages: updatedLanguages });
-        
-        // Show success message
-        toast({
-          title: "Language added",
-          description: "Your language has been added successfully.",
-        });
-        
-        // Reset form and close dialog
-        setNewLanguage("");
-        setNewLanguageLevel("Intermediate");
-        setIsLanguageDialogOpen(false);
-        
-        // Force a refresh of the user data
-        if (result) {
-          // Update local state with the new user data
-          const updatedUser = {
-            ...user,
-            languages: result.languages
-          };
-          // Force a re-render by updating the form
-          form.reset(updatedUser, { keepDirty: false });
-        }
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to add language. Please try again.",
-          variant: "destructive",
-        });
-      }
-    }
-  }, [newLanguage, newLanguageLevel, user, updateUser, toast, form]);
 
-  const handleSkillRemove = async (removedSkill: string) => {
+  const handleSaveChanges = () => {
+    console.log('Form is dirty:', form.formState.isDirty);
+    console.log('Current form values:', form.getValues());
+    form.handleSubmit(onSubmit)();
+  }
+
+  const handleAddSkill = useCallback(async () => {
+    if (!newSkill.trim()) return
+
     try {
-      if (!user?.skills) return;
+      const currentSkills = user?.skills || []
       
-      // Filter out the removed skill
-      const filteredSkills = user.skills.filter(s => s !== removedSkill);
+      if (currentSkills.includes(newSkill.trim())) {
+        toast({
+          title: "Skill already exists",
+          description: "This skill has already been added to your profile.",
+          variant: "destructive",
+        })
+        return
+      }
       
-      // Show loading state immediately
-      setIsLoading(true);
+      const updatedSkills = [...currentSkills, newSkill.trim()]
+      const result = await updateUser({ skills: updatedSkills })
       
-      // Update user profile with filtered skills
-      const result = await updateUser({ skills: filteredSkills });
-      
-      // Show success message
       toast({
-        title: "Skill removed",
-        description: "The skill has been removed from your profile.",
-      });
-  
-      // Force immediate local state update
-      // This ensures the UI updates immediately regardless of the server response
+        title: "Skill added",
+        description: "Your skill has been added successfully.",
+      })
+      
+      setNewSkill("")
+      setIsSkillDialogOpen(false)
+      
       if (result && result.skills) {
-        // Update form with server response
-        form.setValue('skills', result.skills, { 
-          shouldDirty: false,
-          shouldTouch: false,
-          shouldValidate: false
-        });
-      } else {
-        // Fallback: use our filtered skills if server doesn't return updated skills
-        form.setValue('skills', filteredSkills, { 
-          shouldDirty: false,
-          shouldTouch: false,
-          shouldValidate: false
-        });
+        form.setValue('skills', result.skills)
       }
-  
-      // Additional safeguard: trigger a form re-render
-      form.trigger('skills');
-      
     } catch (error) {
-      // Revert the UI state on error by resetting form
-      if (user?.skills) {
-        form.setValue('skills', user.skills, { 
-          shouldDirty: false,
-          shouldTouch: false,
-          shouldValidate: false
-        });
-      }
-      
       toast({
         title: "Error",
-        description: "Failed to remove skill. Please try again.",
+        description: "Failed to add skill. Please try again.",
         variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+      })
     }
-  };
+  }, [newSkill, user, updateUser, toast, form])
 
-  const handleCertificationRemove = async (removedCert: any) => {
+  const handleAddCertification = useCallback(async () => {
+    if (!newCertification.name.trim() || !newCertification.issuer.trim() || !newCertification.date) return
+
     try {
-      if (!user?.certifications) return;
+      const currentCertifications = user?.certifications || []
       
-      const filteredCerts = user.certifications.filter(c => c.name !== removedCert.name);
+      if (currentCertifications.some(cert => cert.name === newCertification.name.trim())) {
+        toast({
+          title: "Certification already exists",
+          description: "This certification has already been added to your profile.",
+          variant: "destructive",
+        })
+        return
+      }
       
-      setIsLoading(true);
-      
-      const result = await updateUser({ certifications: filteredCerts });
+      const updatedCertifications = [...currentCertifications, newCertification]
+      const result = await updateUser({ certifications: updatedCertifications })
       
       toast({
-        title: "Certification removed",
-        description: "The certification has been removed from your profile.",
-      });
+        title: "Certification added",
+        description: "Your certification has been added successfully.",
+      })
+      
+      setNewCertification({ name: "", issuer: "", date: "" })
+      setIsCertificationDialogOpen(false)
       
       if (result && result.certifications) {
-        form.setValue('certifications', result.certifications, { 
-          shouldDirty: false,
-          shouldTouch: false,
-          shouldValidate: false
-        });
-      } else {
-        form.setValue('certifications', filteredCerts, { 
-          shouldDirty: false,
-          shouldTouch: false,
-          shouldValidate: false
-        });
+        form.setValue('certifications', result.certifications)
       }
-      
-      form.trigger('certifications');
-      
     } catch (error) {
-      if (user?.certifications) {
-        form.setValue('certifications', user.certifications, { 
-          shouldDirty: false,
-          shouldTouch: false,
-          shouldValidate: false
-        });
-      }
-      
       toast({
         title: "Error",
-        description: "Failed to remove certification. Please try again.",
+        description: "Failed to add certification. Please try again.",
         variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+      })
     }
-  };
+  }, [newCertification, user, updateUser, toast, form])
 
-  const handleLanguageRemove = async (removedLang: any) => {
+  const handleAddLanguage = useCallback(async () => {
+    if (!newLanguage.trim()) return
+
     try {
-      if (!user?.languages) return;
-            
-      const filteredLangs = user.languages.filter(l => l.language !== removedLang.language);
+      const currentLanguages = user?.languages || []
       
-      setIsLoading(true);
+      if (currentLanguages.some(lang => lang.language === newLanguage.trim())) {
+        toast({
+          title: "Language already exists",
+          description: "This language has already been added to your profile.",
+          variant: "destructive",
+        })
+        return
+      }
       
-      const result = await updateUser({ languages: filteredLangs });
+      const updatedLanguages = [...currentLanguages, { language: newLanguage.trim(), level: newLanguageLevel }]
+      const result = await updateUser({ languages: updatedLanguages })
       
       toast({
-        title: "Language removed",
-        description: "The language has been removed from your profile.",
-      });
+        title: "Language added",
+        description: "Your language has been added successfully.",
+      })
+      
+      setNewLanguage("")
+      setNewLanguageLevel("Intermediate")
+      setIsLanguageDialogOpen(false)
       
       if (result && result.languages) {
-        form.setValue('languages', result.languages, { 
-          shouldDirty: false,
-          shouldTouch: false,
-          shouldValidate: false
-        });
-      } else {
-        form.setValue('languages', filteredLangs, { 
-          shouldDirty: false,
-          shouldTouch: false,
-          shouldValidate: false
-        });
+        form.setValue('languages', result.languages)
       }
-      
-      form.trigger('languages');
-      
     } catch (error) {
-      if (user?.languages) {
-        form.setValue('languages', user.languages, { 
-          shouldDirty: false,
-          shouldTouch: false,
-          shouldValidate: false
-        });
-      }
-      
       toast({
         title: "Error",
-        description: "Failed to remove language. Please try again.",
+        description: "Failed to add language. Please try again.",
         variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+      })
     }
-  };
-
-  const toggleSkillDialog = useCallback((isOpen: boolean) => {
-    setIsSkillDialogOpen(isOpen);
-    if (!isOpen) setNewSkill("");
-  }, []);
-  
-  const toggleCertificationDialog = useCallback((isOpen: boolean) => {
-    setIsCertificationDialogOpen(isOpen);
-    if (!isOpen) setNewCertification({ name: "", issuer: "", date: "" });
-  }, []);
-  
-  const toggleLanguageDialog = useCallback((isOpen: boolean) => {
-    setIsLanguageDialogOpen(isOpen);
-    if (!isOpen) {
-      setNewLanguage("");
-      setNewLanguageLevel("Intermediate");
-    }
-  }, []);
-  
-  const toggleExperienceDialog = useCallback((isOpen: boolean) => {
-    setIsExperienceDialogOpen(isOpen);
-    if (!isOpen) setCurrentlyWorking(false);
-  }, []);
-  
-  const toggleEducationDialog = useCallback((isOpen: boolean) => {
-    setIsEducationDialogOpen(isOpen);
-  }, []);
+  }, [newLanguage, newLanguageLevel, user, updateUser, toast, form])
 
   // Memoize dialog content to prevent re-rendering
   const skillDialogContent = useMemo(() => (
@@ -1022,7 +812,7 @@ export default function SettingsDashboard() {
         </Button>
       </DialogFooter>
     </div>
-  ), [newSkill, handleAddSkill, toggleSkillDialog]);
+  ), [newSkill, handleAddSkill, toggleSkillDialog])
 
   const certificationDialogContent = useMemo(() => (
     <div className="p-4">
@@ -1071,10 +861,7 @@ export default function SettingsDashboard() {
         <Button 
           variant="outline"
           className="flex-1 border-slate-200 rounded-xl hover:bg-slate-50"
-          onClick={() => {
-            setNewCertification({ name: "", issuer: "", date: "" });
-            toggleCertificationDialog(false);
-          }}
+          onClick={() => toggleCertificationDialog(false)}
         >
           Cancel
         </Button>
@@ -1087,7 +874,7 @@ export default function SettingsDashboard() {
         </Button>
       </DialogFooter>
     </div>
-  ), [newCertification, handleAddCertification, toggleCertificationDialog]);
+  ), [newCertification, handleAddCertification, toggleCertificationDialog])
 
   const languageDialogContent = useMemo(() => (
     <div className="p-4">
@@ -1134,11 +921,7 @@ export default function SettingsDashboard() {
         <Button
           variant="outline"
           className="flex-1 border-slate-200 rounded-xl hover:bg-slate-50 transition-all duration-200"
-          onClick={() => {
-            setNewLanguage("");
-            setNewLanguageLevel("Intermediate");
-            toggleLanguageDialog(false);
-          }}
+          onClick={() => toggleLanguageDialog(false)}
         >
           Cancel
         </Button>
@@ -1151,72 +934,36 @@ export default function SettingsDashboard() {
         </Button>
       </DialogFooter>
     </div>
-  ), [newLanguage, newLanguageLevel, handleAddLanguage, toggleLanguageDialog]);
+  ), [newLanguage, newLanguageLevel, handleAddLanguage, toggleLanguageDialog])
 
-  // Memoize long lists to prevent re-rendering
-  const countriesList = useMemo(() => {
-    const countries = [
-      { value: "us", label: "United States" },
-      { value: "gb", label: "United Kingdom" },
-      { value: "ca", label: "Canada" },
-      { value: "au", label: "Australia" },
-      { value: "de", label: "Germany" },
-      { value: "fr", label: "France" },
-      { value: "jp", label: "Japan" },
-      { value: "in", label: "India" },
-      { value: "cn", label: "China" },
-      { value: "br", label: "Brazil" }
-    ];
-    
-    return (
-      <>
-        {countries.map(country => (
-          <SelectItem key={country.value} value={country.value}>{country.label}</SelectItem>
-        ))}
-      </>
-    );
-  }, []);
-
-  if (authLoading || !user || !isFormInitialized) {
+  if (!user || !isFormInitialized) {
     return (
       <div className="flex items-center justify-center min-h-[600px] px-6">
-        <div className="text-center space-y-6">
-          <div className="relative">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <div className="absolute inset-0 rounded-full border-2 border-blue-100"></div>
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-slate-700">Loading Settings</h3>
-            <p className="text-slate-500">
-              {authLoading ? "Authenticating..." : 
-               !user ? "Loading user data..." : 
-               "Initializing form..."}
-            </p>
-          </div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h3 className="text-lg font-semibold text-slate-700">Loading Settings</h3>
+          <p className="text-slate-500">
+            Loading user data...
+          </p>
         </div>
       </div>
-    );
+    )
   }
 
-  // Show access denied only if auth is complete but no user
-  if (!user && !authLoading) {
+  // Show access denied only if no user
+  if (!user) {
     return (
       <div className="flex items-center justify-center min-h-[600px] px-6">
-        <div className="text-center space-y-6">
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-slate-700">Access Denied</h3>
-            <p className="text-slate-500">Please log in to access your settings.</p>
-          </div>
-          <Button onClick={() => router.push('/login')} className="bg-blue-600 hover:bg-blue-700">
-            Go to Login
-          </Button>
+        <div className="text-center">
+          <h3 className="text-lg font-semibold text-slate-700">Access Denied</h3>
+          <p className="text-slate-500">Please log in to view your settings.</p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 px-6 pb-6">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 px-6 pb-6">
       <div className="space-y-6">
       {/* Background Pattern - Simplified */}
       <div className="absolute inset-0 bg-grid-slate-200/40 pointer-events-none"></div>
@@ -1531,12 +1278,7 @@ export default function SettingsDashboard() {
                           type="submit"
                           disabled={isLoading || !form.formState.isDirty}
                           className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm hover:shadow-md transition-all duration-200"
-                          onClick={() => {
-                            console.log('Submit button clicked');
-                            console.log('Form is dirty:', form.formState.isDirty);
-                            console.log('Current form values:', form.getValues());
-                            form.handleSubmit(onSubmit)();
-                          }}
+                          onClick={handleSaveChanges}
                         >
                           {isLoading ? (
                             <>
@@ -1910,12 +1652,7 @@ export default function SettingsDashboard() {
                         type="submit"
                         disabled={isLoading || !form.formState.isDirty}
                         className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm hover:shadow-md transition-all duration-200"
-                        onClick={() => {
-                          console.log('Submit button clicked');
-                          console.log('Form is dirty:', form.formState.isDirty);
-                          console.log('Current form values:', form.getValues());
-                          form.handleSubmit(onSubmit)();
-                        }}
+                        onClick={handleSaveChanges}
                       >
                         {isLoading ? (
                           <>

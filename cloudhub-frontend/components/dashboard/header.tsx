@@ -38,7 +38,7 @@ import {
 import { useScrollHandler } from "@/hooks/use-scroll-handler"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/contexts/auth-context'
 
 export default function DashboardHeader() {
   const [notifications] = useState(3)
@@ -241,7 +241,7 @@ export default function DashboardHeader() {
               >
                 <Avatar className="h-6 w-6 border border-slate-100 shadow-sm">
                   <AvatarImage src={user?.avatar || '/default-avatar.png'} alt={user?.full_name || 'User'} />
-                  <AvatarFallback>{user?.full_name ? user.full_name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U'}</AvatarFallback>
+                  <AvatarFallback>{user?.full_name ? user.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase() : 'U'}</AvatarFallback>
                 </Avatar>
                 <span className="hidden md:inline-block">{user?.full_name || 'Loading...'}</span>
                 <ChevronDown className="h-4 w-4 opacity-50" />

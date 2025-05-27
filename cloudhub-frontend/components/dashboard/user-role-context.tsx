@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react"
-import { useAuth } from "@/lib/auth"
+import { useAuth } from "@/contexts/auth-context"
 
 type UserRole = "organizer" | "participant" | "judge" | "mentor" | "media"
 

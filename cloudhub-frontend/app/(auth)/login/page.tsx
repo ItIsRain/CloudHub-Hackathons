@@ -12,7 +12,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { authAPI } from "@/lib/api/auth";
+import { useAuth } from "@/contexts/auth-context";
 import { toast } from "sonner";
 import CountryCodeSelect from '@/components/selects/CountryCodeSelect';
 
@@ -55,20 +55,9 @@ const countryCodes = [
   { value: "+64", label: "+64 (New Zealand)" }
 ];
 
-interface LoginResponse {
-  access_token: string;
-  refresh_token: string;
-  user: {
-    id: string;
-    email: string;
-    full_name: string;
-    role: string;
-    avatar?: string;
-  };
-}
-
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const { theme, systemTheme } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
@@ -151,83 +140,37 @@ export default function LoginPage() {
         username = `${countryCode}${cleanPhone}@phone.cloudhub.com`;
       }
 
-      const response = await authAPI.login({
+      await login({
         username,
         password
       });
 
-      // Check if we have both tokens before proceeding
-      if (!response.access_token || !response.refresh_token) {
-        throw new Error('Authentication failed');
-      }
+      // Show success message
+      toast.success("Successfully logged in!");
 
-      // Store tokens and user data
-      localStorage.setItem('access_token', response.access_token);
-      localStorage.setItem('refresh_token', response.refresh_token);
+      // Check for redirect parameter
+      const params = new URLSearchParams(window.location.search);
+      const redirectPath = params.get('redirect') || '/dashboard';
       
-      if (response.user) {
-        // Store user data
-        const userData = {
-          id: response.user.id,
-          email: response.user.email,
-          full_name: response.user.full_name,
-          role: response.user.role,
-          avatar: response.user.avatar || null
-        };
-        localStorage.setItem('user', JSON.stringify(userData));
-
-        // Set cookies for server-side access
-        document.cookie = `access_token=${response.access_token}; path=/`;
-        document.cookie = `refresh_token=${response.refresh_token}; path=/`;
-        document.cookie = `user=${JSON.stringify(userData)}; path=/`;
-
-        // Show success message
-        toast.success("Successfully logged in!");
-
-        // Check for redirect parameter
-        const params = new URLSearchParams(window.location.search);
-        const redirectPath = params.get('redirect') || '/dashboard';
-        
-        // Use router.push to redirect
-        router.push(redirectPath);
-      } else {
-        throw new Error('User data not received');
-      }
+      // Use router.push to redirect
+      router.push(redirectPath);
     } catch (err: any) {
       setIsLoading(false);
       let errorMessage = 'Invalid email/phone or password';
       
       if (err.response?.status === 401) {
-        errorMessage = 'Invalid email/phone or password';
-      } else if (err.response?.status === 422) {
-        // Handle validation errors
-        const validationErrors = err.response.data;
-        if (typeof validationErrors === 'object') {
-          const messages = [];
-          for (const key in validationErrors) {
-            if (Array.isArray(validationErrors[key])) {
-              messages.push(...validationErrors[key]);
-            } else if (typeof validationErrors[key] === 'string') {
-              messages.push(validationErrors[key]);
-            }
-          }
-          errorMessage = messages.join(', ') || 'Invalid input data';
-        } else if (err.response.data.detail) {
-          errorMessage = err.response.data.detail;
-        }
+        errorMessage = 'Invalid credentials';
       } else if (err.message) {
         errorMessage = err.message;
       }
-
-      // Set error state and show toast with longer duration
+      
       setError(errorMessage);
       toast.error(errorMessage, {
         duration: 5000,
         position: 'bottom-center',
       });
-      return; // Return early to prevent further execution
     }
-  }, [loginMethod, email, phone, countryCode, password, router]);
+  }, [login, loginMethod, email, phone, password, countryCode, isLoading, router]);
 
   // Memoize tab switcher to prevent rerenders when other state changes
   const TabSwitcher = useMemo(() => (

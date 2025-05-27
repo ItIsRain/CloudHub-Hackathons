@@ -45,7 +45,7 @@ import AnimatedGradientText from "../animated-gradient-text"
 import { useUserRole } from "./user-role-context"
 import { LucideIcon } from "lucide-react"
 import Image from "next/image"
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/contexts/auth-context'
 
 // Define the type for navigation items
 interface NavItem {

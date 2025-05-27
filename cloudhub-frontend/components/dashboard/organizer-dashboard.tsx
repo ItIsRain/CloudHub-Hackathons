@@ -5,7 +5,7 @@ import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
-import { getStoredUser } from "@/lib/auth"
+import { useAuth } from "@/contexts/auth-context"
 import {
   CalendarDays,
   Clock,
@@ -80,7 +80,7 @@ const hackathonData = [
 export default function OrganizerDashboard() {
   // Simulate loading state
   const [isLoading, setIsLoading] = useState(true)
-  const user = getStoredUser()
+  const { user } = useAuth()
   
   useEffect(() => {
     const timer = setTimeout(() => {
