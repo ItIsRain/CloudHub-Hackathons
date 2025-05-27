@@ -216,13 +216,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     
     try {
+      console.log('Refreshing user data...');
       const freshUser = await authAPI.getCurrentUser();
+      console.log('Fresh user data retrieved:', freshUser);
       setUser(freshUser);
       localStorage.setItem('user', JSON.stringify(freshUser));
     } catch (error) {
       console.error('Failed to refresh user:', error);
       
-      // If refresh user fails due to auth, logout
       if (error instanceof Error && 
           (error.message.includes('401') || 
            error.message.includes('Unauthorized'))) {

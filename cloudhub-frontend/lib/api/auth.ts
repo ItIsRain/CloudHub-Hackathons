@@ -98,66 +98,9 @@ export class AuthAPI {
 
   constructor() {
     this.api = axiosInstance;
-    
-    // Add response interceptor for token refresh
-    this.api.interceptors.response.use(
-      (response) => response,
-      async (error) => {
-        const originalRequest = error.config;
-        
-        // If error is not 401 or request has already been retried, reject
-        if (error.response?.status !== 401 || originalRequest._retry) {
-          return Promise.reject(error);
-        }
-
-        // If already refreshing, wait for the new token
-        if (this.isRefreshing) {
-          return new Promise((resolve) => {
-            this.refreshSubscribers.push((token: string) => {
-              originalRequest.headers['Authorization'] = `Bearer ${token}`;
-              resolve(this.api(originalRequest));
-            });
-          });
-        }
-
-        originalRequest._retry = true;
-        this.isRefreshing = true;
-
-        try {
-          const refreshToken = localStorage.getItem('refresh_token');
-          if (!refreshToken) {
-            throw new Error('No refresh token available');
-          }
-
-          const response = await this.api.post<RefreshTokenResponse>('/auth/refresh', {
-            refresh_token: refreshToken
-          });
-
-          const { access_token } = response.data;
-          
-          // Update tokens
-          localStorage.setItem('access_token', access_token);
-          this.api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
-
-          // Retry all queued requests
-          this.refreshSubscribers.forEach(callback => callback(access_token));
-          this.refreshSubscribers = [];
-
-          return this.api(originalRequest);
-        } catch (refreshError) {
-          // If refresh fails, clear tokens and redirect to login
-          this.clearTokens();
-          window.location.href = '/login';
-          return Promise.reject(refreshError);
-        } finally {
-          this.isRefreshing = false;
-        }
-      }
-    );
   }
 
   private handleError(error: any): never {
-    // Handle specific error cases
     if (error.response?.status === 422) {
       const validationErrors = error.response.data.errors;
       if (validationErrors && Array.isArray(validationErrors)) {
@@ -177,7 +120,6 @@ export class AuthAPI {
       throw new Error(error.response.data.detail);
     }
 
-    // Handle network errors
     if (error.message === 'Network Error') {
       throw new Error('Unable to connect to server. Please check your internet connection.');
     }
@@ -238,7 +180,7 @@ export class AuthAPI {
     }
 
     try {
-      const response = await this.api.post<TokenResponse>('/auth/refresh', {
+      const response = await axios.post<TokenResponse>(`${this.api.defaults.baseURL}/auth/refresh`, {
         refresh_token
       });
 
@@ -253,7 +195,6 @@ export class AuthAPI {
 
       return response.data;
     } catch (error) {
-      // If refresh fails, clear all tokens and throw error
       this.clearTokens();
       throw error;
     }
@@ -345,11 +286,6 @@ export class AuthAPI {
       const response = await this.api.put<User>('/users/me', data);
       return response.data;
     } catch (error: unknown) {
-      const err = error as { response?: { status?: number } };
-      if (err.response?.status === 401) {
-        // Token refresh will be handled by the interceptor
-        throw new Error('Session expired. Please log in again.');
-      }
       throw this.handleError(error);
     }
   }
