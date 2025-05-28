@@ -1,4 +1,4 @@
-// @/contexts/auth-context.tsx - Unified auth context
+// @/contexts/auth-context.tsx - Fixed auth context with better redirect handling
 
 "use client";
 
@@ -6,7 +6,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, UserRole } from '@/types/user';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Cookies from 'js-cookie';
 
 // Types
@@ -105,12 +105,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
   const router = useRouter();
 
   // Initialize auth state
   useEffect(() => {
-    initializeAuth();
-  }, []);
+    if (!isInitialized) {
+      initializeAuth();
+    }
+  }, [isInitialized]);
 
   // Listen for storage changes
   useEffect(() => {
@@ -126,65 +129,112 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const initializeAuth = async () => {
     try {
+      console.log('🔄 Initializing auth...');
       setLoading(true);
       
       const storedUser = localStorage.getItem(TOKEN_STORAGE.USER);
       const accessToken = localStorage.getItem(TOKEN_STORAGE.ACCESS_TOKEN);
       const refreshToken = localStorage.getItem(TOKEN_STORAGE.REFRESH_TOKEN);
 
+      console.log('📊 Auth tokens check:', {
+        hasStoredUser: !!storedUser,
+        hasAccessToken: !!accessToken,
+        hasRefreshToken: !!refreshToken
+      });
+
       if (!accessToken || !refreshToken) {
+        console.log('❌ No tokens found, clearing auth state');
         clearTokens();
         setUser(null);
         setLoading(false);
+        setIsInitialized(true);
         return;
       }
 
-      if (storedUser && accessToken) {
+      // Try to use stored user first, then validate with server
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          console.log('👤 Found stored user:', parsedUser.email);
+          setUser(parsedUser);
+          
+          // Validate in background - don't await this
+          validateUserInBackground();
+        } catch (parseError) {
+          console.error('❌ Error parsing stored user:', parseError);
+          clearTokens();
+          setUser(null);
+        }
+      } else {
+        // No stored user, try to fetch from server
         try {
           const freshUser = await getCurrentUser();
+          console.log('✅ Fetched fresh user:', freshUser.email);
           setUser(freshUser);
           localStorage.setItem(TOKEN_STORAGE.USER, JSON.stringify(freshUser));
         } catch (error) {
-          if (error instanceof Error && 
-              (error.message.includes('401') || 
-               error.message.includes('Unauthorized') ||
-               error.message.includes('Invalid authentication credentials'))) {
-            
+          console.log('❌ Failed to fetch user, trying token refresh');
+          if (await tryRefreshTokens()) {
             try {
-              await refreshTokens();
               const retryUser = await getCurrentUser();
+              console.log('✅ Got user after token refresh:', retryUser.email);
               setUser(retryUser);
               localStorage.setItem(TOKEN_STORAGE.USER, JSON.stringify(retryUser));
-            } catch (refreshError) {
+            } catch (retryError) {
+              console.log('❌ Failed to get user after refresh, clearing tokens');
               clearTokens();
               setUser(null);
-              setLoading(false);
-              return;
             }
           } else {
-            try {
-              const parsedUser = JSON.parse(storedUser);
-              setUser(parsedUser);
-            } catch (parseError) {
-              clearTokens();
-              setUser(null);
-            }
+            clearTokens();
+            setUser(null);
           }
         }
-      } else {
-        setUser(null);
       }
     } catch (error) {
+      console.error('❌ Auth initialization error:', error);
       clearTokens();
       setUser(null);
     } finally {
       setLoading(false);
+      setIsInitialized(true);
+    }
+  };
+
+  const validateUserInBackground = async () => {
+    try {
+      const freshUser = await getCurrentUser();
+      // Only update if there are differences
+      const currentUserStr = JSON.stringify(user);
+      const freshUserStr = JSON.stringify(freshUser);
+      
+      if (currentUserStr !== freshUserStr) {
+        console.log('🔄 Updating user data from server');
+        setUser(freshUser);
+        localStorage.setItem(TOKEN_STORAGE.USER, JSON.stringify(freshUser));
+      }
+    } catch (error) {
+      console.log('⚠️ Background user validation failed (this is OK):', error);
+      // Don't clear tokens here - user might just be offline
+    }
+  };
+
+  const tryRefreshTokens = async (): Promise<boolean> => {
+    try {
+      await refreshTokens();
+      console.log('✅ Tokens refreshed successfully');
+      return true;
+    } catch (error) {
+      console.log('❌ Token refresh failed:', error);
+      return false;
     }
   };
 
   const login = async (credentials: LoginCredentials) => {
     setLoading(true);
     try {
+      console.log('🔐 Attempting login for:', credentials.username);
+      
       const formData = new URLSearchParams();
       formData.append('username', credentials.username);
       formData.append('password', credentials.password);
@@ -212,16 +262,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } : undefined
       } : undefined;
 
+      // Store tokens
       localStorage.setItem(TOKEN_STORAGE.ACCESS_TOKEN, access_token);
       localStorage.setItem(TOKEN_STORAGE.REFRESH_TOKEN, refresh_token);
       if (mappedUser) localStorage.setItem(TOKEN_STORAGE.USER, JSON.stringify(mappedUser));
 
-      Cookies.set(TOKEN_STORAGE.ACCESS_TOKEN, access_token, { secure: true, sameSite: 'strict' });
-      Cookies.set(TOKEN_STORAGE.REFRESH_TOKEN, refresh_token, { secure: true, sameSite: 'strict' });
+      // Also store in cookies as backup
+      Cookies.set(TOKEN_STORAGE.ACCESS_TOKEN, access_token, { 
+        expires: 7, // 7 days
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax' // Changed from 'strict' to 'lax' for better redirect handling
+      });
+      Cookies.set(TOKEN_STORAGE.REFRESH_TOKEN, refresh_token, { 
+        expires: 30, // 30 days
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      });
 
       setUser(mappedUser || null);
+      console.log('✅ Login successful:', mappedUser?.email);
+      
       router.push('/dashboard');
     } catch (error) {
+      console.error('❌ Login failed:', error);
       throw error;
     } finally {
       setLoading(false);
@@ -290,7 +353,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       // Continue with local logout even if API call fails
+      console.log('⚠️ Server logout failed, continuing with local logout');
     } finally {
+      console.log('👋 Logging out user');
       clearTokens();
       setUser(null);
       router.push('/login');
@@ -328,8 +393,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(TOKEN_STORAGE.ACCESS_TOKEN, access_token);
       localStorage.setItem(TOKEN_STORAGE.REFRESH_TOKEN, new_refresh_token);
 
-      Cookies.set(TOKEN_STORAGE.ACCESS_TOKEN, access_token, { secure: true, sameSite: 'strict' });
-      Cookies.set(TOKEN_STORAGE.REFRESH_TOKEN, new_refresh_token, { secure: true, sameSite: 'strict' });
+      Cookies.set(TOKEN_STORAGE.ACCESS_TOKEN, access_token, { 
+        expires: 7,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      });
+      Cookies.set(TOKEN_STORAGE.REFRESH_TOKEN, new_refresh_token, { 
+        expires: 30,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      });
 
       return response.data;
     } catch (error) {
@@ -348,7 +421,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         updateUser,
         refreshUser,
-        isAuthenticated: typeof window !== 'undefined' ? !!localStorage.getItem(TOKEN_STORAGE.ACCESS_TOKEN) : false
+        isAuthenticated: !!user && !!localStorage.getItem(TOKEN_STORAGE.ACCESS_TOKEN)
       }}
     >
       {children}

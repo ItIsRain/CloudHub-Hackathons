@@ -49,6 +49,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { hackathonApi, HackathonFormData } from '@/lib/api/hackathon';
 import { useAuth } from '@/contexts/auth-context'
+import { useSearchParams } from "next/navigation"
+import StripeRedirectHandler from "./ui/payments/StripeRedirectHandler"
 import stripePromise from '@/lib/stripe';
 
 // Define interfaces for the criteria and challenges
@@ -88,19 +90,17 @@ interface DateRangeType {
 
 export default function OrganizerMyHackathonsPage() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
   
-  // Add useEffect to log user data when component mounts
-  useEffect(() => {
-    // Removed debug logging
-  }, [user]);
-
-  const [isCreateHackathonOpen, setIsCreateHackathonOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [createStepIndex, setCreateStepIndex] = useState(0)
-  const [selectedPackage, setSelectedPackage] = useState<string | null>(null)
-  const [selectedMaxParticipants, setSelectedMaxParticipants] = useState<number>(50)
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false)
+  // Move ALL hooks to the top before any conditional logic
+  const [isCreateHackathonOpen, setIsCreateHackathonOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [createStepIndex, setCreateStepIndex] = useState(0);
+  const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
+  const [selectedMaxParticipants, setSelectedMaxParticipants] = useState<number>(50);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [hackathonName, setHackathonName] = useState("");
   const [description, setDescription] = useState("");
   const [rulesText, setRulesText] = useState("");
@@ -114,7 +114,6 @@ export default function OrganizerMyHackathonsPage() {
     addDays(new Date(), 14)
   );
   const [prizePool, setPrizePool] = useState<string>("1000");
-  // State for tiered prizes
   const [hasTieredPrizes, setHasTieredPrizes] = useState(false);
   const [prizeSplitOption, setPrizeSplitOption] = useState<string>("none");
   const [prizes, setPrizes] = useState<Prize[]>([
@@ -144,16 +143,12 @@ export default function OrganizerMyHackathonsPage() {
     }
   ]);
   const [participationPrize, setParticipationPrize] = useState("Certificate of Participation");
-  
-  // State for judging criteria weights
   const [criteriaWeights, setCriteriaWeights] = useState<Criterion[]>([
     { id: '1', name: 'Innovation', weight: 25, description: 'How original and innovative is the solution?' },
     { id: '2', name: 'Technical Complexity', weight: 25, description: 'How technically challenging was the implementation?' },
     { id: '3', name: 'User Experience', weight: 25, description: 'How intuitive and user-friendly is the solution?' },
     { id: '4', name: 'Impact & Practicality', weight: 25, description: 'How impactful and practical is the solution for real-world use?' },
   ]);
-  
-  // State for challenges
   const [challenges, setChallenges] = useState<Challenge[]>([
     { 
       id: '1', 
@@ -166,6 +161,26 @@ export default function OrganizerMyHackathonsPage() {
       description: 'Create applications that improve urban sustainability through energy efficiency, waste management, transportation solutions, or environmental monitoring.' 
     }
   ]);
+  const [formErrors, setFormErrors] = useState<string[]>([]);
+  const [hackathonType, setHackathonType] = useState("online");
+  const [minTeamSize, setMinTeamSize] = useState<number>(1);
+  const [maxTeamSize, setMaxTeamSize] = useState<number>(6);
+  const [isTeamRequired, setIsTeamRequired] = useState(true);
+  const [coverImageUrl, setCoverImageUrl] = useState<string>("");
+  const [bannerImageUrl, setBannerImageUrl] = useState<string>("");
+  const [organizationLogo, setOrganizationLogo] = useState<string>("");
+  const [submissionTemplate, setSubmissionTemplate] = useState<string>("");
+  const [resources, setResources] = useState<string[]>([]);
+  const [organizationName, setOrganizationName] = useState<string>("");
+  const [maxParticipants, setMaxParticipants] = useState<number>(100);
+
+  useEffect(() => {
+  }, [user]);
+
+  const hasPaymentParams = searchParams.get('payment');
+  if (hasPaymentParams) {
+    return <StripeRedirectHandler />;
+  }
   
   // Calculate total weight of all criteria
   const calculateTotalWeight = (): number => {
@@ -424,12 +439,8 @@ export default function OrganizerMyHackathonsPage() {
     setCreateStepIndex(prev => prev - 1);
   };
 
-  const { toast } = useToast()
+  // Updated handleCreateHackathon function with proper authentication
 
-  // Add error state after other state declarations
-  const [formErrors, setFormErrors] = useState<string[]>([]);
-
-  // Update the handleCreateHackathon function
   const handleCreateHackathon = async () => {
     // Create an array to collect all validation errors
     const errors: string[] = [];
@@ -496,87 +507,111 @@ export default function OrganizerMyHackathonsPage() {
     setIsProcessingPayment(true);
 
     try {
-      // Prepare hackathon data
-      const hackathonData = {
-        title: hackathonName,
-        description,
-        short_description: description.substring(0, 200),
-        organization_name: user?.organization_name || user?.full_context?.organization_name || "",
-        cover_image: coverImageUrl,
-        banner_image: bannerImageUrl,
-        organization_logo: organizationLogo,
-        dateRange: {
-          from: dateRange.from,
-          to: dateRange.to
-        },
-        registrationDeadline: registrationDeadline,
-        maxParticipants: selectedMaxParticipants,
-        min_team_size: minTeamSize,
-        max_team_size: maxTeamSize,
-        is_team_required: isTeamRequired,
-        package: selectedPackage,
-        prizePool,
-        prizes: prizes.map(prize => ({
-          place: prize.place,
-          amount: prize.amount.toString(),
-          position: prize.position,
-          description: prize.description,
-          currency: prize.currency
-        })),
-        judgingCriteria: criteriaWeights.map(criteria => ({
-          name: criteria.name,
-          weight: criteria.weight,
-          description: criteria.description
-        })),
-        challenges: challenges.map(challenge => ({
-          title: challenge.title,
-          description: challenge.description
-        })),
-        rules: rulesText,
-        requirements: [],
-        resources: resources,
-        submission_template: submissionTemplate || "",
-        isPrivate: false,
-        tags: []
+      // Get the authentication token
+      const token = localStorage.getItem('access_token') || 
+                    sessionStorage.getItem('access_token') ||
+                    document.cookie.split('; ').find(row => row.startsWith('access_token='))?.split('=')[1];
+      
+      if (!token) {
+          throw new Error('Authentication token not found. Please log in again.');
+      }
+
+      const getValidUrl = (url: string | undefined) => {
+          return url && url.trim() ? url : undefined;
       };
 
-      // Create Stripe checkout session
-      const response = await fetch('http://localhost:8000/api/payment/create-checkout-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({
+      const hackathonData = {
+          title: hackathonName,
+          description,
+          short_description: description.substring(0, 200),
+          organization_name: user?.organization_name || user?.full_context?.organization_name || "Anonymous Organization",
+          // Only include URL fields if they have valid values
+          ...(coverImageUrl && coverImageUrl.trim() && { cover_image: coverImageUrl }),
+          ...(bannerImageUrl && bannerImageUrl.trim() && { banner_image: bannerImageUrl }),
+          ...(organizationLogo && organizationLogo.trim() && { organization_logo: organizationLogo }),
+          dateRange: {
+              from: dateRange.from,
+              to: dateRange.to
+          },
+          registrationDeadline: registrationDeadline,
+          maxParticipants: selectedMaxParticipants,
+          min_team_size: minTeamSize,
+          max_team_size: maxTeamSize,
+          is_team_required: isTeamRequired,
           package: selectedPackage,
-          hackathon_data: hackathonData
-        }),
+          prizePool,
+          prizes: prizes.map(prize => ({
+              place: prize.place,
+              amount: prize.amount.toString(),
+              position: prize.position,
+              description: prize.description,
+              currency: prize.currency
+          })),
+          judgingCriteria: criteriaWeights.map(criteria => ({
+              name: criteria.name,
+              weight: criteria.weight,
+              description: criteria.description
+          })),
+          challenges: challenges.map(challenge => ({
+              title: challenge.title,
+              description: challenge.description
+          })),
+          rules: rulesText,
+          requirements: [],
+          resources: resources,
+          submission_template: submissionTemplate || "",
+          isPrivate: false,
+          tags: []
+      };
+
+      console.log('🔑 Sending request with token:', token ? 'Token found' : 'No token');
+
+      const response = await fetch('http://localhost:8000/api/payment/create-checkout-session', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Authorization': `Bearer ${token}`,
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+              package: selectedPackage,
+              hackathon_data: hackathonData
+          }),
       });
-
+      
+      console.log('📡 Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ Error response:', errorData);
+        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+      }
+      
       const session = await response.json();
-
+      console.log('✅ Session created:', session.sessionId);
+      
       if (session.error) {
         throw new Error(session.error);
       }
-
+      
       // Redirect to Stripe Checkout
       const stripe = await stripePromise;
       if (!stripe) {
         throw new Error('Failed to load Stripe');
       }
-
-      // Redirect to Stripe checkout
+      
       const { error } = await stripe.redirectToCheckout({
         sessionId: session.sessionId
       });
-
+      
       if (error) {
         throw error;
       }
 
     } catch (error: any) {
       setIsProcessingPayment(false);
+      console.error('💥 Payment error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to process payment",
@@ -584,23 +619,6 @@ export default function OrganizerMyHackathonsPage() {
       });
     }
   };
-
-  // Add hackathonType state variable after the other useState declarations
-  const [hackathonType, setHackathonType] = useState("online");
-
-  // Add new state variables after existing ones
-  const [minTeamSize, setMinTeamSize] = useState<number>(1);
-  const [maxTeamSize, setMaxTeamSize] = useState<number>(6);
-  const [isTeamRequired, setIsTeamRequired] = useState(true);
-  const [coverImageUrl, setCoverImageUrl] = useState<string>("");
-  const [bannerImageUrl, setBannerImageUrl] = useState<string>("");
-  const [organizationLogo, setOrganizationLogo] = useState<string>("");
-  const [submissionTemplate, setSubmissionTemplate] = useState<string>("");
-  const [resources, setResources] = useState<string[]>([]);
-  const [organizationName, setOrganizationName] = useState<string>("");
-
-  // Update the state variables with proper types
-  const [maxParticipants, setMaxParticipants] = useState<number>(100);
 
   // Dummy data for hackathons
   interface Hackathon {
