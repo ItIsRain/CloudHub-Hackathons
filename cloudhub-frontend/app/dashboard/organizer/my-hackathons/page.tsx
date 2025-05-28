@@ -39,7 +39,8 @@ import {
   Upload,
   Image as ImageIcon,
   Info,
-  AlertTriangle
+  AlertTriangle,
+  FileCode2
 } from "lucide-react"
 import Link from "next/link"
 import { Progress } from "@/components/ui/progress"
@@ -173,6 +174,91 @@ export default function OrganizerMyHackathonsPage() {
   const [resources, setResources] = useState<string[]>([]);
   const [organizationName, setOrganizationName] = useState<string>("");
   const [maxParticipants, setMaxParticipants] = useState<number>(100);
+
+  // Add state for hackathons
+  const [isLoading, setIsLoading] = useState(true);
+  const [ownedHackathons, setOwnedHackathons] = useState<Hackathon[]>([]);
+  const [teamHackathons, setTeamHackathons] = useState<Hackathon[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch hackathons on component mount
+  useEffect(() => {
+    const fetchHackathons = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const token = localStorage.getItem('access_token') || 
+                     sessionStorage.getItem('access_token') ||
+                     document.cookie.split('; ').find(row => row.startsWith('access_token='))?.split('=')[1];
+
+        if (!token) {
+          throw new Error('No authentication token found');
+        }
+
+        // Fetch both owned and team hackathons
+        const [ownedResponse, teamResponse] = await Promise.all([
+          fetch('http://localhost:8000/api/hackathons/my-hackathons', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+          }),
+          fetch('http://localhost:8000/api/hackathons/team-hackathons', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+          })
+        ]);
+
+        if (!ownedResponse.ok || !teamResponse.ok) {
+          throw new Error('Failed to fetch hackathons');
+        }
+
+        const ownedData = await ownedResponse.json();
+        const teamData = await teamResponse.json();
+
+        // Add role to owned hackathons
+        const ownedHackathonsWithRole = (ownedData.hackathons || []).map((h: any) => ({
+          ...h,
+          role: 'owner'
+        }));
+
+        setOwnedHackathons(ownedHackathonsWithRole);
+        setTeamHackathons(teamData.hackathons || []);
+      } catch (err: any) {
+        setError(err.message || 'An unexpected error occurred');
+        toast({
+          title: "Error",
+          description: "Failed to fetch hackathons. Please try again later.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchHackathons();
+    }
+  }, [user, toast]);
+
+  // Combine and filter hackathons
+  const allHackathons = [...ownedHackathons, ...teamHackathons];
+  const filteredHackathons = allHackathons.filter((hackathon) => {
+    const matchesSearch = hackathon.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         hackathon.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         hackathon.categories?.some(cat => cat.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    const matchesStatus = statusFilter === "all" || hackathon.status.toLowerCase() === statusFilter.toLowerCase();
+    
+    return matchesSearch && matchesStatus;
+  });
 
   useEffect(() => {
   }, [user]);
@@ -620,7 +706,6 @@ export default function OrganizerMyHackathonsPage() {
     }
   };
 
-  // Dummy data for hackathons
   interface Hackathon {
     id: number;
     title: string;
@@ -637,89 +722,10 @@ export default function OrganizerMyHackathonsPage() {
     bannerImage: string;
     categories: string[];
     featured: boolean;
+    role?: string;
+    participants_count?: number;
+    submission_count?: number;
   }
-
-  const hackathons: Hackathon[] = [
-    {
-      id: 1,
-      title: "AI Innovation Challenge",
-      description: "Build innovative AI solutions for real-world problems",
-      startDate: "2025-06-15",
-      endDate: "2025-06-17",
-      registrationDeadline: "2025-06-10",
-      participants: 250,
-      maxParticipants: 300,
-      submissionCount: 48,
-      prizePool: "10,000 AED",
-      status: "Active",
-      progress: 65,
-      bannerImage: "/placeholder.svg?height=100&width=200",
-      categories: ["AI/ML", "Web Development", "Mobile"],
-      featured: true,
-    },
-    {
-      id: 2,
-      title: "Web3 Hackathon",
-      description: "Decentralized applications for the future",
-      startDate: "2025-07-01",
-      endDate: "2025-07-03",
-      registrationDeadline: "2025-06-25",
-      participants: 200,
-      maxParticipants: 500,
-      submissionCount: 0,
-      prizePool: "15,000 AED",
-      status: "Active",
-      progress: 40,
-      bannerImage: "/placeholder.svg?height=100&width=200",
-      categories: ["Blockchain", "Smart Contracts", "Cryptocurrency"],
-      featured: false,
-    },
-    {
-      id: 3,
-      title: "Environmental Tech Challenge",
-      description: "Technology solutions for environmental sustainability",
-      startDate: "2025-08-10",
-      endDate: "2025-08-12",
-      registrationDeadline: "2025-08-01",
-      participants: 0,
-      maxParticipants: 200,
-      submissionCount: 0,
-      prizePool: "8,000 AED",
-      status: "Draft",
-      progress: 85,
-      bannerImage: "/placeholder.svg?height=100&width=200",
-      categories: ["Sustainability", "IoT", "Clean Energy"],
-      featured: false,
-    },
-    {
-      id: 4,
-      title: "Mobile App Innovation",
-      description: "Create the next generation of mobile applications",
-      startDate: "2025-04-15",
-      endDate: "2025-04-17",
-      registrationDeadline: "2025-04-10",
-      participants: 180,
-      maxParticipants: 200,
-      submissionCount: 65,
-      prizePool: "12,000 AED",
-      status: "Completed",
-      progress: 100,
-      bannerImage: "/placeholder.svg?height=100&width=200",
-      categories: ["iOS", "Android", "Cross-platform"],
-      featured: false,
-    },
-  ];
-
-  // Filter hackathons based on search query and status filter
-  const filteredHackathons = hackathons.filter((hackathon) => {
-    const matchesSearch = hackathon.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          hackathon.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          hackathon.categories.some(cat => cat.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    const matchesStatus = statusFilter === "all" || hackathon.status.toLowerCase() === statusFilter.toLowerCase();
-    
-    return matchesSearch && matchesStatus;
-  });
 
   return (
     <div className="space-y-8 pb-10 px-6">
@@ -761,15 +767,19 @@ export default function OrganizerMyHackathonsPage() {
             <div className="hidden md:block">
               <div className="flex items-end justify-end gap-4">
                 <div className="bg-white/10 backdrop-blur-xl rounded-xl border border-white/20 p-4 w-32 text-center shadow-xl">
-                  <h3 className="text-3xl font-bold text-white">{hackathons.filter(h => h.status === "Active").length}</h3>
+                  <h3 className="text-3xl font-bold text-white">{allHackathons.filter(h => h.status === "Active").length}</h3>
                   <p className="text-xs text-white/80 mt-1">Active Hackathons</p>
                 </div>
                 <div className="bg-white/10 backdrop-blur-xl rounded-xl border border-white/20 p-4 w-32 text-center shadow-xl">
-                  <h3 className="text-3xl font-bold text-white">{hackathons.reduce((sum, h) => sum + h.participants, 0)}</h3>
+                  <h3 className="text-3xl font-bold text-white">
+                    {allHackathons.reduce((sum, h) => sum + (h.participants_count || 0), 0)}
+                  </h3>
                   <p className="text-xs text-white/80 mt-1">Total Participants</p>
                 </div>
                 <div className="bg-white/10 backdrop-blur-xl rounded-xl border border-white/20 p-4 w-32 text-center shadow-xl">
-                  <h3 className="text-3xl font-bold text-white">{hackathons.reduce((sum, h) => sum + h.submissionCount, 0)}</h3>
+                  <h3 className="text-3xl font-bold text-white">
+                    {allHackathons.reduce((sum, h) => sum + (h.submission_count || 0), 0)}
+                  </h3>
                   <p className="text-xs text-white/80 mt-1">Submissions</p>
                 </div>
               </div>
@@ -778,342 +788,375 @@ export default function OrganizerMyHackathonsPage() {
         </div>
       </section>
 
-      <Tabs defaultValue="cards" className="w-full">
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
-          <div className="relative w-full sm:w-auto flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-            <Input 
-              placeholder="Search hackathons..." 
-              className="pl-9 bg-white border-slate-200 h-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px] bg-white border-slate-200 h-10">
-                <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-slate-500" />
-                  <SelectValue placeholder="Filter by status" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      )}
 
-            <div className="bg-white rounded-lg border border-slate-200 shadow-sm h-10 p-0 overflow-hidden">
-              <TabsList className="grid grid-cols-2 w-[180px] h-full">
-                <TabsTrigger 
-                  value="cards" 
-                  className="rounded-md data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm text-sm font-medium h-full"
-                >
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+          <p>{error}</p>
+        </div>
+      )}
+
+      {/* Hackathon List */}
+      {!isLoading && !error && (
+        <Tabs defaultValue="cards" className="w-full">
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
+            <div className="relative w-full sm:w-auto flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+              <Input 
+                placeholder="Search hackathons..." 
+                className="pl-9 bg-white border-slate-200 h-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-[180px] bg-white border-slate-200 h-10">
                   <div className="flex items-center gap-2">
-                    <LayoutDashboard className="h-4 w-4" />
-                    <span>Cards</span>
+                    <Filter className="h-4 w-4 text-slate-500" />
+                    <SelectValue placeholder="Filter by status" />
                   </div>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="list" 
-                  className="rounded-md data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm text-sm font-medium h-full"
-                >
-                  <div className="flex items-center gap-2">
-                    <List className="h-4 w-4" />
-                    <span>List</span>
-                  </div>
-                </TabsTrigger>
-              </TabsList>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <div className="bg-white rounded-lg border border-slate-200 shadow-sm h-10 p-0 overflow-hidden">
+                <TabsList className="grid grid-cols-2 w-[180px] h-full">
+                  <TabsTrigger 
+                    value="cards" 
+                    className="rounded-md data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm text-sm font-medium h-full"
+                  >
+                    <div className="flex items-center gap-2">
+                      <LayoutDashboard className="h-4 w-4" />
+                      <span>Cards</span>
+                    </div>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="list" 
+                    className="rounded-md data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm text-sm font-medium h-full"
+                  >
+                    <div className="flex items-center gap-2">
+                      <List className="h-4 w-4" />
+                      <span>List</span>
+                    </div>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
             </div>
           </div>
-        </div>
-        
-        <TabsContent value="cards" className="mt-0">
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredHackathons.map((hackathon) => (
-              <Link key={hackathon.id} href={`/dashboard/organizer/hackathons/${hackathon.id}`}>
-                <Card className="h-full overflow-hidden border-slate-200 transition-all hover:border-blue-200 hover:shadow-md cursor-pointer">
-                  <div 
-                    className="h-36 w-full bg-cover bg-center relative border-b border-slate-100"
-                    style={{ backgroundImage: `url(${hackathon.bannerImage})` }}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 to-transparent"></div>
-                    <div className="absolute bottom-3 left-4 right-4 flex justify-between items-end">
-                      <Badge className={`
-                        ${hackathon.status === "Active" ? "bg-emerald-600" : 
-                          hackathon.status === "Draft" ? "bg-amber-600" : 
-                          "bg-slate-600"}
-                      `}>
-                        {hackathon.status}
-                      </Badge>
-                      {hackathon.featured && (
-                        <Badge className="bg-blue-600">Featured</Badge>
-                      )}
-                    </div>
-                  </div>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-xl font-bold line-clamp-1">{hackathon.title}</CardTitle>
-                    <CardDescription className="line-clamp-2">{hackathon.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex flex-wrap gap-2">
-                      {hackathon.categories.map((category, idx) => (
-                        <Badge key={idx} variant="outline" className="bg-slate-50 text-slate-700 border-slate-200">
-                          {category}
+          
+          <TabsContent value="cards" className="mt-0">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredHackathons.map((hackathon) => (
+                <Link key={hackathon.id} href={`/dashboard/organizer/hackathons/${hackathon.id}`}>
+                  <Card className="group h-full overflow-hidden border-slate-200 bg-white transition-all hover:border-blue-200 hover:shadow-lg hover:shadow-blue-100/50 cursor-pointer">
+                    <div 
+                      className="h-48 w-full bg-cover bg-center relative"
+                      style={{ 
+                        backgroundImage: `url(${hackathon.bannerImage || '/default-hackathon-banner.jpg'})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center'
+                      }}
+                    >
+                      {/* Gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
+                      
+                      {/* Status and Featured badges */}
+                      <div className="absolute top-3 left-3 flex gap-2">
+                        <Badge className={`
+                          ${hackathon.status === "Active" ? "bg-emerald-500/90 hover:bg-emerald-500" : 
+                            hackathon.status === "Draft" ? "bg-amber-500/90 hover:bg-amber-500" : 
+                            "bg-slate-500/90 hover:bg-slate-500"}
+                          backdrop-blur-sm text-white border-none shadow-sm
+                        `}>
+                          {hackathon.status}
                         </Badge>
-                      ))}
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs text-slate-500 mb-1">Participants</p>
-                        <div className="flex items-center gap-1.5">
-                          <Users className="h-3.5 w-3.5 text-slate-600" />
-                          <span className="font-medium">
-                            {hackathon.participants}/{hackathon.maxParticipants}
-                          </span>
-                        </div>
+                        {hackathon.featured && (
+                          <Badge className="bg-blue-500/90 hover:bg-blue-500 backdrop-blur-sm text-white border-none shadow-sm">
+                            Featured
+                          </Badge>
+                        )}
                       </div>
-                      <div>
-                        <p className="text-xs text-slate-500 mb-1">Submissions</p>
-                        <div className="flex items-center gap-1.5">
-                          <Trophy className="h-3.5 w-3.5 text-slate-600" />
-                          <span className="font-medium">{hackathon.submissionCount}</span>
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-500 mb-1">Prize Pool</p>
-                        <div className="flex items-center gap-1.5">
-                          <Award className="h-3.5 w-3.5 text-slate-600" />
-                          <span className="font-medium">{hackathon.prizePool}</span>
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-500 mb-1">Dates</p>
-                        <div className="flex items-center gap-1.5">
-                          <Calendar className="h-3.5 w-3.5 text-slate-600" />
-                          <span className="font-medium text-xs">
-                            {new Date(hackathon.startDate).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                            })}
-                            {" - "}
-                            {new Date(hackathon.endDate).toLocaleDateString("en-US", {
-                              month: "short", 
-                              day: "numeric"
-                            })}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="pt-0">
-                    <div className="w-full">
-                      <div className="flex justify-between items-center text-xs mb-2">
-                        <span className="text-slate-500">Progress</span>
-                        <span className="font-medium text-blue-700">{hackathon.progress}%</span>
-                      </div>
-                      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+
+                      {/* Progress bar */}
+                      <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-700/50">
                         <div 
-                          className={cn(
-                            "h-full transition-all duration-300 rounded-full",
-                            hackathon.status === "Draft" ? "bg-amber-500" :
-                            hackathon.status === "Completed" ? "bg-slate-500" :
-                            "bg-blue-600"
-                          )}
+                          className="h-full bg-blue-500"
                           style={{ width: `${hackathon.progress}%` }}
                         />
                       </div>
                     </div>
-                  </CardFooter>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </TabsContent>
 
-        <TabsContent value="list" className="mt-0">
-          <Card className="border-slate-200 shadow-md overflow-hidden rounded-xl">
-            <CardContent className="p-0">
-              <div className="rounded-lg overflow-hidden">
-                <div className="bg-gradient-to-r from-blue-600/90 to-indigo-600/90 text-white px-6 py-4 border-b border-indigo-700/20">
-                  <h3 className="text-lg font-semibold">Hackathon Events</h3>
-                </div>
+                    <CardHeader className="pb-3 pt-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <CardTitle className="text-xl font-bold line-clamp-1 group-hover:text-blue-600 transition-colors">
+                          {hackathon.title}
+                        </CardTitle>
+                      </div>
+                      <CardDescription className="line-clamp-2 text-sm text-slate-600">
+                        {hackathon.description}
+                      </CardDescription>
+                    </CardHeader>
 
-                <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-gradient-to-r from-slate-100 to-slate-50 border-b border-slate-200 text-sm font-medium text-slate-600">
-                  <div className="col-span-4">Hackathon</div>
-                  <div className="col-span-2 text-center">Dates</div>
-                  <div className="col-span-2 text-center">Participants</div>
-                  <div className="col-span-2 text-center">Status</div>
-                  <div className="col-span-2 text-right">Actions</div>
-                </div>
+                    <CardContent className="space-y-4">
+                      {/* Categories */}
+                      <div className="flex flex-wrap gap-1.5">
+                        {hackathon.categories.slice(0, 3).map((category, idx) => (
+                          <Badge 
+                            key={idx} 
+                            variant="outline" 
+                            className="bg-slate-50/50 text-slate-600 border-slate-200 text-xs font-medium"
+                          >
+                            {category}
+                          </Badge>
+                        ))}
+                        {hackathon.categories.length > 3 && (
+                          <Badge 
+                            variant="outline" 
+                            className="bg-slate-50/50 text-slate-600 border-slate-200 text-xs font-medium"
+                          >
+                            +{hackathon.categories.length - 3} more
+                          </Badge>
+                        )}
+                      </div>
 
-                {filteredHackathons.map((hackathon, index) => (
-                  <div 
-                    key={hackathon.id}
-                    className={`grid grid-cols-12 gap-4 px-6 py-5 items-center border-b border-slate-100 last:border-0 hover:bg-blue-50/40 transition-all duration-200 ${index % 2 === 0 ? "bg-white" : "bg-slate-50/30"}`}
-                  >
-                    <div className="col-span-4">
-                      <div className="flex items-center gap-4">
-                        <div className="h-14 w-14 rounded-xl bg-slate-100 flex-shrink-0 bg-cover bg-center shadow overflow-hidden ring-1 ring-slate-200 border border-white"
-                          style={{ backgroundImage: `url(${hackathon.bannerImage})` }}>
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-slate-800 text-base mb-0.5">{hackathon.title}</h4>
-                          <p className="text-sm text-slate-500 line-clamp-1 leading-snug pr-4">{hackathon.description}</p>
-                          <div className="flex gap-2 mt-1.5">
-                            {hackathon.categories.slice(0, 2).map((category, idx) => (
-                              <Badge key={idx} variant="outline" className="bg-slate-50 text-xs text-slate-600 border-slate-200 font-normal py-0 h-5">
-                                {category}
-                              </Badge>
-                            ))}
-                            {hackathon.categories.length > 2 && (
-                              <span className="text-xs text-slate-400">+{hackathon.categories.length - 2} more</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="col-span-2 text-center">
-                      <div className="flex flex-col">
-                        <div className="flex items-center justify-center gap-1.5 mb-1">
-                          <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                          <span className="font-medium text-slate-700 text-sm">
-                            Starts on {new Date(hackathon.startDate).toLocaleDateString("en-US", {
-                              month: "short", day: "numeric", year: "numeric"
-                            })}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-center gap-1.5">
-                          <div className="w-2 h-2 rounded-full bg-rose-500"></div>
-                          <span className="font-medium text-slate-700 text-sm">
-                            Ends on {new Date(hackathon.endDate).toLocaleDateString("en-US", {
-                              month: "short", day: "numeric", year: "numeric"
-                            })}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="col-span-2 text-center">
-                      <div className="flex flex-col">
-                        <div className="flex justify-between items-center mb-1.5">
-                          <span className="text-sm font-medium text-indigo-700">
-                            {Math.round((hackathon.participants / hackathon.maxParticipants) * 100)}%
-                          </span>
-                          <span className="text-sm font-medium text-slate-600">
-                            {hackathon.participants}/{hackathon.maxParticipants}
-                          </span>
-                        </div>
-                        <div className="relative w-full">
-                          <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden shadow-inner">
-                            <div 
-                              className={`h-full rounded-full ${
-                                hackathon.status === "Active" ? "bg-gradient-to-r from-blue-500 to-indigo-600" : 
-                                hackathon.status === "Draft" ? "bg-gradient-to-r from-amber-400 to-amber-500" : 
-                                "bg-gradient-to-r from-slate-400 to-slate-500"
-                              }`}
-                              style={{ width: `${(hackathon.participants / hackathon.maxParticipants) * 100}%` }}
-                            ></div>
-                          </div>
-                          <div className="mt-1.5 flex items-center gap-1 justify-center text-xs text-slate-500">
-                            <Users className="h-3 w-3 text-slate-400" strokeWidth={2.5} />
-                            <span>Participation rate</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="col-span-2 text-center">
-                      <div>
-                        <Badge className={`
-                          px-4 py-1.5 font-medium shadow-sm rounded-full text-sm ${
-                            hackathon.status === "Active" ? "bg-emerald-100 text-emerald-700 border border-emerald-200 hover:bg-emerald-200" : 
-                            hackathon.status === "Draft" ? "bg-amber-100 text-amber-700 border border-amber-200 hover:bg-amber-200" : 
-                            "bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200"
-                          }
-                        `}>
+                      {/* Stats Grid */}
+                      <div className="grid grid-cols-2 gap-4 pt-2">
+                        <div className="space-y-1.5">
                           <div className="flex items-center gap-1.5">
-                            {hackathon.status === "Active" && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>}
-                            {hackathon.status === "Draft" && <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>}
-                            {hackathon.status === "Completed" && <CheckCircle2 className="w-3.5 h-3.5" />}
-                            {hackathon.status}
+                            <Users className="h-4 w-4 text-slate-500" />
+                            <span className="text-sm font-medium text-slate-700">
+                              {hackathon.participants_count} / {hackathon.maxParticipants}
+                            </span>
                           </div>
-                        </Badge>
+                          <p className="text-xs text-slate-500">Participants</p>
+                        </div>
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <FileCode2 className="h-4 w-4 text-slate-500" />
+                            <span className="text-sm font-medium text-slate-700">
+                              {hackathon.submission_count}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500">Submissions</p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="col-span-2">
-                      <div className="flex justify-end gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-9 px-3 text-slate-600 hover:text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-100 rounded-lg"
-                          asChild
-                        >
-                          <Link href={`/dashboard/organizer/hackathons/${hackathon.id}`}>
-                            <Eye className="h-4 w-4 mr-1.5" />
-                            <span className="font-medium">View</span>
-                          </Link>
-                        </Button>
-                        <div className="relative group">
+
+                      {/* Timeline and Prize Pool */}
+                      <div className="border-t border-slate-100 pt-4 mt-4 space-y-3">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Calendar className="h-4 w-4 text-slate-500" />
+                          <span className="text-slate-600">
+                            {new Date(hackathon.startDate).toLocaleDateString()} - {new Date(hackathon.endDate).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Trophy className="h-4 w-4 text-slate-500" />
+                          <span className="text-slate-600 font-medium">
+                            Prize Pool: {hackathon.prizePool} AED
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="list" className="mt-0">
+            <Card className="border-slate-200 shadow-md overflow-hidden rounded-xl">
+              <CardContent className="p-0">
+                <div className="rounded-lg overflow-hidden">
+                  <div className="bg-gradient-to-r from-blue-600/90 to-indigo-600/90 text-white px-6 py-4 border-b border-indigo-700/20">
+                    <h3 className="text-lg font-semibold">Hackathon Events</h3>
+                  </div>
+
+                  <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-gradient-to-r from-slate-100 to-slate-50 border-b border-slate-200 text-sm font-medium text-slate-600">
+                    <div className="col-span-4">Hackathon</div>
+                    <div className="col-span-2 text-center">Dates</div>
+                    <div className="col-span-2 text-center">Participants</div>
+                    <div className="col-span-2 text-center">Status</div>
+                    <div className="col-span-2 text-right">Actions</div>
+                  </div>
+
+                  {filteredHackathons.map((hackathon, index) => (
+                    <div 
+                      key={hackathon.id}
+                      className={`grid grid-cols-12 gap-4 px-6 py-5 items-center border-b border-slate-100 last:border-0 hover:bg-blue-50/40 transition-all duration-200 ${index % 2 === 0 ? "bg-white" : "bg-slate-50/30"}`}
+                    >
+                      <div className="col-span-4">
+                        <div className="flex items-center gap-4">
+                          <div className="h-14 w-14 rounded-xl bg-slate-100 flex-shrink-0 bg-cover bg-center shadow overflow-hidden ring-1 ring-slate-200 border border-white"
+                            style={{ backgroundImage: `url(${hackathon.bannerImage})` }}>
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-slate-800 text-base mb-0.5">{hackathon.title}</h4>
+                            <p className="text-sm text-slate-500 line-clamp-1 leading-snug pr-4">{hackathon.description}</p>
+                            <div className="flex gap-2 mt-1.5">
+                              {hackathon.categories.slice(0, 2).map((category, idx) => (
+                                <Badge key={idx} variant="outline" className="bg-slate-50 text-xs text-slate-600 border-slate-200 font-normal py-0 h-5">
+                                  {category}
+                                </Badge>
+                              ))}
+                              {hackathon.categories.length > 2 && (
+                                <span className="text-xs text-slate-400">+{hackathon.categories.length - 2} more</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-span-2 text-center">
+                        <div className="flex flex-col">
+                          <div className="flex items-center justify-center gap-1.5 mb-1">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                            <span className="font-medium text-slate-700 text-sm">
+                              Starts on {new Date(hackathon.startDate).toLocaleDateString("en-US", {
+                                month: "short", day: "numeric", year: "numeric"
+                              })}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-center gap-1.5">
+                            <div className="w-2 h-2 rounded-full bg-rose-500"></div>
+                            <span className="font-medium text-slate-700 text-sm">
+                              Ends on {new Date(hackathon.endDate).toLocaleDateString("en-US", {
+                                month: "short", day: "numeric", year: "numeric"
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-span-2 text-center">
+                        <div className="flex flex-col">
+                          <div className="flex justify-between items-center mb-1.5">
+                            <span className="text-sm font-medium text-indigo-700">
+                              {Math.round((hackathon.participants / hackathon.maxParticipants) * 100)}%
+                            </span>
+                            <span className="text-sm font-medium text-slate-600">
+                              {hackathon.participants}/{hackathon.maxParticipants}
+                            </span>
+                          </div>
+                          <div className="relative w-full">
+                            <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                              <div 
+                                className={`h-full rounded-full ${
+                                  hackathon.status === "Active" ? "bg-gradient-to-r from-blue-500 to-indigo-600" : 
+                                  hackathon.status === "Draft" ? "bg-gradient-to-r from-amber-400 to-amber-500" : 
+                                  "bg-gradient-to-r from-slate-400 to-slate-500"
+                                }`}
+                                style={{ width: `${(hackathon.participants / hackathon.maxParticipants) * 100}%` }}
+                              ></div>
+                            </div>
+                            <div className="mt-1.5 flex items-center gap-1 justify-center text-xs text-slate-500">
+                              <Users className="h-3 w-3 text-slate-400" strokeWidth={2.5} />
+                              <span>Participation rate</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-span-2 text-center">
+                        <div>
+                          <Badge className={`
+                            px-4 py-1.5 font-medium shadow-sm rounded-full text-sm ${
+                              hackathon.status === "Active" ? "bg-emerald-100 text-emerald-700 border border-emerald-200 hover:bg-emerald-200" : 
+                              hackathon.status === "Draft" ? "bg-amber-100 text-amber-700 border border-amber-200 hover:bg-amber-200" : 
+                              "bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200"
+                            }
+                          `}>
+                            <div className="flex items-center gap-1.5">
+                              {hackathon.status === "Active" && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>}
+                              {hackathon.status === "Draft" && <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>}
+                              {hackathon.status === "Completed" && <CheckCircle2 className="w-3.5 h-3.5" />}
+                              {hackathon.status}
+                            </div>
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        <div className="flex justify-end gap-2">
                           <Button 
                             variant="ghost" 
-                            size="icon" 
-                            className="h-9 w-9 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-transparent hover:border-slate-200"
+                            size="sm" 
+                            className="h-9 px-3 text-slate-600 hover:text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-100 rounded-lg"
+                            asChild
                           >
-                            <MoreHorizontal className="h-5 w-5" />
-                          </Button>
-                          <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-slate-200 py-1.5 hidden group-hover:block z-10">
-                            <Link href={`/dashboard/organizer/hackathons/${hackathon.id}/edit`} className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-indigo-600">
-                              <Edit className="h-3.5 w-3.5" />
-                              <span>Edit</span>
+                            <Link href={`/dashboard/organizer/hackathons/${hackathon.id}`}>
+                              <Eye className="h-4 w-4 mr-1.5" />
+                              <span className="font-medium">View</span>
                             </Link>
-                            <button className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50">
-                              <Trash2 className="h-3.5 w-3.5" />
-                              <span>Delete</span>
-                            </button>
+                          </Button>
+                          <div className="relative group">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-9 w-9 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-transparent hover:border-slate-200"
+                            >
+                              <MoreHorizontal className="h-5 w-5" />
+                            </Button>
+                            <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-slate-200 py-1.5 hidden group-hover:block z-10">
+                              <Link href={`/dashboard/organizer/hackathons/${hackathon.id}/edit`} className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-indigo-600">
+                                <Edit className="h-3.5 w-3.5" />
+                                <span>Edit</span>
+                              </Link>
+                              <button className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50">
+                                <Trash2 className="h-3.5 w-3.5" />
+                                <span>Delete</span>
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-            <CardFooter className="bg-slate-50 border-t border-slate-200 px-6 py-4">
-              <div className="flex justify-between items-center w-full">
-                <div className="flex items-center gap-5">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                    <span className="text-sm text-slate-600">
-                      <strong className="font-medium">{hackathons.filter(h => h.status === "Active").length}</strong> Active
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                    <span className="text-sm text-slate-600">
-                      <strong className="font-medium">{hackathons.filter(h => h.status === "Draft").length}</strong> Draft
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 rounded-full bg-slate-500"></div>
-                    <span className="text-sm text-slate-600">
-                      <strong className="font-medium">{hackathons.filter(h => h.status === "Completed").length}</strong> Completed
-                    </span>
-                  </div>
+                  ))}
                 </div>
-                <Button 
-                  size="sm" 
-                  className="bg-blue-600 hover:bg-blue-700 flex items-center gap-1.5 rounded-lg h-9"
-                  onClick={() => handleDialogOpenChange(true)}
-                >
-                  <PlusCircle className="h-4 w-4" />
-                  <span>New Hackathon</span>
-                </Button>
-              </div>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              </CardContent>
+              <CardFooter className="bg-slate-50 border-t border-slate-200 px-6 py-4">
+                <div className="flex justify-between items-center w-full">
+                  <div className="flex items-center gap-5">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                      <span className="text-sm text-slate-600">
+                        <strong className="font-medium">{allHackathons.filter(h => h.status === "Active").length}</strong> Active
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                      <span className="text-sm text-slate-600">
+                        <strong className="font-medium">{allHackathons.filter(h => h.status === "Draft").length}</strong> Draft
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-slate-500"></div>
+                      <span className="text-sm text-slate-600">
+                        <strong className="font-medium">{allHackathons.filter(h => h.status === "Completed").length}</strong> Completed
+                      </span>
+                    </div>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    className="bg-blue-600 hover:bg-blue-700 flex items-center gap-1.5 rounded-lg h-9"
+                    onClick={() => handleDialogOpenChange(true)}
+                  >
+                    <PlusCircle className="h-4 w-4" />
+                    <span>New Hackathon</span>
+                  </Button>
+                </div>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      )}
 
       {/* Create Hackathon Dialog */}
       <Dialog open={isCreateHackathonOpen} onOpenChange={handleDialogOpenChange}>

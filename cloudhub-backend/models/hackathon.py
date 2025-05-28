@@ -78,6 +78,9 @@ class Hackathon(Document):
     organizer_id: str = Field(..., description="ID of the organizing user")
     organization_name: str = Field(..., description="Name of the organizing entity")
     organization_logo: Optional[HttpUrl] = None
+    management_team: List[str] = Field(default_factory=list, description="List of management team member IDs")
+    collaborators: List[str] = Field(default_factory=list, description="List of collaborator IDs")
+    co_organizers: List[str] = Field(default_factory=list, description="List of co-organizer IDs")
     
     # Configuration
     status: HackathonStatus = Field(default=HackathonStatus.DRAFT)
@@ -183,6 +186,9 @@ class Hackathon(Document):
             'organizer_id': str(self.organizer_id) if self.organizer_id else None,  # Convert ObjectId to string
             'organization_name': self.organization_name,
             'organization_logo': str(self.organization_logo) if self.organization_logo else None,
+            'management_team': [str(id) for id in self.management_team] if self.management_team else [],
+            'collaborators': [str(id) for id in self.collaborators] if self.collaborators else [],
+            'co_organizers': [str(id) for id in self.co_organizers] if self.co_organizers else [],
             'status': self.status,
             'max_participants': self.max_participants,
             'min_team_size': self.min_team_size,

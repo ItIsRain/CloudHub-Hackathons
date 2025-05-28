@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status, Request
 from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
 from pydantic import ValidationError
@@ -36,6 +36,194 @@ from schemas.hackathon import (
 )
 
 router = APIRouter()
+
+@router.get("/my-hackathons")
+async def get_my_hackathons(
+    current_user: User = Depends(get_current_user),
+    hackathon_status: Optional[str] = Query(None, description="Filter by status: draft, active, completed"),
+    limit: int = Query(50, ge=1, le=100, description="Maximum number of hackathons to return"),
+    skip: int = Query(0, ge=0, description="Number of hackathons to skip for pagination"),
+    db: AsyncIOMotorClient = Depends(get_db)
+):
+    """Get hackathons created by the current user."""
+    try:
+        logger.debug(f"Fetching hackathons for user: {current_user.email}")
+        
+        # Build query to find hackathons where current user is the organizer
+        query = {
+            "organizer_id": str(current_user.id),
+            "is_deleted": {"$ne": True}  # Exclude deleted hackathons
+        }
+        
+        # Add status filter if provided
+        if hackathon_status:
+            query["status"] = hackathon_status.lower()
+            logger.debug(f"Filtering by status: {hackathon_status}")
+        
+        logger.debug(f"Query: {query}")
+        
+        # Find hackathons with pagination
+        hackathons = await Hackathon.find(query).skip(skip).limit(limit).to_list()
+        
+        logger.debug(f"Found {len(hackathons)} hackathons")
+        
+        # Convert to response format
+        hackathon_list = []
+        for hackathon in hackathons:
+            try:
+                hackathon_dict = hackathon.to_dict()
+                
+                # Get timeline dates
+                timeline = hackathon_dict.get("timeline", {})
+                start_date = timeline.get("event_start") if timeline else datetime.utcnow().isoformat()
+                end_date = timeline.get("event_end") if timeline else (datetime.utcnow() + timedelta(days=3)).isoformat()
+                registration_deadline = timeline.get("registration_end") if timeline else (datetime.utcnow() + timedelta(days=1)).isoformat()
+                
+                # Ensure required fields exist with defaults
+                hackathon_response = {
+                    "id": hackathon_dict.get("id", str(hackathon.id)),
+                    "title": hackathon_dict.get("title", "Untitled Hackathon"),
+                    "description": hackathon_dict.get("description", ""),
+                    "startDate": start_date,
+                    "endDate": end_date,
+                    "registrationDeadline": registration_deadline,
+                    "participants": len(hackathon_dict.get("management_team", [])) + len(hackathon_dict.get("collaborators", [])) + len(hackathon_dict.get("co_organizers", [])),
+                    "maxParticipants": hackathon_dict.get("max_participants", 100),
+                    "submissionCount": hackathon_dict.get("submitted_projects", 0),
+                    "prizePool": str(hackathon_dict.get("total_prize_pool", 0)),
+                    "status": hackathon_dict.get("status", "draft").title(),
+                    "progress": calculate_progress(hackathon_dict),
+                    "bannerImage": hackathon_dict.get("banner_image", ""),
+                    "categories": hackathon_dict.get("tags", []),
+                    "featured": hackathon_dict.get("is_featured", False),
+                    "role": "owner" if str(current_user.id) == str(hackathon_dict.get("organizer_id")) else "team_member",
+                    "participants_count": hackathon_dict.get("registered_participants", 0),
+                    "submission_count": hackathon_dict.get("submitted_projects", 0)
+                }
+                
+                # Add cover image
+                hackathon_response["coverImage"] = hackathon_dict.get("cover_image", "")
+                
+                # Add organization details
+                hackathon_response["organizationName"] = hackathon_dict.get("organization_name", "")
+                hackathon_response["organizationLogo"] = hackathon_dict.get("organization_logo", "")
+                
+                hackathon_list.append(hackathon_response)
+                
+            except Exception as e:
+                logger.error(f"Error processing hackathon {hackathon.id}: {str(e)}")
+                continue
+        
+        # Get total count for pagination
+        total_count = len(await Hackathon.find(query).to_list())
+        
+        return {
+            "hackathons": hackathon_list,
+            "total": total_count,
+            "page": skip // limit + 1,
+            "pages": (total_count + limit - 1) // limit,
+            "has_more": skip + limit < total_count
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching user hackathons: {str(e)}")
+        logger.error(f"Full error traceback:", exc_info=True)
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch hackathons: {str(e)}"
+        )
+
+@router.get("/team-hackathons")
+async def get_team_hackathons(
+    current_user: User = Depends(get_current_user),
+    hackathon_status: Optional[str] = Query(None, description="Filter by status"),
+    limit: int = Query(50, ge=1, le=100),
+    skip: int = Query(0, ge=0),
+    db: AsyncIOMotorClient = Depends(get_db)
+):
+    """Get hackathons where the current user is part of the management team."""
+    try:
+        logger.debug(f"Fetching team hackathons for user: {current_user.email}")
+        
+        # Build query to find hackathons where user is in management team
+        query = {
+            "$or": [
+                {"management_team": {"$in": [str(current_user.id)]}},
+                {"collaborators": {"$in": [str(current_user.id)]}},
+                {"co_organizers": {"$in": [str(current_user.id)]}}
+            ],
+            "is_deleted": {"$ne": True}
+        }
+        
+        if hackathon_status:
+            query["status"] = hackathon_status.lower()
+        
+        hackathons = await Hackathon.find(query).skip(skip).limit(limit).to_list()
+        
+        # Process hackathons similar to my-hackathons
+        hackathon_list = []
+        for hackathon in hackathons:
+            try:
+                hackathon_dict = hackathon.to_dict()
+                hackathon_response = {
+                    "id": hackathon_dict.get("id", str(hackathon.id)),
+                    "title": hackathon_dict.get("title", "Untitled Hackathon"),
+                    "description": hackathon_dict.get("description", ""),
+                    "short_description": hackathon_dict.get("short_description", hackathon_dict.get("description", "")[:200]),
+                    "status": hackathon_dict.get("status", "draft").title(),
+                    "cover_image": hackathon_dict.get("cover_image", ""),
+                    "banner_image": hackathon_dict.get("banner_image", ""),
+                    "organization_name": hackathon_dict.get("organization_name", ""),
+                    "organization_logo": hackathon_dict.get("organization_logo", ""),
+                    "max_participants": hackathon_dict.get("max_participants", 100),
+                    "participants_count": len(hackathon_dict.get("participants", [])),
+                    "submission_count": len(hackathon_dict.get("submissions", [])),
+                    "prize_pool": hackathon_dict.get("total_prize_pool", 0),
+                    "featured": hackathon_dict.get("is_featured", False),
+                    "categories": hackathon_dict.get("tags", []),
+                    "progress": calculate_progress(hackathon_dict),
+                    "role": "team_member"  # Indicate user's role
+                }
+                
+                # Add timeline dates
+                timeline = hackathon_dict.get("timeline", {})
+                if timeline:
+                    hackathon_response.update({
+                        "start_date": timeline.get("event_start", datetime.utcnow().isoformat()),
+                        "end_date": timeline.get("event_end", datetime.utcnow().isoformat()),
+                        "registration_deadline": timeline.get("registration_end", datetime.utcnow().isoformat()),
+                    })
+                else:
+                    now = datetime.utcnow()
+                    hackathon_response.update({
+                        "start_date": now.isoformat(),
+                        "end_date": (now + timedelta(days=3)).isoformat(),
+                        "registration_deadline": (now + timedelta(days=1)).isoformat(),
+                    })
+                
+                hackathon_list.append(hackathon_response)
+                
+            except Exception as e:
+                logger.error(f"Error processing team hackathon {hackathon.id}: {str(e)}")
+                continue
+        
+        # Get total count for pagination
+        total_count = len(await Hackathon.find(query).to_list())
+        
+        return {
+            "hackathons": hackathon_list,
+            "total": total_count,
+            "page": skip // limit + 1,
+            "pages": (total_count + limit - 1) // limit,
+            "has_more": skip + limit < total_count
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching team hackathons: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch team hackathons: {str(e)}"
+        )
 
 def generate_slug(title: str) -> str:
     """Generate a URL-friendly slug from the title."""
@@ -135,7 +323,7 @@ async def create_hackathon(
             logger.error(f"Error with timeline dates: {str(e)}")
             logger.error(f"Timeline data received: {data.timeline}")
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid date format in timeline: {str(e)}"
             )
         
@@ -157,7 +345,7 @@ async def create_hackathon(
             logger.error(f"Error creating billing info: {str(e)}")
             logger.error(f"Billing data received: {data.billing}")
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid billing data: {str(e)}"
             )
         
@@ -177,7 +365,7 @@ async def create_hackathon(
             logger.error(f"Error creating judging criteria: {str(e)}")
             logger.error(f"Judging criteria data received: {data.judging_criteria}")
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid judging criteria data: {str(e)}"
             )
         
@@ -196,7 +384,7 @@ async def create_hackathon(
             logger.error(f"Error creating challenges: {str(e)}")
             logger.error(f"Challenges data received: {data.challenges}")
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid challenge data: {str(e)}"
             )
         
@@ -222,7 +410,7 @@ async def create_hackathon(
             logger.error(f"Error creating prizes: {str(e)}")
             logger.error(f"Prize data received: {data.prizes}")
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid prize data: {str(e)}"
             )
         
@@ -242,7 +430,7 @@ async def create_hackathon(
             logger.error(f"Error creating technologies: {str(e)}")
             logger.error(f"Technology data received: {data.technologies}")
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid technology data: {str(e)}"
             )
         
@@ -253,7 +441,7 @@ async def create_hackathon(
         except Exception as e:
             logger.error(f"Error converting organizer ID: {str(e)}")
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid organizer ID: {str(e)}"
             )
         
@@ -311,13 +499,13 @@ async def create_hackathon(
             logger.error(f"Validation error creating hackathon object: {str(e)}")
             logger.error(f"Validation error details: {e.errors()}")
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=http_status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail={"message": "Validation error", "errors": e.errors()}
             )
         except Exception as e:
             logger.error(f"Error creating hackathon object: {str(e)}")
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Error creating hackathon object: {str(e)}"
             )
         
@@ -329,7 +517,7 @@ async def create_hackathon(
         except Exception as e:
             logger.error(f"Database error while saving hackathon: {str(e)}")
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Database error: {str(e)}"
             )
         
@@ -342,7 +530,7 @@ async def create_hackathon(
         except Exception as e:
             logger.error(f"Error converting hackathon to dictionary: {str(e)}")
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error converting response: {str(e)}"
             )
         
@@ -350,14 +538,14 @@ async def create_hackathon(
         logger.error(f"Validation error in create_hackathon: {str(e)}")
         logger.error(f"Validation error details: {e.errors()}")
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=http_status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={"message": "Validation error", "errors": e.errors()}
         )
     except Exception as e:
         logger.error(f"Unexpected error in create_hackathon: {str(e)}")
         logger.error(f"Full error traceback:", exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create hackathon: {str(e)}"
         )
 
@@ -388,18 +576,68 @@ async def get_hackathon(
     db: AsyncIOMotorClient = Depends(get_db)
 ):
     """Get hackathon details."""
-    hackathon = await Hackathon.find_one(
-        Hackathon.id == hackathon_id,
-        Hackathon.is_deleted == False
-    )
-    
-    if not hackathon:
+    try:
+        # Convert string ID to ObjectId
+        object_id = ObjectId(hackathon_id)
+        
+        hackathon = await Hackathon.find_one(
+            {"_id": object_id, "is_deleted": False}
+        )
+        
+        if not hackathon:
+            raise HTTPException(
+                status_code=404,
+                detail="Hackathon not found"
+            )
+        
+        # Convert to response format
+        hackathon_dict = hackathon.to_dict()
+        
+        # Get timeline dates
+        timeline = hackathon_dict.get("timeline", {})
+        start_date = timeline.get("event_start") if timeline else datetime.utcnow().isoformat()
+        end_date = timeline.get("event_end") if timeline else (datetime.utcnow() + timedelta(days=3)).isoformat()
+        registration_deadline = timeline.get("registration_end") if timeline else (datetime.utcnow() + timedelta(days=1)).isoformat()
+        
+        # Format response
+        response = {
+            "id": str(hackathon_dict.get("id", hackathon.id)),
+            "title": hackathon_dict.get("title", "Untitled Hackathon"),
+            "description": hackathon_dict.get("description", ""),
+            "startDate": start_date,
+            "endDate": end_date,
+            "registrationDeadline": registration_deadline,
+            "participants": len(hackathon_dict.get("management_team", [])) + len(hackathon_dict.get("collaborators", [])) + len(hackathon_dict.get("co_organizers", [])),
+            "maxParticipants": hackathon_dict.get("max_participants", 100),
+            "submissionCount": hackathon_dict.get("submitted_projects", 0),
+            "prizePool": str(hackathon_dict.get("total_prize_pool", 0)),
+            "status": hackathon_dict.get("status", "draft").title(),
+            "progress": calculate_progress(hackathon_dict),
+            "bannerImage": hackathon_dict.get("banner_image", ""),
+            "categories": hackathon_dict.get("tags", []),
+            "featured": hackathon_dict.get("is_featured", False),
+            "participants_count": hackathon_dict.get("registered_participants", 0),
+            "submission_count": hackathon_dict.get("submitted_projects", 0),
+            "coverImage": hackathon_dict.get("cover_image", ""),
+            "organizationName": hackathon_dict.get("organization_name", ""),
+            "organizationLogo": hackathon_dict.get("organization_logo", ""),
+            "rules": hackathon_dict.get("rules", ""),
+            "requirements": hackathon_dict.get("requirements", []),
+            "judging_criteria": hackathon_dict.get("judging_criteria", []),
+            "challenges": hackathon_dict.get("challenges", []),
+            "prizes": hackathon_dict.get("prizes", []),
+            "resources": hackathon_dict.get("resources", []),
+            "submission_template": hackathon_dict.get("submission_template", "")
+        }
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error fetching hackathon {hackathon_id}: {str(e)}")
         raise HTTPException(
             status_code=404,
             detail="Hackathon not found"
         )
-    
-    return hackathon.to_dict()
 
 @router.put("/{hackathon_id}")
 async def update_hackathon(
@@ -617,3 +855,46 @@ async def fix_access_codes(
         "message": f"Updated {updated_count} hackathons with new access codes",
         "updated_count": updated_count
     }
+
+def calculate_progress(hackathon_dict: dict) -> int:
+    """Calculate hackathon progress based on status and timeline."""
+    try:
+        hackathon_status = hackathon_dict.get("status", "draft").lower()
+        
+        # Progress based on status
+        if hackathon_status == "draft":
+            return 25
+        elif hackathon_status == "active":
+            # Calculate progress based on current date vs timeline
+            timeline = hackathon_dict.get("timeline", {})
+            if timeline:
+                try:
+                    event_start = datetime.fromisoformat(str(timeline.get("event_start", "")))
+                    event_end = datetime.fromisoformat(str(timeline.get("event_end", "")))
+                    now = datetime.utcnow()
+                    
+                    if now < event_start:
+                        return 50  # Active but not started
+                    elif now > event_end:
+                        return 90  # Active but ended, waiting for results
+                    else:
+                        # Calculate progress during event
+                        total_duration = (event_end - event_start).total_seconds()
+                        elapsed = (now - event_start).total_seconds()
+                        if total_duration > 0:
+                            progress = 50 + int((elapsed / total_duration) * 40)  # 50-90% range
+                            return min(progress, 90)
+                        return 75
+                except:
+                    return 75  # Default for active
+            return 75
+        elif hackathon_status == "completed":
+            return 100
+        elif hackathon_status == "cancelled":
+            return 0
+        else:
+            return 50  # Default
+            
+    except Exception as e:
+        logger.error(f"Error calculating progress: {str(e)}")
+        return 50  # Default fallback
