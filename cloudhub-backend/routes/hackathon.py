@@ -685,32 +685,100 @@ async def delete_hackathon(
     current_user: User = Depends(get_current_user),
     db: AsyncIOMotorClient = Depends(get_db)
 ):
-    """Delete a hackathon."""
-    hackathon = await Hackathon.find_one(
-        Hackathon.id == hackathon_id,
-        Hackathon.is_deleted == False
-    )
-    
-    if not hackathon:
+    """Delete a hackathon (soft delete)."""
+    try:
+        # Find the hackathon
+        hackathon = await Hackathon.find_one({"_id": ObjectId(hackathon_id)})
+        
+        if not hackathon:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="Hackathon not found"
+            )
+        
+        # Check if user is the organizer
+        if str(hackathon.organizer_id) != str(current_user.id):
+            raise HTTPException(
+                status_code=http_status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to delete this hackathon"
+            )
+        
+        # Soft delete by setting is_deleted flag
+        hackathon.is_deleted = True
+        hackathon.deleted_at = datetime.utcnow()
+        await hackathon.save()
+        
+        return {"message": "Hackathon deleted successfully"}
+        
+    except Exception as e:
+        logger.error(f"Error deleting hackathon: {str(e)}")
         raise HTTPException(
-            status_code=404,
-            detail="Hackathon not found"
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete hackathon: {str(e)}"
         )
-    
-    # Check permissions
-    if str(hackathon.organizer) != str(current_user.id) and current_user.role != 'admin':
+
+@router.patch("/{hackathon_id}")
+async def patch_hackathon(
+    hackathon_id: str,
+    update_data: dict,
+    current_user: User = Depends(get_current_user),
+    db: AsyncIOMotorClient = Depends(get_db)
+):
+    """Partially update a hackathon."""
+    try:
+        # Find the hackathon
+        hackathon = await Hackathon.find_one({"_id": ObjectId(hackathon_id)})
+        
+        if not hackathon:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="Hackathon not found"
+            )
+        
+        # Check if user is the organizer or in management team
+        is_authorized = (
+            str(hackathon.organizer_id) == str(current_user.id) or
+            str(current_user.id) in hackathon.management_team or
+            str(current_user.id) in hackathon.collaborators or
+            str(current_user.id) in hackathon.co_organizers
+        )
+        
+        if not is_authorized:
+            raise HTTPException(
+                status_code=http_status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to update this hackathon"
+            )
+        
+        # Update only provided fields
+        allowed_fields = [
+            'bannerImage', 'coverImage', 'organizationLogo',
+            'title', 'description', 'short_description',
+            'organization_name', 'tags', 'requirements',
+            'rules', 'submission_template'
+        ]
+        
+        for field, value in update_data.items():
+            # Convert camelCase to snake_case for database fields
+            db_field = re.sub(r'(?<!^)(?=[A-Z])', '_', field).lower()
+            
+            if field in allowed_fields:
+                setattr(hackathon, db_field, value)
+        
+        # Update last modified timestamp
+        hackathon.updated_at = datetime.utcnow()
+        
+        # Save the hackathon
+        await hackathon.save()
+        
+        # Return updated hackathon
+        return hackathon.to_dict()
+        
+    except Exception as e:
+        logger.error(f"Error updating hackathon: {str(e)}")
         raise HTTPException(
-            status_code=403,
-            detail="Unauthorized to delete hackathon"
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update hackathon: {str(e)}"
         )
-    
-    hackathon.is_deleted = True
-    hackathon.deleted_at = datetime.utcnow()
-    await hackathon.save()
-    
-    return {
-        'message': 'Hackathon deleted successfully'
-    }
 
 @router.post("/{hackathon_id}/register")
 async def register_for_hackathon(

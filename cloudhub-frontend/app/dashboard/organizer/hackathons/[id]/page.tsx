@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -52,6 +52,8 @@ import { useRouter, useParams } from "next/navigation"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
 import { useToast } from "@/components/ui/use-toast"
+import ReactCrop, { Crop } from 'react-image-crop'
+import 'react-image-crop/dist/ReactCrop.css'
 
 // Types
 interface HackathonStats {
@@ -278,6 +280,25 @@ export default function HackathonManagement() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [configureRoleOpen, setConfigureRoleOpen] = useState(false);
 
+  // Image upload states
+  const [bannerImageUrl, setBannerImageUrl] = useState<string>('');
+  const [coverImageUrl, setCoverImageUrl] = useState<string>('');
+  const [organizationLogoUrl, setOrganizationLogoUrl] = useState<string>('');
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [crop, setCrop] = useState<Crop>({
+    unit: '%',
+    width: 100,
+    height: 100,
+    x: 0,
+    y: 0
+  });
+  const [completedCrop, setCompletedCrop] = useState<Crop | null>(null);
+  const [isCropping, setIsCropping] = useState(false);
+  const [imageType, setImageType] = useState<'banner' | 'cover' | 'logo'>('banner');
+  const [isUploading, setIsUploading] = useState(false);
+  const imageRef = useRef<HTMLImageElement | null>(null);
+
   useEffect(() => {
     const fetchHackathonData = async () => {
       try {
@@ -310,6 +331,10 @@ export default function HackathonManagement() {
 
         const data = await response.json();
         setHackathon(data);
+        // Set existing images
+        setBannerImageUrl(data.bannerImage || '');
+        setCoverImageUrl(data.coverImage || '');
+        setOrganizationLogoUrl(data.organizationLogo || '');
       } catch (err: any) {
         setError(err.message || 'An unexpected error occurred');
         toast({
@@ -395,6 +420,172 @@ export default function HackathonManagement() {
   const handleConfigureRole = (role: Role) => {
     setSelectedRole(role);
     setConfigureRoleOpen(true);
+  };
+
+  // Image handling functions
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'banner' | 'cover' | 'logo') => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedImageFile(file);
+      setImageType(type);
+      
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImagePreview(reader.result as string);
+        // Set appropriate crop dimensions based on image type
+        if (type === 'banner') {
+          setCrop({
+            unit: '%',
+            width: 100,
+            height: 56.25, // 16:9 aspect ratio
+            x: 0,
+            y: 0
+          });
+        } else if (type === 'cover') {
+          setCrop({
+            unit: '%',
+            width: 100,
+            height: 56.25, // 16:9 aspect ratio
+            x: 0,
+            y: 0
+          });
+        } else if (type === 'logo') {
+          setCrop({
+            unit: '%',
+            width: 50,
+            height: 50, // 1:1 aspect ratio
+            x: 25,
+            y: 25
+          });
+        }
+        setIsCropping(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const getCroppedImg = async (image: HTMLImageElement, crop: Crop): Promise<File> => {
+    const canvas = document.createElement('canvas');
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    
+    canvas.width = crop.width;
+    canvas.height = crop.height;
+    const ctx = canvas.getContext('2d');
+
+    if (ctx) {
+      ctx.drawImage(
+        image,
+        crop.x * scaleX,
+        crop.y * scaleY,
+        crop.width * scaleX,
+        crop.height * scaleY,
+        0,
+        0,
+        crop.width,
+        crop.height
+      );
+    }
+
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const file = new File([blob], `${imageType}-image.jpg`, { type: 'image/jpeg' });
+          resolve(file);
+        }
+      }, 'image/jpeg', 0.9);
+    });
+  };
+
+  const handleCropComplete = async () => {
+    if (imageRef.current && completedCrop && completedCrop.width && completedCrop.height) {
+      try {
+        const croppedImageFile = await getCroppedImg(imageRef.current, completedCrop);
+        await handleImageUpload(croppedImageFile);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to crop image. Please try again.",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  const handleImageUpload = async (file: File) => {
+    setIsUploading(true);
+    try {
+      const token = localStorage.getItem('access_token') || 
+                   sessionStorage.getItem('access_token') ||
+                   document.cookie.split('; ').find(row => row.startsWith('access_token='))?.split('=')[1];
+
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      // Upload image to BunnyNet
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', `hackathons/${params.id}`);
+
+      const uploadResponse = await fetch('http://localhost:8000/api/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload image');
+      }
+
+      const uploadResult = await uploadResponse.json();
+      const imageUrl = uploadResult.file.url;
+
+      // Update hackathon with new image URL
+      const updateData: any = {};
+      if (imageType === 'banner') {
+        updateData.bannerImage = imageUrl;
+        setBannerImageUrl(imageUrl);
+      } else if (imageType === 'cover') {
+        updateData.coverImage = imageUrl;
+        setCoverImageUrl(imageUrl);
+      } else if (imageType === 'logo') {
+        updateData.organizationLogo = imageUrl;
+        setOrganizationLogoUrl(imageUrl);
+      }
+
+      const updateResponse = await fetch(`http://localhost:8000/api/hackathons/${params.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updateData)
+      });
+
+      if (!updateResponse.ok) {
+        throw new Error('Failed to update hackathon');
+      }
+
+      toast({
+        title: "Success",
+        description: `${imageType.charAt(0).toUpperCase() + imageType.slice(1)} image updated successfully`,
+      });
+
+      setIsCropping(false);
+      setSelectedImageFile(null);
+      setImagePreview('');
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to upload image. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   if (isLoading) {
@@ -592,45 +783,148 @@ export default function HackathonManagement() {
                     <CardHeader className="bg-gradient-to-r from-slate-50 via-purple-50 to-blue-50 border-b border-slate-200 p-6">
                       <div className="flex items-center gap-2">
                         <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-sm">
-                          <AlertCircle className="h-4 w-4 text-white" />
+                          <Upload className="h-4 w-4 text-white" />
                         </div>
-                        <CardTitle className="text-lg font-semibold text-slate-800">Recent Activity</CardTitle>
+                        <CardTitle className="text-lg font-semibold text-slate-800">Image Management</CardTitle>
                       </div>
                     </CardHeader>
                     <CardContent className="p-6">
-                      <div className="space-y-4">
-                        <div className="flex items-start gap-4">
-                          <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center">
-                            <Users className="h-4 w-4" />
+                      <div className="space-y-6">
+                        {/* Banner Image */}
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                              <h4 className="text-sm font-medium text-slate-900">Banner Image</h4>
+                              <p className="text-xs text-slate-500">Recommended size: 1920x1080px (16:9)</p>
+                            </div>
+                            <Label 
+                              htmlFor="banner-upload" 
+                              className="cursor-pointer"
+                            >
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="h-8"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  document.getElementById('banner-upload')?.click();
+                                }}
+                              >
+                                <Upload className="h-4 w-4 mr-2" />
+                                Upload
+                              </Button>
+                              <Input
+                                id="banner-upload"
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => handleImageSelect(e, 'banner')}
+                              />
+                            </Label>
                           </div>
-                          <div>
-                            <p className="text-sm">
-                              <span className="font-medium">New team registered:</span> AI Innovators
-                            </p>
-                            <p className="text-xs text-slate-500">2 hours ago</p>
-                          </div>
+                          {bannerImageUrl && (
+                            <div className="relative aspect-video rounded-lg overflow-hidden border border-slate-200">
+                              <img 
+                                src={bannerImageUrl} 
+                                alt="Banner" 
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                              <Badge className="absolute bottom-2 right-2 bg-green-600 text-white">
+                                Current Banner
+                              </Badge>
+                            </div>
+                          )}
                         </div>
-                        <div className="flex items-start gap-4">
-                          <div className="h-8 w-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center">
-                            <MessageSquare className="h-4 w-4" />
+
+                        {/* Cover Image */}
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                              <h4 className="text-sm font-medium text-slate-900">Cover Image</h4>
+                              <p className="text-xs text-slate-500">Recommended size: 1200x675px (16:9)</p>
+                            </div>
+                            <Label 
+                              htmlFor="cover-upload" 
+                              className="cursor-pointer"
+                            >
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="h-8"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  document.getElementById('cover-upload')?.click();
+                                }}
+                              >
+                                <Upload className="h-4 w-4 mr-2" />
+                                Upload
+                              </Button>
+                              <Input
+                                id="cover-upload"
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => handleImageSelect(e, 'cover')}
+                              />
+                            </Label>
                           </div>
-                          <div>
-                            <p className="text-sm">
-                              <span className="font-medium">Announcement sent:</span> Workshop Schedule Update
-                            </p>
-                            <p className="text-xs text-slate-500">5 hours ago</p>
-                          </div>
+                          {coverImageUrl && (
+                            <div className="relative aspect-video rounded-lg overflow-hidden border border-slate-200">
+                              <img 
+                                src={coverImageUrl} 
+                                alt="Cover" 
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                              <Badge className="absolute bottom-2 right-2 bg-blue-600 text-white">
+                                Current Cover
+                              </Badge>
+                            </div>
+                          )}
                         </div>
-                        <div className="flex items-start gap-4">
-                          <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                            <Trophy className="h-4 w-4" />
+
+                        {/* Organization Logo */}
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                              <h4 className="text-sm font-medium text-slate-900">Organization Logo</h4>
+                              <p className="text-xs text-slate-500">Recommended size: 400x400px (1:1)</p>
+                            </div>
+                            <Label 
+                              htmlFor="logo-upload" 
+                              className="cursor-pointer"
+                            >
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="h-8"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  document.getElementById('logo-upload')?.click();
+                                }}
+                              >
+                                <Upload className="h-4 w-4 mr-2" />
+                                Upload
+                              </Button>
+                              <Input
+                                id="logo-upload"
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => handleImageSelect(e, 'logo')}
+                              />
+                            </Label>
                           </div>
-                          <div>
-                            <p className="text-sm">
-                              <span className="font-medium">Project submitted:</span> Neural Network Navigator
-                            </p>
-                            <p className="text-xs text-slate-500">8 hours ago</p>
-                          </div>
+                          {organizationLogoUrl && (
+                            <div className="relative w-24 h-24 rounded-lg overflow-hidden border border-slate-200 mx-auto">
+                              <img 
+                                src={organizationLogoUrl} 
+                                alt="Organization Logo" 
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -3811,6 +4105,77 @@ export default function HackathonManagement() {
               }}
             >
               Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Cropping Dialog */}
+      <Dialog open={isCropping} onOpenChange={setIsCropping}>
+        <DialogContent className="sm:max-w-[800px] p-0 gap-0">
+          <DialogHeader className="bg-gradient-to-r from-slate-50 via-purple-50 to-blue-50 border-b border-slate-200 p-6 relative overflow-hidden">
+            <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
+            <div className="relative">
+              <DialogTitle className="text-xl font-semibold tracking-tight text-slate-900">
+                Crop {imageType.charAt(0).toUpperCase() + imageType.slice(1)} Image
+              </DialogTitle>
+              <DialogDescription className="text-base text-slate-500 mt-2">
+                Adjust the crop area to get the perfect {imageType} image
+              </DialogDescription>
+            </div>
+          </DialogHeader>
+          
+          <div className="p-6">
+            {imagePreview && (
+              <div className="relative max-h-[500px] overflow-auto rounded-lg border border-slate-200">
+                <ReactCrop
+                  crop={crop}
+                  onChange={(c) => setCrop(c)}
+                  onComplete={(c) => setCompletedCrop(c)}
+                  aspect={imageType === 'logo' ? 1 : 16 / 9}
+                  minWidth={imageType === 'logo' ? 100 : 200}
+                  minHeight={imageType === 'logo' ? 100 : 112}
+                >
+                  <img
+                    ref={imageRef}
+                    src={imagePreview}
+                    alt="Crop preview"
+                    style={{ maxWidth: '100%' }}
+                    onLoad={(e) => {
+                      imageRef.current = e.currentTarget;
+                    }}
+                  />
+                </ReactCrop>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 bg-slate-50">
+            <Button 
+              variant="outline"
+              className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
+              onClick={() => {
+                setIsCropping(false);
+                setImagePreview('');
+                setSelectedImageFile(null);
+              }}
+              disabled={isUploading}
+            >
+              Cancel
+            </Button>
+            <Button 
+              className="rounded-lg px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md transition-all hover:shadow-lg"
+              onClick={handleCropComplete}
+              disabled={isUploading}
+            >
+              {isUploading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Uploading...
+                </>
+              ) : (
+                'Apply Crop & Upload'
+              )}
             </Button>
           </div>
         </DialogContent>
