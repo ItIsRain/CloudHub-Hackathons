@@ -213,9 +213,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(freshUser);
         localStorage.setItem(TOKEN_STORAGE.USER, JSON.stringify(freshUser));
       }
-    } catch (error) {
-      console.log('⚠️ Background user validation failed (this is OK):', error);
-      // Don't clear tokens here - user might just be offline
+    } catch (error: any) {
+      console.log('⚠️ Background user validation failed:', error);
+      
+      // Check if error is due to invalid token (401)
+      if (error?.response?.status === 401) {
+        console.log('🔄 Token expired, attempting refresh...');
+        try {
+          // Try to refresh the token
+          await tryRefreshTokens();
+          
+          // Retry getting user info with new token
+          const retryUser = await getCurrentUser();
+          console.log('✅ Got user after token refresh');
+          setUser(retryUser);
+          localStorage.setItem(TOKEN_STORAGE.USER, JSON.stringify(retryUser));
+        } catch (refreshError) {
+          console.log('❌ Token refresh failed, logging out:', refreshError);
+          // If refresh fails, log the user out
+          await logout();
+        }
+      }
+      // Don't throw error for background validation
     }
   };
 
