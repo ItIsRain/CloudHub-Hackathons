@@ -89,10 +89,29 @@ interface Hackathon {
   maxParticipants: number;
 }
 
+// Add status type
+type HackathonStatus = 'draft' | 'published' | 'active' | 'judging' | 'completed' | 'archived';
+
+interface AnalyticsData {
+  registered: number;
+  active: number;
+  submitted: number;
+  dailySubmissions: { day: string; value: number }[];
+  monthlyStats: { month: string; participants: number; submissions: number }[];
+}
+
 export default function OrganizerDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [ownedHackathons, setOwnedHackathons] = useState<Hackathon[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [selectedHackathonId, setSelectedHackathonId] = useState<string>('all');
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
+    registered: 0,
+    active: 0,
+    submitted: 0,
+    dailySubmissions: [],
+    monthlyStats: []
+  });
   const { user } = useAuth();
 
   // Get first name from full name
@@ -108,6 +127,49 @@ export default function OrganizerDashboard() {
 
   // Featured hackathon
   const [featuredHackathon, setFeaturedHackathon] = useState<Hackathon | null>(null);
+
+  // Function to check if a hackathon is active
+  const isHackathonActive = (status: string) => {
+    const lowerStatus = status.toLowerCase();
+    return lowerStatus === 'active' || lowerStatus === 'published' || lowerStatus === 'judging';
+  };
+
+  // Function to calculate analytics data based on selected hackathon
+  const calculateAnalytics = (hackathons: Hackathon[]) => {
+    const targetHackathons = selectedHackathonId === 'all' 
+      ? hackathons 
+      : hackathons.filter(h => h.id === selectedHackathonId);
+
+    console.log('Calculating analytics for hackathons:', targetHackathons); // Debug log
+
+    // Calculate participant stats
+    const registered = targetHackathons.reduce((sum, h) => sum + (h.participants_count || 0), 0);
+    const active = targetHackathons.reduce((sum, h) => sum + (h.participants_count || 0), 0);
+    const submitted = targetHackathons.reduce((sum, h) => sum + (h.submission_count || 0), 0);
+
+    // Generate daily submission data (last 7 days)
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const dailySubmissions = days.map(day => ({
+      day,
+      value: 0 // Set to 0 since we don't have real daily data yet
+    }));
+
+    // Generate monthly stats (last 6 months)
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+    const monthlyStats = months.map(month => ({
+      month,
+      participants: 0, // Set to 0 since we don't have real monthly data yet
+      submissions: 0
+    }));
+
+    setAnalyticsData({
+      registered,
+      active,
+      submitted,
+      dailySubmissions,
+      monthlyStats
+    });
+  };
 
   useEffect(() => {
     const fetchHackathons = async () => {
@@ -133,10 +195,12 @@ export default function OrganizerDashboard() {
 
         const data = await response.json();
         const hackathons: Hackathon[] = data.hackathons || [];
+        console.log('Fetched hackathons:', hackathons);
         setOwnedHackathons(hackathons);
 
         // Calculate stats
-        const activeHacks = hackathons.filter(h => h.status.toLowerCase() === 'active');
+        const activeHacks = hackathons.filter(h => isHackathonActive(h.status));
+        console.log('Active hackathons:', activeHacks);
         const totalParticipants = hackathons.reduce((sum, h) => sum + (h.participants_count || 0), 0);
         const totalSubmissions = hackathons.reduce((sum, h) => sum + (h.submission_count || 0), 0);
         const totalPrize = hackathons.reduce((sum, h) => sum + parseFloat(h.prizePool || '0'), 0);
@@ -152,6 +216,9 @@ export default function OrganizerDashboard() {
         const featured = activeHacks[0] || hackathons[0];
         setFeaturedHackathon(featured);
 
+        // Calculate initial analytics
+        calculateAnalytics(hackathons);
+
       } catch (error: any) {
         console.error('Error fetching hackathons:', error);
         setError(error.message);
@@ -162,6 +229,11 @@ export default function OrganizerDashboard() {
 
     fetchHackathons();
   }, []);
+
+  // Update analytics when hackathon selection changes
+  useEffect(() => {
+    calculateAnalytics(ownedHackathons);
+  }, [selectedHackathonId, ownedHackathons]);
 
   return (
     <div className="space-y-8 pb-10 px-6 mt-6">
@@ -343,14 +415,17 @@ export default function OrganizerDashboard() {
               <CardTitle className="text-slate-900">Participant Analytics</CardTitle>
               <CardDescription className="text-slate-500">Overview of participant engagement</CardDescription>
             </div>
-            <Select defaultValue="all">
+            <Select value={selectedHackathonId} onValueChange={setSelectedHackathonId}>
               <SelectTrigger className="w-[180px] bg-white border-slate-200">
                 <SelectValue placeholder="Select hackathon" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Hackathons</SelectItem>
-                <SelectItem value="ai-challenge">AI Challenge</SelectItem>
-                <SelectItem value="web3">Web3 Hackathon</SelectItem>
+                {ownedHackathons.map(hackathon => (
+                  <SelectItem key={hackathon.id} value={hackathon.id}>
+                    {hackathon.title}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </CardHeader>
@@ -361,7 +436,7 @@ export default function OrganizerDashboard() {
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart
-                      data={submissionData}
+                      data={analyticsData.dailySubmissions}
                       margin={{
                         top: 5,
                         right: 30,
@@ -405,7 +480,11 @@ export default function OrganizerDashboard() {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={participantData}
+                        data={[
+                          { name: "Registered", value: analyticsData.registered },
+                          { name: "Active", value: analyticsData.active },
+                          { name: "Submitted", value: analyticsData.submitted }
+                        ]}
                         cx="50%"
                         cy="50%"
                         labelLine={false}
@@ -429,7 +508,11 @@ export default function OrganizerDashboard() {
                   </ResponsiveContainer>
                 </div>
                 <div className="space-y-2 mt-2">
-                  {participantData.map((item, index) => (
+                  {[
+                    { name: "Registered", value: analyticsData.registered },
+                    { name: "Active", value: analyticsData.active },
+                    { name: "Submitted", value: analyticsData.submitted }
+                  ].map((item, index) => (
                     <div key={index} className="flex items-center justify-between">
                       <div className="flex items-center">
                         <div className="h-3 w-3 rounded-full mr-2" style={{ backgroundColor: COLORS[index] }}></div>
@@ -455,7 +538,7 @@ export default function OrganizerDashboard() {
               {[
                 {
                   title: "Review Submissions",
-                  description: "15 new submissions to review",
+                  description: `${analyticsData.submitted} submissions to review`,
                   icon: <FileText className="h-5 w-5 text-[#2684ff]" />,
                   link: "/dashboard/organizer/judging",
                 },
@@ -467,7 +550,7 @@ export default function OrganizerDashboard() {
                 },
                 {
                   title: "Send Announcements",
-                  description: "Update participants",
+                  description: `Update ${analyticsData.active} participants`,
                   icon: <Megaphone className="h-5 w-5 text-emerald-600" />,
                   link: "/dashboard/organizer/announcements",
                 }
@@ -528,150 +611,82 @@ export default function OrganizerDashboard() {
           <Card className="border-slate-200 shadow-none">
             <CardContent className="p-0">
               <div className="space-y-4 p-6">
-                {[
-                  {
-                    id: 1,
-                    title: "AI Innovation Challenge",
-                    startDate: "2025-06-15",
-                    endDate: "2025-06-17",
-                    participants: 250,
-                    maxParticipants: 300,
-                    prizePool: "10,000 AED",
-                    status: "Active",
-                    progress: 65,
-                    image: "/placeholder.svg?height=100&width=200",
-                    technologies: ["TensorFlow", "Python", "React"],
-                    teamSize: 4,
-                  },
-                  {
-                    id: 2,
-                    title: "Web3 Hackathon",
-                    startDate: "2025-07-01",
-                    endDate: "2025-07-03",
-                    participants: 200,
-                    maxParticipants: 500,
-                    prizePool: "15,000 AED",
-                    status: "Active",
-                    progress: 40,
-                    image: "/placeholder.svg?height=100&width=200",
-                    technologies: ["Solidity", "Ethereum", "Web3.js"],
-                    teamSize: 3,
-                  },
-                ].map((hackathon) => (
-                  <div
-                    key={hackathon.id}
-                    className="flex flex-col sm:flex-row gap-4 p-5 rounded-xl border border-slate-200 bg-white hover:border-blue-200 hover:shadow-md transition-all group relative overflow-hidden"
-                  >
-                    {/* Status indicator */}
-                    <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-blue-500 to-indigo-500 opacity-70 group-hover:opacity-100 transition-opacity"></div>
-                    
+                {ownedHackathons
+                  .filter(hackathon => isHackathonActive(hackathon.status))
+                  .map((hackathon) => (
                     <div
-                      className="w-full sm:w-32 h-24 bg-slate-100 rounded-lg flex-shrink-0 bg-cover bg-center overflow-hidden"
-                      style={{ backgroundImage: `url(${hackathon.image})` }}
+                      key={hackathon.id}
+                      className="flex flex-col sm:flex-row gap-4 p-5 rounded-xl border border-slate-200 bg-white hover:border-blue-200 hover:shadow-md transition-all group relative overflow-hidden"
                     >
-                      <div className="w-full h-full bg-gradient-to-tr from-blue-900/30 to-transparent"></div>
-                    </div>
-                    
-                    <div className="flex-1 space-y-3 pl-1.5">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                        <div>
-                          <h3 className="font-semibold text-slate-900 group-hover:text-blue-700 transition-colors">{hackathon.title}</h3>
-                          <p className="text-sm text-slate-500">Organized by you</p>
-                        </div>
-                        <Badge className={`${hackathon.status === "Active" ? "bg-emerald-500" : "bg-blue-500"} shadow-sm`}>
-                          {hackathon.status}
-                        </Badge>
-                      </div>
+                      {/* Status indicator */}
+                      <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-blue-500 to-indigo-500 opacity-70 group-hover:opacity-100 transition-opacity"></div>
                       
-                      <div className="flex flex-wrap gap-3 text-sm">
-                        <div className="flex items-center gap-1 text-slate-700">
-                          <CalendarDays className="h-4 w-4 text-slate-500" />
-                          <span>
-                            {new Date(hackathon.startDate).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                            })}{" "}
-                            -{" "}
-                            {new Date(hackathon.endDate).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })}
-                          </span>
+                      <div className="flex-1 space-y-3 pl-1.5">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                          <div>
+                            <h3 className="font-semibold text-slate-900 group-hover:text-blue-700 transition-colors">{hackathon.title}</h3>
+                            <p className="text-sm text-slate-500">Organized by you</p>
+                          </div>
+                          <Badge className={`${
+                            hackathon.status.toLowerCase() === 'active' ? 'bg-emerald-500' :
+                            hackathon.status.toLowerCase() === 'published' ? 'bg-blue-500' :
+                            hackathon.status.toLowerCase() === 'judging' ? 'bg-amber-500' :
+                            'bg-slate-500'
+                          } shadow-sm`}>
+                            {hackathon.status}
+                          </Badge>
                         </div>
-                        <div className="flex items-center gap-1 text-slate-700">
-                          <Trophy className="h-4 w-4 text-slate-500" />
-                          <span>{hackathon.prizePool} prize pool</span>
+                        
+                        <div className="flex flex-wrap gap-3 text-sm">
+                          <div className="flex items-center gap-1 text-slate-700">
+                            <Users className="h-4 w-4 text-slate-500" />
+                            <span>
+                              {hackathon.participants_count || 0}/{hackathon.maxParticipants} participants
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 text-slate-700">
+                            <Trophy className="h-4 w-4 text-slate-500" />
+                            <span>{hackathon.prizePool || '0'} prize pool</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1 text-slate-700">
-                          <Users className="h-4 w-4 text-slate-500" />
-                          <span>
-                            {hackathon.participants}/{hackathon.maxParticipants} participants
-                          </span>
-                        </div>
-                      </div>
 
-                      <div className="flex flex-wrap gap-2 mt-1">
-                        {hackathon.technologies.map((tech, index) => (
-                          <HoverCard key={index}>
-                            <HoverCardTrigger>
-                              <Badge variant="outline" className="bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200 cursor-pointer">
-                                {tech}
-                              </Badge>
-                            </HoverCardTrigger>
-                            <HoverCardContent className="w-60">
-                              <div className="space-y-2">
-                                <h4 className="font-medium">{tech}</h4>
-                                <p className="text-sm text-slate-500">
-                                  {tech === "TensorFlow" && "Machine learning framework used in this hackathon."}
-                                  {tech === "Python" && "Primary programming language for AI development."}
-                                  {tech === "React" && "Frontend JavaScript library for UI development."}
-                                  {tech === "Solidity" && "Smart contract programming language for Ethereum."}
-                                  {tech === "Ethereum" && "Blockchain platform used in this hackathon."}
-                                  {tech === "Web3.js" && "JavaScript library for interacting with the Ethereum blockchain."}
-                                </p>
-                              </div>
-                            </HoverCardContent>
-                          </HoverCard>
-                        ))}
-                      </div>
-                      
-                      <div className="pt-1">
-                        <div className="flex justify-between text-xs mb-1.5">
-                          <span className="text-slate-600">Progress</span>
-                          <span className="font-medium text-blue-700">{hackathon.progress}%</span>
-                        </div>
-                        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-300" 
-                            style={{ width: `${hackathon.progress}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center justify-between pt-2">
-                        <div className="flex -space-x-2">
-                          {[...Array(3)].map((_, i) => (
-                            <Avatar key={i} className="h-7 w-7 border-2 border-white">
-                              <AvatarImage src={`/placeholder.svg?height=28&width=28&text=${i+1}`} />
-                              <AvatarFallback>P{i+1}</AvatarFallback>
-                            </Avatar>
-                          ))}
-                          <div className="h-7 w-7 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center border-2 border-white">
-                            +{hackathon.participants > 3 ? hackathon.participants - 3 : 0}
+                        <div className="pt-1">
+                          <div className="flex justify-between text-xs mb-1.5">
+                            <span className="text-slate-600">Progress</span>
+                            <span className="font-medium text-blue-700">{hackathon.progress || 0}%</span>
+                          </div>
+                          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-300" 
+                              style={{ width: `${hackathon.progress || 0}%` }}
+                            ></div>
                           </div>
                         </div>
                         
-                        <Button size="sm" className="gap-1 bg-white text-blue-700 border border-blue-200 hover:bg-blue-50 hover:text-blue-800 shadow-sm" asChild>
-                          <Link href={`/dashboard/hackathons/${hackathon.id}`}>
-                            Manage
-                            <ArrowRight className="h-3.5 w-3.5" />
-                          </Link>
-                        </Button>
+                        <div className="flex items-center justify-end pt-2">
+                          <Button size="sm" className="gap-1 bg-white text-blue-700 border border-blue-200 hover:bg-blue-50 hover:text-blue-800 shadow-sm" asChild>
+                            <Link href={`/dashboard/hackathons/${hackathon.id}`}>
+                              Manage
+                              <ArrowRight className="h-3.5 w-3.5" />
+                            </Link>
+                          </Button>
+                        </div>
                       </div>
                     </div>
+                  ))}
+                
+                {ownedHackathons.length === 0 && (
+                  <div className="text-center py-8">
+                    <p className="text-slate-500">No hackathons found</p>
                   </div>
-                ))}
+                )}
+                
+                {ownedHackathons.length > 0 && 
+                 ownedHackathons.filter(h => isHackathonActive(h.status)).length === 0 && (
+                  <div className="text-center py-8">
+                    <p className="text-slate-500">No active hackathons found</p>
+                  </div>
+                )}
               </div>
               
               <div className="flex justify-center p-6 pt-2">
