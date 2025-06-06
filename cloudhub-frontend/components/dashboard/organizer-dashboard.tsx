@@ -77,21 +77,91 @@ const hackathonData = [
   { month: "Jun", participants: 300, submissions: 120 },
 ]
 
+interface Hackathon {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  participants_count: number;
+  submission_count: number;
+  prizePool: string;
+  progress: number;
+  maxParticipants: number;
+}
+
 export default function OrganizerDashboard() {
-  // Simulate loading state
-  const [isLoading, setIsLoading] = useState(true)
-  const { user } = useAuth()
-  
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 1000)
-    
-    return () => clearTimeout(timer)
-  }, [])
+  const [isLoading, setIsLoading] = useState(true);
+  const [ownedHackathons, setOwnedHackathons] = useState<Hackathon[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   // Get first name from full name
-  const firstName = user?.full_name?.split(' ')[0] || 'Admin'
+  const firstName = user?.full_name?.split(' ')[0] || 'Admin';
+
+  // Stats
+  const [stats, setStats] = useState({
+    activeHackathons: 0,
+    totalParticipants: 0,
+    totalSubmissions: 0,
+    totalPrizePool: 0
+  });
+
+  // Featured hackathon
+  const [featuredHackathon, setFeaturedHackathon] = useState<Hackathon | null>(null);
+
+  useEffect(() => {
+    const fetchHackathons = async () => {
+      try {
+        setIsLoading(true);
+        const token = localStorage.getItem('access_token');
+        
+        if (!token) {
+          throw new Error('No authentication token found');
+        }
+
+        // Fetch owned hackathons
+        const response = await fetch('http://localhost:8000/api/hackathons/my-hackathons', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch hackathons');
+        }
+
+        const data = await response.json();
+        const hackathons: Hackathon[] = data.hackathons || [];
+        setOwnedHackathons(hackathons);
+
+        // Calculate stats
+        const activeHacks = hackathons.filter(h => h.status.toLowerCase() === 'active');
+        const totalParticipants = hackathons.reduce((sum, h) => sum + (h.participants_count || 0), 0);
+        const totalSubmissions = hackathons.reduce((sum, h) => sum + (h.submission_count || 0), 0);
+        const totalPrize = hackathons.reduce((sum, h) => sum + parseFloat(h.prizePool || '0'), 0);
+
+        setStats({
+          activeHackathons: activeHacks.length,
+          totalParticipants,
+          totalSubmissions,
+          totalPrizePool: totalPrize
+        });
+
+        // Set featured hackathon (first active one or first in list)
+        const featured = activeHacks[0] || hackathons[0];
+        setFeaturedHackathon(featured);
+
+      } catch (error: any) {
+        console.error('Error fetching hackathons:', error);
+        setError(error.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHackathons();
+  }, []);
 
   return (
     <div className="space-y-8 pb-10 px-6 mt-6">
@@ -125,7 +195,7 @@ export default function OrganizerDashboard() {
               </h1>
               
               <p className="text-white/90 text-lg mb-8 max-w-lg font-light">
-                You have 2 active hackathons with 450 total participants.
+                You have {stats.activeHackathons} active hackathons with {stats.totalParticipants} total participants.
               </p>
               
               <div className="flex flex-wrap gap-4">
@@ -138,32 +208,39 @@ export default function OrganizerDashboard() {
               </div>
             </div>
             
-            <div className="hidden md:flex justify-end">
-              <div className="bg-white/10 backdrop-blur-xl rounded-xl border border-white/20 p-5 w-full max-w-xs shadow-xl">
-                <h3 className="font-medium mb-4 flex items-center text-white">
-                  <Sparkles className="h-4 w-4 mr-2 text-amber-300" />
-                  <span className="text-base">Featured Hackathon</span>
-                </h3>
-                <div className="bg-white/10 rounded-lg backdrop-blur-md p-5 mb-4">
-                  <Badge className="bg-emerald-500/90 mb-3 border-0 px-3 py-1 text-xs">Active</Badge>
-                  <h4 className="font-medium text-white text-lg mb-1">AI Innovation Challenge</h4>
-                  <p className="text-sm text-white/80 mb-4">450 participants registered</p>
-                  <div className="mt-3 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full" style={{ width: "65%" }}></div>
+            {featuredHackathon && (
+              <div className="hidden md:flex justify-end">
+                <div className="bg-white/10 backdrop-blur-xl rounded-xl border border-white/20 p-5 w-full max-w-xs shadow-xl">
+                  <h3 className="font-medium mb-4 flex items-center text-white">
+                    <Sparkles className="h-4 w-4 mr-2 text-amber-300" />
+                    <span className="text-base">Featured Hackathon</span>
+                  </h3>
+                  <div className="bg-white/10 rounded-lg backdrop-blur-md p-5 mb-4">
+                    <Badge className="bg-emerald-500/90 mb-3 border-0 px-3 py-1 text-xs">
+                      {featuredHackathon.status}
+                    </Badge>
+                    <h4 className="font-medium text-white text-lg mb-1">{featuredHackathon.title}</h4>
+                    <p className="text-sm text-white/80 mb-4">{featuredHackathon.participants_count} participants registered</p>
+                    <div className="mt-3 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full" 
+                        style={{ width: `${featuredHackathon.progress}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between mt-2 text-xs text-white/80">
+                      <span>Progress</span>
+                      <span className="font-medium">{featuredHackathon.progress}%</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between mt-2 text-xs text-white/80">
-                    <span>Progress</span>
-                    <span className="font-medium">65%</span>
-                  </div>
+                  <Button variant="outline" className="w-full text-white border-white/20 bg-white/10 hover:bg-white hover:text-indigo-700 backdrop-blur-xl transition-all group px-4 py-2 h-auto text-sm font-medium rounded-xl" asChild>
+                    <Link href={`/dashboard/organizer/hackathons/${featuredHackathon.id}`}>
+                      <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                      <span>View Details</span>
+                    </Link>
+                  </Button>
                 </div>
-                <Button variant="outline" className="w-full text-white border-white/20 bg-white/10 hover:bg-white hover:text-indigo-700 backdrop-blur-xl transition-all group px-4 py-2 h-auto text-sm font-medium rounded-xl" asChild>
-                  <Link href="/dashboard/organizer/hackathons/ai-innovation-challenge/">
-                    <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                    <span>View Details</span>
-                  </Link>
-                </Button>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </section>
@@ -180,8 +257,8 @@ export default function OrganizerDashboard() {
               </div>
               <h3 className="font-medium text-sm text-slate-500">Active Hackathons</h3>
               <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-slate-900">2</p>
-                <span className="text-xs text-green-600 font-medium">+1 this month</span>
+                <p className="text-2xl font-bold text-slate-900">{stats.activeHackathons}</p>
+                <span className="text-xs text-green-600 font-medium">+{Math.min(stats.activeHackathons, 1)} this month</span>
               </div>
             </div>
             <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-indigo-500"></div>
@@ -198,8 +275,8 @@ export default function OrganizerDashboard() {
               </div>
               <h3 className="font-medium text-sm text-slate-500">Total Participants</h3>
               <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-slate-900">450</p>
-                <span className="text-xs text-green-600 font-medium">+50 this week</span>
+                <p className="text-2xl font-bold text-slate-900">{stats.totalParticipants}</p>
+                <span className="text-xs text-green-600 font-medium">+{Math.min(stats.totalParticipants, 50)} this week</span>
               </div>
             </div>
             <div className="h-1 w-full bg-gradient-to-r from-purple-500 to-pink-500"></div>
@@ -216,8 +293,8 @@ export default function OrganizerDashboard() {
               </div>
               <h3 className="font-medium text-sm text-slate-500">Submissions</h3>
               <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-slate-900">135</p>
-                <span className="text-xs text-green-600 font-medium">+15 new</span>
+                <p className="text-2xl font-bold text-slate-900">{stats.totalSubmissions}</p>
+                <span className="text-xs text-green-600 font-medium">+{Math.min(stats.totalSubmissions, 15)} new</span>
               </div>
             </div>
             <div className="h-1 w-full bg-gradient-to-r from-pink-500 to-rose-500"></div>
@@ -234,7 +311,7 @@ export default function OrganizerDashboard() {
               </div>
               <h3 className="font-medium text-sm text-slate-500">Prize Pool</h3>
               <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-slate-900">25K</p>
+                <p className="text-2xl font-bold text-slate-900">{stats.totalPrizePool}K</p>
                 <span className="text-xs text-amber-600 font-medium">AED total</span>
               </div>
             </div>
@@ -242,6 +319,20 @@ export default function OrganizerDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+          <p>{error}</p>
+        </div>
+      )}
 
       {/* Analytics Section */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
