@@ -19,6 +19,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 # Import routes
 from routes import auth, user, hackathon, team, project, upload, message
 from routes.payment import router as payment_router
+from routes import team_members, sponsors, timeline_events, resources, faqs
 
 # Import models
 from models.user import User
@@ -28,6 +29,11 @@ from models.project import Project
 from models.team import Team
 from models.hackathon import Hackathon
 from models.pending_hackathon import PendingHackathon
+from models.team_member import TeamMember
+from models.sponsor import Sponsor
+from models.timeline_event import TimelineEvent
+from models.resource import Resource
+from models.faq import FAQ
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -51,6 +57,13 @@ def register_routes(app: FastAPI):
     app.include_router(upload.router, prefix="/api/upload", tags=["File Upload"])
     app.include_router(message.router, prefix="/api/messages", tags=["Messages"])
     app.include_router(payment_router, prefix="/api/payment", tags=["Payments"])
+    
+    # New management routes
+    app.include_router(team_members.router, prefix="/api/hackathons", tags=["Team Members"])
+    app.include_router(sponsors.router, prefix="/api/hackathons", tags=["Sponsors"])
+    app.include_router(timeline_events.router, prefix="/api/hackathons", tags=["Timeline Events"])
+    app.include_router(resources.router, prefix="/api/hackathons", tags=["Resources"])
+    app.include_router(faqs.router, prefix="/api/hackathons", tags=["FAQs"])
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -72,7 +85,12 @@ async def lifespan(app: FastAPI):
             Project,
             Team,
             Hackathon,
-            PendingHackathon
+            PendingHackathon,
+            TeamMember,
+            Sponsor,
+            TimelineEvent,
+            Resource,
+            FAQ
         ]
         
         try:

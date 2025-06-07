@@ -39,7 +39,8 @@ import {
   Settings,
   ArrowUpRight,
   FileCode2,
-  LayoutDashboard
+  LayoutDashboard,
+  MapPin
 } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
@@ -54,106 +55,9 @@ import { Progress } from "@/components/ui/progress"
 import { useToast } from "@/components/ui/use-toast"
 import ReactCrop, { Crop } from 'react-image-crop'
 import 'react-image-crop/dist/ReactCrop.css'
+import { useAuth } from "@/contexts/auth-context"
 
-// Types
-interface HackathonStats {
-  participants: number;
-  teams: number;
-  submissions: number;
-  mentors: number;
-  judges: number;
-  daysRemaining: number;
-  currentPhase: 'registration' | 'submission' | 'judging' | 'completed';
-}
-
-interface TeamMember {
-  id: string;
-  name: string;
-  email: string;
-  role: 'organizer' | 'judge' | 'mentor' | 'media';
-  permissions: string[];
-  status: 'active' | 'pending' | 'inactive';
-  dateAdded: string;
-}
-
-interface Sponsor {
-  id: string;
-  name: string;
-  tier: 'platinum' | 'gold' | 'silver' | 'bronze';
-  logo: string;
-  website: string;
-  description: string;
-  contacts: {
-    name: string;
-    role: string;
-    email: string;
-    phone: string;
-  }[];
-  benefits: string[];
-  contribution: number;
-}
-
-interface TimelineEvent {
-  id: string;
-  title: string;
-  description: string;
-  date: string;
-  type: 'milestone' | 'deadline' | 'workshop' | 'announcement';
-  status: 'upcoming' | 'ongoing' | 'completed';
-  duration?: number; // in minutes
-  location?: string;
-}
-
-interface Resource {
-  id: string;
-  title: string;
-  description: string;
-  type: 'dataset' | 'api' | 'documentation' | 'tool';
-  format?: string;
-  size?: string;
-  url: string;
-  accessLevel: 'public' | 'private';
-  category: string;
-  downloads?: number;
-  lastUpdated: string;
-}
-
-interface EmailTemplate {
-  id: string;
-  name: string;
-  subject: string;
-  description: string;
-  type: 'welcome' | 'reminder' | 'update' | 'announcement';
-  lastUsed?: string;
-  variables: string[];
-}
-
-interface FAQ {
-  id: string;
-  question: string;
-  answer: string;
-  category: string;
-  views: number;
-  helpful: number;
-  lastUpdated: string;
-  order: number;
-  published: boolean;
-  featured: boolean;
-}
-
-interface Role {
-  name: 'organizer' | 'judge' | 'mentor' | 'media';
-  count: number;
-  description: string;
-}
-
-interface SponsorshipTier {
-  name: 'platinum' | 'gold' | 'silver' | 'bronze';
-  description: string;
-  minContribution: number;
-}
-
-// Add interface for API response
+// Types for API integration
 interface HackathonResponse {
   id: string;
   title: string;
@@ -192,74 +96,240 @@ interface HackathonResponse {
     description: string;
     currency: string;
   }[];
-  resources: Resource[];
+  resources: any[];
   submission_template: string;
 }
 
-// Dummy data for FAQs
-const faqs: FAQ[] = [
-  {
-    id: "1",
-    question: "What technologies are allowed in the hackathon?",
-    answer: "Participants can use any programming language or framework. We encourage the use of modern technologies and open-source tools.",
-    category: "Technical",
-    views: 245,
-    helpful: 180,
-    lastUpdated: "2024-03-01T09:00:00",
-    order: 1,
-    published: true,
-    featured: true
-  },
-  {
-    id: "2",
-    question: "How are projects evaluated?",
-    answer: "Projects are evaluated based on innovation (30%), technical implementation (30%), impact (20%), and presentation (20%).",
-    category: "Judging",
-    views: 312,
-    helpful: 290,
-    lastUpdated: "2024-03-05T11:30:00",
-    order: 2,
-    published: true,
-    featured: true
-  }
-];
+interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  role: 'organizer' | 'judge' | 'mentor' | 'media';
+  permissions: string[];
+  status: 'active' | 'pending' | 'inactive';
+  date_added: string;
+  user_id: string;
+  hackathon_id: string;
+  added_by: string;
+  auto_approve: boolean;
+  notifications_enabled: boolean;
+}
 
-// Dummy data for email templates
-const emailTemplates: EmailTemplate[] = [
-  {
-    id: "1",
-    name: "Welcome Email",
-    subject: "Welcome to the Hackathon!",
-    description: "Initial welcome email sent to all participants",
-    type: "welcome",
-    lastUsed: "2024-03-01T09:00:00",
-    variables: ["participantName", "teamName", "startDate", "mentorName"]
-  },
-  {
-    id: "2",
-    name: "Submission Reminder",
-    subject: "Project Submission Deadline Approaching",
-    description: "Reminder email for project submission deadline",
-    type: "reminder",
-    lastUsed: "2024-03-15T14:00:00",
-    variables: ["participantName", "teamName", "daysRemaining", "submissionLink"]
+interface Sponsor {
+  id: string;
+  name: string;
+  tier: 'platinum' | 'gold' | 'silver' | 'bronze';
+  logo: string;
+  website: string;
+  description: string;
+  contacts: {
+    name: string;
+    role: string;
+    email: string;
+    phone: string;
+  }[];
+  benefits: string[];
+  contribution: number;
+  currency: string;
+  contract_signed: boolean;
+  featured: boolean;
+  display_order: number;
+  hackathon_id: string;
+  added_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface TimelineEvent {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  event_type: 'milestone' | 'deadline' | 'workshop' | 'announcement';
+  status: 'upcoming' | 'ongoing' | 'completed';
+  duration?: number;
+  location?: string;
+  meeting_url?: string;
+  notify_participants: boolean;
+  reminder_hours: number;
+  is_public: boolean;
+  display_order: number;
+  hackathon_id: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Resource {
+  id: string;
+  title: string;
+  description: string;
+  type: 'dataset' | 'api' | 'documentation' | 'tool';
+  format?: string;
+  size?: string;
+  url: string;
+  access_level: 'public' | 'private';
+  category: string;
+  downloads: number;
+  last_downloaded?: string;
+  tags: string[];
+  featured: boolean;
+  display_order: number;
+  api_key?: string;
+  api_endpoint?: string;
+  documentation_url?: string;
+  hackathon_id: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  last_updated: string;
+}
+
+interface FAQ {
+  id: string;
+  question: string;
+  answer: string;
+  category: string;
+  views: number;
+  helpful: number;
+  not_helpful: number;
+  order: number;
+  published: boolean;
+  featured: boolean;
+  hackathon_id: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  last_updated: string;
+}
+
+interface Role {
+  name: 'organizer' | 'judge' | 'mentor' | 'media';
+  count: number;
+  description: string;
+}
+
+interface SponsorshipTier {
+  name: 'platinum' | 'gold' | 'silver' | 'bronze';
+  description: string;
+  min_contribution: number;
+  currency: string;
+  count: number;
+}
+
+// API utility functions
+const getAuthToken = () => {
+  return localStorage.getItem('access_token') || 
+         sessionStorage.getItem('access_token') ||
+         document.cookie.split('; ').find(row => row.startsWith('access_token='))?.split('=')[1];
+};
+
+const apiCall = async (url: string, options: RequestInit = {}) => {
+  const token = getAuthToken();
+  
+  const defaultHeaders = {
+    'Authorization': `Bearer ${token}`,
+    'Accept': 'application/json',
+    'Content-Type': 'application/json'
+  };
+
+  try {
+    const response = await fetch(`http://localhost:8000${url}`, {
+      ...options,
+      headers: {
+        ...defaultHeaders,
+        ...options.headers
+      },
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        // Handle expired token - force logout and redirect
+        console.log('🔒 API call failed with 401, forcing logout');
+        localStorage.removeItem('access_token');
+        sessionStorage.removeItem('access_token');
+        // Force redirect to login
+        window.location.href = '/login';
+        throw new Error('Session expired. Please login again.');
+      }
+      
+      // Try to parse error response
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.detail) {
+          errorMessage = errorData.detail;
+        } else if (errorData.errors && Array.isArray(errorData.errors)) {
+          // Handle validation errors
+          const validationErrors = errorData.errors.map((err: any) => {
+            const field = err.loc.join('.');
+            return `${field}: ${err.msg}`;
+          }).join(', ');
+          errorMessage = `Validation error: ${validationErrors}`;
+        }
+      } catch (e) {
+        // If we can't parse the error response, use the status text
+      }
+      
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  } catch (error: any) {
+    // Re-throw the error so it can be handled by the calling function
+    throw error;
   }
-];
+};
 
 export default function HackathonManagement() {
   const router = useRouter();
   const params = useParams();
   const { toast } = useToast();
+  
+  // Auth guard - redirect to login if not authenticated
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  
+  useEffect(() => {
+    if (!authLoading && (!user || !isAuthenticated)) {
+      console.log('🔒 User not authenticated, redirecting to login');
+      router.push('/login');
+      return;
+    }
+  }, [user, isAuthenticated, authLoading, router]);
+  
+  // Don't render anything if not authenticated
+  if (!user || !isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+  
+  // Core state
   const [hackathon, setHackathon] = useState<HackathonResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Data state
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [sponsors, setSponsors] = useState<Sponsor[]>([]);
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [faqs, setFaqs] = useState<FAQ[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [sponsorshipTiers, setSponsorshipTiers] = useState<SponsorshipTier[]>([]);
 
-  // Add state for UI components
+  // UI state
   const [activeTab, setActiveTab] = useState("overview");
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [editMemberOpen, setEditMemberOpen] = useState(false);
   const [addSponsorOpen, setAddSponsorOpen] = useState(false);
   const [editSponsorOpen, setEditSponsorOpen] = useState(false);
+  const [addTimelineOpen, setAddTimelineOpen] = useState(false);
   const [editTimelineOpen, setEditTimelineOpen] = useState(false);
   const [editResourceOpen, setEditResourceOpen] = useState(false);
   const [editFAQOpen, setEditFAQOpen] = useState(false);
@@ -267,7 +337,7 @@ export default function HackathonManagement() {
   const [activeFaqFilter, setActiveFaqFilter] = useState("all");
   const [addDocumentationOpen, setAddDocumentationOpen] = useState(false);
 
-  // Add state for delete dialogs
+  // Delete dialog state
   const [deleteMemberOpen, setDeleteMemberOpen] = useState(false);
   const [deleteSponsorOpen, setDeleteSponsorOpen] = useState(false);
   const [deleteTimelineOpen, setDeleteTimelineOpen] = useState(false);
@@ -280,7 +350,80 @@ export default function HackathonManagement() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [configureRoleOpen, setConfigureRoleOpen] = useState(false);
 
-  // Image upload states
+  // Form state for adding/editing
+  const [memberForm, setMemberForm] = useState({
+    name: '',
+    email: '',
+    role: 'organizer' as 'organizer' | 'judge' | 'mentor' | 'media',
+    permissions: [] as string[],
+    auto_approve: false,
+    notifications_enabled: true
+  });
+
+  const [sponsorForm, setSponsorForm] = useState({
+    name: '',
+    tier: 'bronze' as 'platinum' | 'gold' | 'silver' | 'bronze',
+    logo: '',
+    website: '',
+    description: '',
+    contacts: [{
+      name: '',
+      role: '',
+      email: '',
+      phone: ''
+    }],
+    benefits: [] as string[],
+    contribution: 0,
+    currency: 'AED',
+    featured: false,
+    display_order: 0
+  });
+
+  const [timelineForm, setTimelineForm] = useState({
+    title: '',
+    description: '',
+    date: '',
+    event_type: 'milestone' as 'milestone' | 'deadline' | 'workshop' | 'announcement',
+    status: 'upcoming' as 'upcoming' | 'ongoing' | 'completed',
+    duration: '',
+    location: '',
+    meeting_url: '',
+    notify_participants: true,
+    reminder_hours: 24,
+    is_public: true,
+    display_order: 0
+  });
+
+  const [resourceForm, setResourceForm] = useState({
+    title: '',
+    description: '',
+    resource_type: 'dataset' as 'dataset' | 'api' | 'documentation' | 'tool',
+    format: '',
+    size: '',
+    url: '',
+    access_level: 'public' as 'public' | 'private',
+    category: '',
+    tags: [] as string[],
+    featured: false,
+    display_order: 0,
+    api_key: '',
+    api_endpoint: '',
+    documentation_url: ''
+  });
+
+  const [faqForm, setFaqForm] = useState({
+    question: '',
+    answer: '',
+    category: '',
+    order: 0,
+    published: true,
+    featured: false
+  });
+
+  // Loading states
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Image upload state
   const [bannerImageUrl, setBannerImageUrl] = useState<string>('');
   const [coverImageUrl, setCoverImageUrl] = useState<string>('');
   const [organizationLogoUrl, setOrganizationLogoUrl] = useState<string>('');
@@ -299,63 +442,332 @@ export default function HackathonManagement() {
   const [isUploading, setIsUploading] = useState(false);
   const imageRef = useRef<HTMLImageElement | null>(null);
 
+  // Role configuration form state
+  const [roleConfigForm, setRoleConfigForm] = useState({
+    description: '',
+    permissions: [] as string[],
+    auto_approve: false,
+    notifications_enabled: true
+  });
+
+  // Store role configurations locally since backend only applies to existing members
+  const [roleConfigurations, setRoleConfigurations] = useState<{[key: string]: any}>({});
+
+  // Load role configurations from localStorage on mount
   useEffect(() => {
-    const fetchHackathonData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const token = localStorage.getItem('access_token') || 
-                     sessionStorage.getItem('access_token') ||
-                     document.cookie.split('; ').find(row => row.startsWith('access_token='))?.split('=')[1];
-
-        if (!token) {
-          throw new Error('No authentication token found');
+    if (params.id) {
+      const stored = localStorage.getItem(`roleConfigs_${params.id}`);
+      if (stored) {
+        try {
+          setRoleConfigurations(JSON.parse(stored));
+        } catch (error) {
+          console.error('Failed to parse stored role configurations:', error);
         }
-
-        const response = await fetch(`http://localhost:8000/api/hackathons/${params.id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          },
-          credentials: 'include'
-        });
-
-        if (!response.ok) {
-          if (response.status === 404) {
-            throw new Error('Hackathon not found');
-          }
-          throw new Error('Failed to fetch hackathon data');
-        }
-
-        const data = await response.json();
-        setHackathon(data);
-        // Set existing images
-        setBannerImageUrl(data.bannerImage || '');
-        setCoverImageUrl(data.coverImage || '');
-        setOrganizationLogoUrl(data.organizationLogo || '');
-      } catch (err: any) {
-        setError(err.message || 'An unexpected error occurred');
-        toast({
-          title: "Error",
-          description: err.message || "Failed to fetch hackathon data. Please try again later.",
-          variant: "destructive"
-        });
-      } finally {
-        setIsLoading(false);
       }
-    };
+    }
+  }, [params.id]);
 
+  // Save role configurations to localStorage
+  const saveRoleConfigurationsToStorage = (configs: {[key: string]: any}) => {
+    localStorage.setItem(`roleConfigs_${params.id}`, JSON.stringify(configs));
+    setRoleConfigurations(configs);
+  };
+
+  // Apply saved role configurations to existing team members
+  const applyConfigurationsToExistingMembers = async () => {
+    if (Object.keys(roleConfigurations).length === 0) return;
+
+    try {
+      // Apply each role configuration to the backend
+      for (const [roleName, config] of Object.entries(roleConfigurations)) {
+        const roleConfigData = {
+          role: roleName,
+          description: config.description,
+          permissions: config.permissions,
+          auto_approve: config.auto_approve,
+          notifications_enabled: config.notifications_enabled
+        };
+
+        await apiCall(`/api/hackathons/${params.id}/roles/${roleName}/configure`, {
+          method: 'POST',
+          body: JSON.stringify(roleConfigData)
+        });
+      }
+    } catch (error) {
+      console.error('Failed to apply role configurations to existing members:', error);
+    }
+  };
+
+  // Apply configurations when team members are loaded
+  useEffect(() => {
+    if (teamMembers.length > 0 && Object.keys(roleConfigurations).length > 0) {
+      applyConfigurationsToExistingMembers();
+    }
+  }, [teamMembers.length, roleConfigurations]);
+
+  // API functions
+  const fetchHackathonData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const data = await apiCall(`/api/hackathons/${params.id}`);
+      setHackathon(data);
+      setBannerImageUrl(data.bannerImage || '');
+      setCoverImageUrl(data.coverImage || '');
+      setOrganizationLogoUrl(data.organizationLogo || '');
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred');
+      toast({
+        title: "Error",
+        description: err.message || "Failed to fetch hackathon data. Please try again later.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchTeamMembers = async () => {
+    try {
+      const data = await apiCall(`/api/hackathons/${params.id}/team-members`);
+      setTeamMembers(data);
+    } catch (err) {
+      console.error('Failed to fetch team members:', err);
+    }
+  };
+
+  const fetchSponsors = async () => {
+    try {
+      const data = await apiCall(`/api/hackathons/${params.id}/sponsors`);
+      setSponsors(data);
+    } catch (err) {
+      console.error('Failed to fetch sponsors:', err);
+    }
+  };
+
+  const fetchTimelineEvents = async () => {
+    try {
+      const data = await apiCall(`/api/hackathons/${params.id}/timeline-events`);
+      setTimelineEvents(data);
+    } catch (err) {
+      console.error('Failed to fetch timeline events:', err);
+    }
+  };
+
+  const fetchResources = async () => {
+    try {
+      const data = await apiCall(`/api/hackathons/${params.id}/resources`);
+      setResources(data);
+    } catch (err) {
+      console.error('Failed to fetch resources:', err);
+    }
+  };
+
+  const fetchFAQs = async () => {
+    try {
+      const data = await apiCall(`/api/hackathons/${params.id}/faqs`);
+      setFaqs(data);
+    } catch (err) {
+      console.error('Failed to fetch FAQs:', err);
+    }
+  };
+
+  const fetchRoles = async () => {
+    try {
+      const data = await apiCall(`/api/hackathons/${params.id}/roles`);
+      setRoles(data.roles);
+    } catch (err) {
+      console.error('Failed to fetch roles:', err);
+    }
+  };
+
+  const fetchSponsorshipTiers = async () => {
+    try {
+      const data = await apiCall(`/api/hackathons/${params.id}/sponsorship-tiers`);
+      setSponsorshipTiers(data.tiers);
+    } catch (err) {
+      console.error('Failed to fetch sponsorship tiers:', err);
+    }
+  };
+
+  // CRUD API functions
+  const createTeamMember = async (memberData: any) => {
+    return await apiCall(`/api/hackathons/${params.id}/team-members`, {
+      method: 'POST',
+      body: JSON.stringify(memberData)
+    });
+  };
+
+  const updateTeamMember = async (memberId: string, memberData: any) => {
+    return await apiCall(`/api/hackathons/${params.id}/team-members/${memberId}`, {
+      method: 'PUT',
+      body: JSON.stringify(memberData)
+    });
+  };
+
+  const deleteTeamMember = async (memberId: string) => {
+    return await apiCall(`/api/hackathons/${params.id}/team-members/${memberId}`, {
+      method: 'DELETE'
+    });
+  };
+
+  const createSponsor = async (sponsorData: any) => {
+    return await apiCall(`/api/hackathons/${params.id}/sponsors`, {
+      method: 'POST',
+      body: JSON.stringify(sponsorData)
+    });
+  };
+
+  const updateSponsor = async (sponsorId: string, sponsorData: any) => {
+    return await apiCall(`/api/hackathons/${params.id}/sponsors/${sponsorId}`, {
+      method: 'PUT',
+      body: JSON.stringify(sponsorData)
+    });
+  };
+
+  const deleteSponsor = async (sponsorId: string) => {
+    return await apiCall(`/api/hackathons/${params.id}/sponsors/${sponsorId}`, {
+      method: 'DELETE'
+    });
+  };
+
+  const createTimelineEvent = async (eventData: any) => {
+    return await apiCall(`/api/hackathons/${params.id}/timeline-events`, {
+      method: 'POST',
+      body: JSON.stringify(eventData)
+    });
+  };
+
+  const updateTimelineEvent = async (eventId: string, eventData: any) => {
+    return await apiCall(`/api/hackathons/${params.id}/timeline-events/${eventId}`, {
+      method: 'PUT',
+      body: JSON.stringify(eventData)
+    });
+  };
+
+  const deleteTimelineEvent = async (eventId: string) => {
+    return await apiCall(`/api/hackathons/${params.id}/timeline-events/${eventId}`, {
+      method: 'DELETE'
+    });
+  };
+
+  const createResource = async (resourceData: any) => {
+    return await apiCall(`/api/hackathons/${params.id}/resources`, {
+      method: 'POST',
+      body: JSON.stringify(resourceData)
+    });
+  };
+
+  const updateResource = async (resourceId: string, resourceData: any) => {
+    return await apiCall(`/api/hackathons/${params.id}/resources/${resourceId}`, {
+      method: 'PUT',
+      body: JSON.stringify(resourceData)
+    });
+  };
+
+  const deleteResource = async (resourceId: string) => {
+    return await apiCall(`/api/hackathons/${params.id}/resources/${resourceId}`, {
+      method: 'DELETE'
+    });
+  };
+
+  const createFAQ = async (faqData: any) => {
+    return await apiCall(`/api/hackathons/${params.id}/faqs`, {
+      method: 'POST',
+      body: JSON.stringify(faqData)
+    });
+  };
+
+  const updateFAQ = async (faqId: string, faqData: any) => {
+    return await apiCall(`/api/hackathons/${params.id}/faqs/${faqId}`, {
+      method: 'PUT',
+      body: JSON.stringify(faqData)
+    });
+  };
+
+  const deleteFAQ = async (faqId: string) => {
+    return await apiCall(`/api/hackathons/${params.id}/faqs/${faqId}`, {
+      method: 'DELETE'
+    });
+  };
+
+  // Load all data on component mount
+  useEffect(() => {
     if (params.id) {
       fetchHackathonData();
+      fetchTeamMembers();
+      fetchSponsors();
+      fetchTimelineEvents();
+      fetchResources();
+      fetchFAQs();
+      fetchRoles();
+      fetchSponsorshipTiers();
     }
-  }, [params.id, toast]);
+  }, [params.id]);
 
   // Filter FAQs based on selected category
   const filteredFaqs = activeFaqFilter === "all" 
     ? faqs 
     : faqs.filter(faq => faq.category.toLowerCase() === activeFaqFilter.toLowerCase());
+
+  // Get upcoming deadlines from timeline events and hackathon data
+  const getUpcomingDeadlines = () => {
+    if (!hackathon) return [];
+    
+    const now = new Date();
+    const deadlines = [];
+
+    // Add hackathon registration deadline
+    if (hackathon.registrationDeadline && new Date(hackathon.registrationDeadline) > now) {
+      deadlines.push({
+        id: 'registration',
+        title: 'Registration Deadline',
+        date: hackathon.registrationDeadline,
+        type: 'registration',
+        description: 'Last chance to register for the hackathon',
+        icon: Users,
+        color: 'blue'
+      });
+    }
+
+    // Add hackathon end date (submission deadline)
+    if (hackathon.endDate && new Date(hackathon.endDate) > now) {
+      deadlines.push({
+        id: 'submission',
+        title: 'Project Submissions Due',
+        date: hackathon.endDate,
+        type: 'submission',
+        description: 'Final deadline for project submissions',
+        icon: Timer,
+        color: 'purple'
+      });
+    }
+
+    // Add timeline events that are deadlines or important milestones
+    timelineEvents.forEach(event => {
+      const eventDate = new Date(event.date);
+      if (eventDate > now && (event.event_type === 'deadline' || 
+          (event.event_type === 'milestone' && event.status === 'upcoming'))) {
+        deadlines.push({
+          id: event.id,
+          title: event.title,
+          date: event.date,
+          type: event.event_type,
+          description: event.description,
+          icon: event.event_type === 'deadline' ? AlertCircle : Calendar,
+          color: event.event_type === 'deadline' ? 'red' : 'indigo'
+        });
+      }
+    });
+
+    // Sort by date and return first 4
+    return deadlines
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .slice(0, 4);
+  };
+
+  const upcomingDeadlines = getUpcomingDeadlines();
 
   // Helper functions
   const getPhaseColor = (phase: string) => {
@@ -374,52 +786,743 @@ export default function HackathonManagement() {
   };
 
   // Event handlers
-  const handleAddMember = () => setAddMemberOpen(true);
+  const handleAddMember = () => {
+    setMemberForm({
+      name: '',
+      email: '',
+      role: 'organizer',
+      permissions: [],
+      auto_approve: false,
+      notifications_enabled: true
+    });
+    setAddMemberOpen(true);
+  };
+  
   const handleEditMember = (member: TeamMember) => {
+    setSelectedMember(member);
+    setMemberForm({
+      name: member.name,
+      email: member.email,
+      role: member.role,
+      permissions: member.permissions,
+      auto_approve: member.auto_approve,
+      notifications_enabled: member.notifications_enabled
+    });
     setEditMemberOpen(true);
   };
+  
   const handleDeleteMember = (member: TeamMember) => {
     setSelectedMember(member);
     setDeleteMemberOpen(true);
   };
 
-  const handleAddSponsor = () => setAddSponsorOpen(true);
+  const handleSubmitMember = async (isEdit: boolean = false) => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      // Apply saved role configuration if it exists
+      const savedRoleConfig = roleConfigurations[memberForm.role];
+      const memberData = {
+        ...memberForm,
+        // Apply saved permissions if they exist, otherwise use form permissions
+        permissions: savedRoleConfig?.permissions || memberForm.permissions,
+        // Apply saved auto_approve setting if it exists, otherwise use form setting
+        auto_approve: savedRoleConfig?.auto_approve !== undefined ? savedRoleConfig.auto_approve : memberForm.auto_approve,
+        // Apply saved notifications setting if it exists, otherwise use form setting
+        notifications_enabled: savedRoleConfig?.notifications_enabled !== undefined ? savedRoleConfig.notifications_enabled : memberForm.notifications_enabled
+      };
+      
+      if (isEdit && selectedMember) {
+        await updateTeamMember(selectedMember.id, memberData);
+        toast({
+          title: "Success",
+          description: "Team member updated successfully",
+        });
+        setEditMemberOpen(false);
+      } else {
+        await createTeamMember(memberData);
+        toast({
+          title: "Success", 
+          description: "Team member added successfully",
+        });
+        setAddMemberOpen(false);
+      }
+      
+      // Refresh data
+      await fetchTeamMembers();
+      await fetchRoles();
+      
+    } catch (error: any) {
+      console.error('Member submission error:', error);
+      
+      // Enhanced error handling for better user feedback
+      let errorMessage = "Failed to save team member";
+      
+      if (error.message) {
+        try {
+          // Try to parse as JSON error response
+          const errorData = JSON.parse(error.message.replace(/^HTTP \d+: /, ''));
+          
+          if (errorData.errors && Array.isArray(errorData.errors)) {
+            // Handle validation errors array
+            const validationMessages = errorData.errors.map((err: any) => {
+              const field = err.loc[err.loc.length - 1];
+              let fieldName = field;
+              let errorMsg = err.msg;
+              
+              // Convert field names to user-friendly names
+              switch (field) {
+                case 'name':
+                  fieldName = 'Name';
+                  break;
+                case 'email':
+                  fieldName = 'Email address';
+                  break;
+                case 'role':
+                  fieldName = 'Role';
+                  break;
+                default:
+                  fieldName = field.replace(/_/g, ' ');
+              }
+              
+              // Convert error messages to user-friendly format
+              if (errorMsg.includes('value is not a valid email address')) {
+                errorMsg = 'Please enter a valid email address';
+              } else if (errorMsg.includes('field required')) {
+                errorMsg = 'This field is required';
+              } else if (errorMsg.includes('string too short')) {
+                errorMsg = 'This field is too short';
+              } else if (errorMsg.includes('string too long')) {
+                errorMsg = 'This field is too long';
+              }
+              
+              return `${fieldName}: ${errorMsg}`;
+            });
+            
+            errorMessage = validationMessages.join('\n');
+          } else if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData.detail) {
+            errorMessage = errorData.detail;
+          }
+        } catch (parseError) {
+          // If JSON parsing fails, handle as string error
+          if (error.message.includes('already exists')) {
+            errorMessage = "A team member with this email already exists";
+          } else {
+            errorMessage = error.message;
+          }
+        }
+      }
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleConfirmDeleteMember = async () => {
+    if (!selectedMember || isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      await deleteTeamMember(selectedMember.id);
+      toast({
+        title: "Success",
+        description: "Team member removed successfully",
+      });
+      setDeleteMemberOpen(false);
+      setSelectedMember(null);
+      
+      // Refresh data
+      await fetchTeamMembers();
+      await fetchRoles();
+      
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove team member",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleAddSponsor = () => {
+    setSponsorForm({
+      name: '',
+      tier: 'bronze',
+      logo: '',
+      website: '',
+      description: '',
+      contacts: [{
+        name: '',
+        role: '',
+        email: '',
+        phone: ''
+      }],
+      benefits: [],
+      contribution: 0,
+      currency: 'AED',
+      featured: false,
+      display_order: 0
+    });
+    setAddSponsorOpen(true);
+  };
+  
   const handleEditSponsor = (sponsor: Sponsor) => {
+    setSelectedSponsor(sponsor);
+    setSponsorForm({
+      name: sponsor.name,
+      tier: sponsor.tier,
+      logo: sponsor.logo,
+      website: sponsor.website,
+      description: sponsor.description,
+      contacts: sponsor.contacts,
+      benefits: sponsor.benefits,
+      contribution: sponsor.contribution,
+      currency: sponsor.currency,
+      featured: sponsor.featured,
+      display_order: sponsor.display_order
+    });
     setEditSponsorOpen(true);
   };
+  
   const handleDeleteSponsor = (sponsor: Sponsor) => {
     setSelectedSponsor(sponsor);
     setDeleteSponsorOpen(true);
   };
 
+  const handleConfirmDeleteSponsor = async () => {
+    if (!selectedSponsor || isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      await deleteSponsor(selectedSponsor.id);
+      toast({
+        title: "Success",
+        description: "Sponsor deleted successfully",
+      });
+      setDeleteSponsorOpen(false);
+      setSelectedSponsor(null);
+      
+      // Refresh data
+      await fetchSponsors();
+      await fetchSponsorshipTiers();
+      
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete sponsor",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSubmitSponsor = async (isEdit: boolean = false) => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      // Clean up the sponsor form data for API submission
+      let cleanedWebsite: string | null = sponsorForm.website.trim();
+      let cleanedLogo: string | null = sponsorForm.logo.trim();
+      
+      // Handle website URL scheme
+      if (cleanedWebsite === '') {
+        cleanedWebsite = null;
+      } else if (!cleanedWebsite.startsWith('http')) {
+        cleanedWebsite = `https://${cleanedWebsite}`;
+      }
+
+      // Handle logo URL
+      if (cleanedLogo === '') {
+        cleanedLogo = null;
+      } else if (cleanedLogo && !cleanedLogo.startsWith('http')) {
+        cleanedLogo = `https://${cleanedLogo}`;
+      }
+
+      const cleanedSponsorForm = {
+        ...sponsorForm,
+        logo: cleanedLogo,
+        website: cleanedWebsite
+      };
+
+      if (isEdit && selectedSponsor) {
+        await updateSponsor(selectedSponsor.id, cleanedSponsorForm);
+        toast({
+          title: "Success",
+          description: "Sponsor updated successfully",
+        });
+        setEditSponsorOpen(false);
+      } else {
+        await createSponsor(cleanedSponsorForm);
+        toast({
+          title: "Success", 
+          description: "Sponsor added successfully",
+        });
+        setAddSponsorOpen(false);
+      }
+      
+      // Refresh data
+      await fetchSponsors();
+      await fetchSponsorshipTiers();
+      
+    } catch (error: any) {
+      console.error('Sponsor submission error:', error);
+      
+      // Enhanced error handling for better user feedback
+      let errorMessage = "Failed to save sponsor";
+      
+      if (error.message) {
+        try {
+          // Try to parse as JSON error response
+          const errorData = JSON.parse(error.message.replace(/^HTTP \d+: /, ''));
+          
+          if (errorData.errors && Array.isArray(errorData.errors)) {
+            // Handle validation errors array
+            const validationMessages = errorData.errors.map((err: any) => {
+              const field = err.loc[err.loc.length - 1];
+              let fieldName = field;
+              let errorMsg = err.msg;
+              
+              // Convert field names to user-friendly names
+              switch (field) {
+                case 'name':
+                  fieldName = 'Company name';
+                  break;
+                case 'email':
+                  fieldName = 'Email address';
+                  break;
+                case 'logo':
+                  fieldName = 'Logo URL';
+                  break;
+                case 'website':
+                  fieldName = 'Website URL';
+                  break;
+                case 'contribution':
+                  fieldName = 'Contribution amount';
+                  break;
+                case 'tier':
+                  fieldName = 'Sponsorship tier';
+                  break;
+                case 'description':
+                  fieldName = 'Description';
+                  break;
+                default:
+                  fieldName = field.replace(/_/g, ' ');
+              }
+              
+              // Convert error messages to user-friendly format
+              if (errorMsg.includes('value is not a valid email address')) {
+                errorMsg = 'Please enter a valid email address';
+              } else if (errorMsg.includes('Input should be a valid URL')) {
+                errorMsg = 'Please enter a valid URL';
+              } else if (errorMsg.includes('URL scheme should be')) {
+                errorMsg = 'URL must start with http:// or https://';
+              } else if (errorMsg.includes('field required')) {
+                errorMsg = 'This field is required';
+              } else if (errorMsg.includes('string too short')) {
+                errorMsg = 'This field is too short';
+              } else if (errorMsg.includes('string too long')) {
+                errorMsg = 'This field is too long';
+              } else if (errorMsg.includes('value is not a valid')) {
+                errorMsg = 'Please enter a valid value';
+              }
+              
+              return `${fieldName}: ${errorMsg}`;
+            });
+            
+            errorMessage = validationMessages.join('\n');
+          } else if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData.detail) {
+            errorMessage = errorData.detail;
+          }
+        } catch (parseError) {
+          // If JSON parsing fails, handle as string error
+          if (error.message.includes('already exists')) {
+            errorMessage = "A sponsor with this name already exists";
+          } else {
+            errorMessage = error.message;
+          }
+        }
+      }
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleEditTimeline = (event: TimelineEvent) => {
     setSelectedTimeline(event);
+    setTimelineForm({
+      title: event.title,
+      description: event.description,
+      date: event.date.split('T')[0], // Extract date part
+      event_type: event.event_type,
+      status: event.status,
+      duration: event.duration?.toString() || '',
+      location: event.location || '',
+      meeting_url: event.meeting_url || '',
+      notify_participants: event.notify_participants,
+      reminder_hours: event.reminder_hours,
+      is_public: event.is_public,
+      display_order: event.display_order
+    });
     setEditTimelineOpen(true);
   };
+  
   const handleDeleteTimeline = (event: TimelineEvent) => {
     setSelectedTimeline(event);
     setDeleteTimelineOpen(true);
   };
 
+  const handleSubmitTimeline = async (isEdit: boolean = false) => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      const timelineData = {
+        ...timelineForm,
+        duration: timelineForm.duration ? parseInt(timelineForm.duration) : null,
+        date: new Date(timelineForm.date).toISOString()
+      };
+      
+      if (isEdit && selectedTimeline) {
+        await updateTimelineEvent(selectedTimeline.id, timelineData);
+        toast({
+          title: "Success",
+          description: "Timeline event updated successfully",
+        });
+        setEditTimelineOpen(false);
+      } else {
+        await createTimelineEvent(timelineData);
+        toast({
+          title: "Success", 
+          description: "Timeline event created successfully",
+        });
+        // Close the add timeline dialog and reset form
+        setAddTimelineOpen(false);
+        resetTimelineForm();
+      }
+      
+      // Refresh data
+      await fetchTimelineEvents();
+      
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save timeline event",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleConfirmDeleteTimeline = async () => {
+    if (!selectedTimeline || isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      await deleteTimelineEvent(selectedTimeline.id);
+      toast({
+        title: "Success",
+        description: "Timeline event deleted successfully",
+      });
+      setDeleteTimelineOpen(false);
+      setSelectedTimeline(null);
+      
+      // Refresh data
+      await fetchTimelineEvents();
+      
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete timeline event",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleEditResource = (resource: Resource) => {
+    setSelectedResource(resource);
+    setResourceForm({
+      title: resource.title,
+      description: resource.description,
+      resource_type: resource.type,
+      format: resource.format || '',
+      size: resource.size || '',
+      url: resource.url,
+      access_level: resource.access_level,
+      category: resource.category,
+      tags: resource.tags,
+      featured: resource.featured,
+      display_order: resource.display_order,
+      api_key: resource.api_key || '',
+      api_endpoint: resource.api_endpoint || '',
+      documentation_url: resource.documentation_url || ''
+    });
     setEditResourceOpen(true);
   };
+  
   const handleDeleteResource = (resource: Resource) => {
     setSelectedResource(resource);
     setDeleteResourceOpen(true);
   };
 
+  const handleSubmitResource = async (isEdit: boolean = false) => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      if (isEdit && selectedResource) {
+        await updateResource(selectedResource.id, resourceForm);
+        toast({
+          title: "Success",
+          description: "Resource updated successfully",
+        });
+        setEditResourceOpen(false);
+      } else {
+        await createResource(resourceForm);
+        toast({
+          title: "Success", 
+          description: "Resource created successfully",
+        });
+      }
+      
+      // Refresh data
+      await fetchResources();
+      
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save resource",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleConfirmDeleteResource = async () => {
+    if (!selectedResource || isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      await deleteResource(selectedResource.id);
+      toast({
+        title: "Success",
+        description: "Resource deleted successfully",
+      });
+      setDeleteResourceOpen(false);
+      setSelectedResource(null);
+      
+      // Refresh data
+      await fetchResources();
+      
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete resource",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleEditFAQ = (faq: FAQ) => {
+    setSelectedFAQ(faq);
+    setFaqForm({
+      question: faq.question,
+      answer: faq.answer,
+      category: faq.category,
+      order: faq.order,
+      published: faq.published,
+      featured: faq.featured
+    });
     setEditFAQOpen(true);
   };
+  
   const handleDeleteFAQ = (faq: FAQ) => {
     setSelectedFAQ(faq);
     setDeleteFAQOpen(true);
   };
 
+  const handleSubmitFAQ = async (isEdit: boolean = false) => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      if (isEdit && selectedFAQ) {
+        await updateFAQ(selectedFAQ.id, faqForm);
+        toast({
+          title: "Success",
+          description: "FAQ updated successfully",
+        });
+        setEditFAQOpen(false);
+      } else {
+        await createFAQ(faqForm);
+        toast({
+          title: "Success", 
+          description: "FAQ created successfully",
+        });
+      }
+      
+      // Refresh data
+      await fetchFAQs();
+      
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save FAQ",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleConfirmDeleteFAQ = async () => {
+    if (!selectedFAQ || isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      await deleteFAQ(selectedFAQ.id);
+      toast({
+        title: "Success",
+        description: "FAQ deleted successfully",
+      });
+      setDeleteFAQOpen(false);
+      setSelectedFAQ(null);
+      
+      // Refresh data
+      await fetchFAQs();
+      
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete FAQ",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleConfigureRole = (role: Role) => {
     setSelectedRole(role);
+    
+    // Check if we have a saved configuration for this role
+    const savedConfig = roleConfigurations[role.name];
+    
+    if (savedConfig) {
+      // Load saved configuration
+      setRoleConfigForm({
+        description: savedConfig.description || role.description,
+        permissions: savedConfig.permissions || [],
+        auto_approve: savedConfig.auto_approve || false,
+        notifications_enabled: savedConfig.notifications_enabled !== undefined ? savedConfig.notifications_enabled : true
+      });
+    } else {
+      // Set default permissions based on role
+      let defaultPermissions: string[] = [];
+      switch (role.name) {
+        case 'organizer':
+          defaultPermissions = ['admin', 'manage_teams', 'manage_submissions', 'send_communications', 'manage_resources'];
+          break;
+        case 'judge':
+          defaultPermissions = ['manage_submissions', 'score_submissions'];
+          break;
+        case 'mentor':
+          defaultPermissions = ['manage_teams', 'manage_resources'];
+          break;
+        case 'media':
+          defaultPermissions = [];
+          break;
+      }
+      
+      // Initialize form state with role defaults
+      setRoleConfigForm({
+        description: role.description,
+        permissions: defaultPermissions,
+        auto_approve: role.name === 'mentor', // Default for mentors
+        notifications_enabled: true
+      });
+    }
+    
     setConfigureRoleOpen(true);
+  };
+
+  const handleSaveRoleConfiguration = async () => {
+    if (!selectedRole || isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      // Prepare role configuration data from state
+      const roleConfigData = {
+        role: selectedRole.name,
+        description: roleConfigForm.description,
+        permissions: roleConfigForm.permissions,
+        auto_approve: roleConfigForm.auto_approve,
+        notifications_enabled: roleConfigForm.notifications_enabled
+      };
+
+      // Save configuration locally first
+      const updatedConfigs = {
+        ...roleConfigurations,
+        [selectedRole.name]: {
+          description: roleConfigForm.description,
+          permissions: roleConfigForm.permissions,
+          auto_approve: roleConfigForm.auto_approve,
+          notifications_enabled: roleConfigForm.notifications_enabled
+        }
+      };
+      saveRoleConfigurationsToStorage(updatedConfigs);
+
+      // Call API to update role configuration (applies to existing team members)
+      await apiCall(`/api/hackathons/${params.id}/roles/${selectedRole.name}/configure`, {
+        method: 'POST',
+        body: JSON.stringify(roleConfigData)
+      });
+
+      toast({
+        title: "Success",
+        description: "Role configuration saved successfully",
+      });
+      
+      setConfigureRoleOpen(false);
+      setSelectedRole(null);
+      
+      // Refresh roles data
+      await fetchRoles();
+      
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update role configuration",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Image handling functions
@@ -588,6 +1691,54 @@ export default function HackathonManagement() {
     }
   };
 
+  // Form reset functions
+  const resetTimelineForm = () => {
+    setTimelineForm({
+      title: '',
+      description: '',
+      date: '',
+      event_type: 'milestone',
+      status: 'upcoming',
+      duration: '',
+      location: '',
+      meeting_url: '',
+      notify_participants: true,
+      reminder_hours: 24,
+      is_public: true,
+      display_order: 0
+    });
+  };
+
+  const resetResourceForm = () => {
+    setResourceForm({
+      title: '',
+      description: '',
+      resource_type: 'dataset',
+      format: '',
+      size: '',
+      url: '',
+      access_level: 'public',
+      category: '',
+      tags: [],
+      featured: false,
+      display_order: 0,
+      api_key: '',
+      api_endpoint: '',
+      documentation_url: ''
+    });
+  };
+
+  const resetFaqForm = () => {
+    setFaqForm({
+      question: '',
+      answer: '',
+      category: '',
+      order: 0,
+      published: true,
+      featured: false
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -751,30 +1902,64 @@ export default function HackathonManagement() {
                     </CardHeader>
                     <CardContent className="p-6">
                       <div className="space-y-4">
-                        <div className="flex items-center gap-4 p-3 rounded-lg bg-slate-50 border border-slate-100">
-                          <div className="h-10 w-10 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
-                            <Timer className="h-5 w-5" />
+                        {upcomingDeadlines.length > 0 ? (
+                          upcomingDeadlines.map((deadline) => {
+                            const IconComponent = deadline.icon;
+                            const daysUntil = Math.ceil((new Date(deadline.date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                            const isPast = daysUntil < 0;
+                            
+                            return (
+                              <div key={deadline.id} className="flex items-center gap-4 p-3 rounded-lg bg-slate-50 border border-slate-100">
+                                <div className={cn(
+                                  "h-10 w-10 rounded-lg flex items-center justify-center",
+                                  deadline.color === 'blue' ? "bg-blue-100 text-blue-700" :
+                                  deadline.color === 'purple' ? "bg-purple-100 text-purple-700" :
+                                  deadline.color === 'red' ? "bg-red-100 text-red-700" :
+                                  deadline.color === 'indigo' ? "bg-indigo-100 text-indigo-700" :
+                                  "bg-slate-100 text-slate-700"
+                                )}>
+                                  <IconComponent className="h-5 w-5" />
+                                </div>
+                                <div className="flex-1">
+                                  <h4 className="font-medium">{deadline.title}</h4>
+                                  <p className="text-sm text-slate-600">
+                                    {new Date(deadline.date).toLocaleDateString('en-US', { 
+                                      month: 'long', 
+                                      day: 'numeric', 
+                                      year: 'numeric',
+                                      hour: 'numeric',
+                                      minute: '2-digit'
+                                    })}
+                                  </p>
+                                  {deadline.description && (
+                                    <p className="text-xs text-slate-500 mt-1">{deadline.description}</p>
+                                  )}
+                                </div>
+                                <Badge 
+                                  variant="outline" 
+                                  className={cn(
+                                    "ml-auto",
+                                    isPast ? "bg-red-50 text-red-700 border-red-200" :
+                                    daysUntil === 0 ? "bg-orange-50 text-orange-700 border-orange-200" :
+                                    daysUntil <= 3 ? "bg-amber-50 text-amber-700 border-amber-200" :
+                                    "bg-slate-50 text-slate-700 border-slate-200"
+                                  )}
+                                >
+                                  {isPast ? 'Overdue' : 
+                                   daysUntil === 0 ? 'Today' : 
+                                   daysUntil === 1 ? 'Tomorrow' : 
+                                   `In ${daysUntil} days`}
+                                </Badge>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="text-center py-8">
+                            <Calendar className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                            <h3 className="text-lg font-medium text-slate-900 mb-2">No upcoming deadlines</h3>
+                            <p className="text-slate-600">All deadlines are either past or not yet scheduled.</p>
                           </div>
-                          <div>
-                            <h4 className="font-medium">Project Submissions Due</h4>
-                            <p className="text-sm text-slate-600">{new Date(hackathon.endDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} at 11:59 PM</p>
-                          </div>
-                          <Badge variant="outline" className="ml-auto">
-                            In {Math.ceil((new Date(hackathon.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-4 p-3 rounded-lg bg-slate-50 border border-slate-100">
-                          <div className="h-10 w-10 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
-                            <Users className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <h4 className="font-medium">Registration Deadline</h4>
-                            <p className="text-sm text-slate-600">{new Date(hackathon.registrationDeadline).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} at 6:00 PM</p>
-                          </div>
-                          <Badge variant="outline" className="ml-auto">
-                            {new Date(hackathon.registrationDeadline) < new Date() ? 'Closed' : `In ${Math.ceil((new Date(hackathon.registrationDeadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days`}
-                          </Badge>
-                        </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -956,100 +2141,99 @@ export default function HackathonManagement() {
                     </CardHeader>
                     <CardContent className="p-6">
                       <div className="space-y-4">
-                        {/* Example team members - replace with actual data */}
-                        <div className="group rounded-xl border border-slate-200 bg-gradient-to-r from-slate-50 to-white overflow-hidden hover:shadow-md transition-all duration-200">
-                          <div className="p-4">
-                            <div className="flex items-start justify-between">
-                              <div className="flex items-center gap-4">
-                                <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
-                                  <AvatarImage src={`https://avatar.vercel.sh/sarah.chen@example.com`} />
-                                  <AvatarFallback className="bg-gradient-to-br from-slate-100 to-slate-200">
-                                    SC
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <h4 className="font-medium text-slate-900">Sarah Chen</h4>
-                                  <p className="text-sm text-slate-600">sarah.chen@example.com</p>
+                        {teamMembers.length > 0 ? (
+                          teamMembers.map((member) => (
+                            <div key={member.id} className="group rounded-xl border border-slate-200 bg-gradient-to-r from-slate-50 to-white overflow-hidden hover:shadow-md transition-all duration-200">
+                              <div className="p-4">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex items-center gap-4">
+                                    <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
+                                      <AvatarImage src={`https://avatar.vercel.sh/${member.email}`} />
+                                      <AvatarFallback className="bg-gradient-to-br from-slate-100 to-slate-200">
+                                        {member.name.split(' ').map(n => n[0]).join('')}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                      <h4 className="font-medium text-slate-900">{member.name}</h4>
+                                      <p className="text-sm text-slate-600">{member.email}</p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <Badge 
+                                      variant="outline" 
+                                      className={cn(
+                                        "shadow-sm capitalize",
+                                        member.status === 'active' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                        member.status === 'pending' ? "bg-amber-50 text-amber-700 border-amber-200" :
+                                        "bg-slate-50 text-slate-700 border-slate-200"
+                                      )}
+                                    >
+                                      {member.status}
+                                    </Badge>
+                                    <Badge 
+                                      variant="outline" 
+                                      className={cn(
+                                        "shadow-sm capitalize",
+                                        member.role === 'organizer' ? "bg-purple-50 text-purple-700 border-purple-200" :
+                                        member.role === 'judge' ? "bg-blue-50 text-blue-700 border-blue-200" :
+                                        member.role === 'mentor' ? "bg-indigo-50 text-indigo-700 border-indigo-200" :
+                                        "bg-slate-50 text-slate-700 border-slate-200"
+                                      )}
+                                    >
+                                      {member.role}
+                                    </Badge>
+                                  </div>
+                                </div>
+
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                  {member.permissions.map((permission) => (
+                                    <Badge 
+                                      key={permission}
+                                      variant="outline" 
+                                      className="bg-slate-50 text-slate-700 border-slate-200 shadow-sm"
+                                    >
+                                      {permission.replace('_', ' ')}
+                                    </Badge>
+                                  ))}
+                                </div>
+
+                                <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-200">
+                                  <span className="text-sm text-slate-500">Added {new Date(member.date_added).toLocaleDateString()}</span>
+                                  <div className="flex items-center gap-2">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      className="h-8 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
+                                      onClick={() => handleEditMember(member)}
+                                    >
+                                      <PenLine className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      onClick={() => handleDeleteMember(member)}
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Remove
+                                    </Button>
+                                  </div>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-3">
-                                <Badge 
-                                  variant="outline" 
-                                  className="shadow-sm capitalize bg-emerald-50 text-emerald-700 border-emerald-200"
-                                >
-                                  active
-                                </Badge>
-                                <Badge 
-                                  variant="outline" 
-                                  className="shadow-sm capitalize bg-purple-50 text-purple-700 border-purple-200"
-                                >
-                                  organizer
-                                </Badge>
-                              </div>
                             </div>
-
-                            <div className="mt-4 flex flex-wrap gap-2">
-                              <Badge 
-                                variant="outline" 
-                                className="bg-slate-50 text-slate-700 border-slate-200 shadow-sm"
-                              >
-                                admin
-                              </Badge>
-                              <Badge 
-                                variant="outline" 
-                                className="bg-slate-50 text-slate-700 border-slate-200 shadow-sm"
-                              >
-                                manage_teams
-                              </Badge>
-                              <Badge 
-                                variant="outline" 
-                                className="bg-slate-50 text-slate-700 border-slate-200 shadow-sm"
-                              >
-                                manage_submissions
-                              </Badge>
-                            </div>
-
-                            <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-200">
-                              <span className="text-sm text-slate-500">Added 2024-02-15</span>
-                              <div className="flex items-center gap-2">
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  className="h-8 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
-                                  onClick={() => handleEditMember({
-                                    id: '1',
-                                    name: 'Sarah Chen',
-                                    email: 'sarah.chen@example.com',
-                                    role: 'organizer',
-                                    permissions: ['admin', 'manage_teams', 'manage_submissions'],
-                                    status: 'active',
-                                    dateAdded: '2024-02-15'
-                                  } as TeamMember)}
-                                >
-                                  <PenLine className="h-4 w-4 mr-2" />
-                                  Edit
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                  onClick={() => handleDeleteMember({
-                                    id: '1',
-                                    name: 'Sarah Chen',
-                                    email: 'sarah.chen@example.com',
-                                    role: 'organizer',
-                                    permissions: ['admin', 'manage_teams', 'manage_submissions'],
-                                    status: 'active',
-                                    dateAdded: '2024-02-15'
-                                  } as TeamMember)}
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Remove
-                                </Button>
-                              </div>
-                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-12">
+                            <Users className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                            <h3 className="text-lg font-medium text-slate-900 mb-2">No team members</h3>
+                            <p className="text-slate-600 mb-4">Add team members to help manage your hackathon</p>
+                            <Button onClick={handleAddMember}>
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add First Member
+                            </Button>
                           </div>
-                        </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -1067,89 +2251,53 @@ export default function HackathonManagement() {
                     </CardHeader>
                     <CardContent className="p-6">
                       <div className="space-y-4">
-                        <div className="p-4 rounded-xl bg-gradient-to-br from-slate-50 to-white border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <Badge 
+                        {roles.map((role) => (
+                          <div key={role.name} className="p-4 rounded-xl bg-gradient-to-br from-slate-50 to-white border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <Badge 
+                                  variant="outline" 
+                                  className={cn(
+                                    "shadow-sm capitalize",
+                                    role.name === 'organizer' ? "bg-purple-50 text-purple-700 border-purple-200" :
+                                    role.name === 'judge' ? "bg-blue-50 text-blue-700 border-blue-200" :
+                                    role.name === 'mentor' ? "bg-indigo-50 text-indigo-700 border-indigo-200" :
+                                    "bg-slate-50 text-slate-700 border-slate-200"
+                                  )}
+                                >
+                                  {role.name}
+                                </Badge>
+                                <span className="text-sm font-medium text-slate-900">{role.count} member{role.count !== 1 ? 's' : ''}</span>
+                                {roleConfigurations[role.name] && (
+                                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                                    Configured
+                                  </Badge>
+                                )}
+                              </div>
+                              <Button 
                                 variant="outline" 
-                                className="shadow-sm capitalize bg-purple-50 text-purple-700 border-purple-200"
+                                size="sm"
+                                className="h-8 bg-white/50 backdrop-blur-sm border-slate-200 hover:bg-white/75 hover:border-slate-300"
+                                onClick={() => handleConfigureRole(role)}
                               >
-                                organizer
-                              </Badge>
-                              <span className="text-sm font-medium text-slate-900">1 member</span>
+                                <Settings2 className="h-4 w-4 mr-2" />
+                                Configure
+                              </Button>
                             </div>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="h-8 bg-white/50 backdrop-blur-sm border-slate-200 hover:bg-white/75 hover:border-slate-300"
-                              onClick={() => handleConfigureRole({
-                                name: 'organizer',
-                                count: 1,
-                                description: 'Full access to manage the hackathon'
-                              })}
-                            >
-                              <Settings2 className="h-4 w-4 mr-2" />
-                              Configure
-                            </Button>
-                          </div>
-                          <div className="mt-3 text-sm text-slate-600">Full access to manage the hackathon</div>
-                        </div>
-
-                        <div className="p-4 rounded-xl bg-gradient-to-br from-slate-50 to-white border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <Badge 
-                                variant="outline" 
-                                className="shadow-sm capitalize bg-blue-50 text-blue-700 border-blue-200"
-                              >
-                                judge
-                              </Badge>
-                              <span className="text-sm font-medium text-slate-900">0 members</span>
+                            <div className="mt-3 text-sm text-slate-600">
+                              {roleConfigurations[role.name]?.description || role.description}
                             </div>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="h-8 bg-white/50 backdrop-blur-sm border-slate-200 hover:bg-white/75 hover:border-slate-300"
-                              onClick={() => handleConfigureRole({
-                                name: 'judge',
-                                count: 0,
-                                description: 'Access to review and score submissions'
-                              })}
-                            >
-                              <Settings2 className="h-4 w-4 mr-2" />
-                              Configure
-                            </Button>
+                            {roleConfigurations[role.name] && (
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                {roleConfigurations[role.name].permissions?.map((permission: string) => (
+                                  <Badge key={permission} variant="outline" className="text-xs bg-blue-50 text-blue-600 border-blue-200">
+                                    {permission.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                          <div className="mt-3 text-sm text-slate-600">Access to review and score submissions</div>
-                        </div>
-
-                        <div className="p-4 rounded-xl bg-gradient-to-br from-slate-50 to-white border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <Badge 
-                                variant="outline" 
-                                className="shadow-sm capitalize bg-indigo-50 text-indigo-700 border-indigo-200"
-                              >
-                                mentor
-                              </Badge>
-                              <span className="text-sm font-medium text-slate-900">0 members</span>
-                            </div>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="h-8 bg-white/50 backdrop-blur-sm border-slate-200 hover:bg-white/75 hover:border-slate-300"
-                              onClick={() => handleConfigureRole({
-                                name: 'mentor',
-                                count: 0,
-                                description: 'Can provide guidance to participants'
-                              })}
-                            >
-                              <Settings2 className="h-4 w-4 mr-2" />
-                              Configure
-                            </Button>
-                          </div>
-                          <div className="mt-3 text-sm text-slate-600">Can provide guidance to participants</div>
-                        </div>
+                        ))}
                       </div>
                     </CardContent>
                   </Card>
@@ -1180,129 +2328,160 @@ export default function HackathonManagement() {
                     </CardHeader>
                     <CardContent className="p-6">
                       <div className="space-y-6">
-                        {/* Example sponsor - replace with actual data */}
-                        <div className="group rounded-xl border border-violet-200/50 bg-white overflow-hidden hover:shadow-lg transition-all duration-200">
-                          <div className="p-6 relative border-b bg-gradient-to-r from-slate-50 via-violet-50 to-slate-50 border-violet-200/50">
-                            <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-5"></div>
-                            <div className="relative flex items-start gap-6">
-                              <div className="shrink-0 h-20 w-20 rounded-xl border-2 border-violet-200 bg-gradient-to-br from-violet-50 to-white flex items-center justify-center shadow-sm overflow-hidden">
-                                <Building2 className="h-10 w-10 text-violet-300" />
-                              </div>
-                              
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-4">
-                                  <div>
-                                    <h3 className="text-lg font-semibold text-slate-900">TechCorp AI</h3>
-                                    <a 
-                                      href="https://techcorp.ai" 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="mt-1 text-sm text-blue-600 hover:text-blue-700 hover:underline inline-flex items-center gap-1.5"
-                                    >
-                                      <Globe className="h-3.5 w-3.5" />
-                                      techcorp.ai
-                                    </a>
+                        {sponsors.length > 0 ? (
+                          sponsors.map((sponsor) => (
+                            <div key={sponsor.id} className="group rounded-xl border border-violet-200/50 bg-white overflow-hidden hover:shadow-lg transition-all duration-200">
+                              <div className="p-6 relative border-b bg-gradient-to-r from-slate-50 via-violet-50 to-slate-50 border-violet-200/50">
+                                <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-5"></div>
+                                <div className="relative flex items-start gap-6">
+                                  <div className="shrink-0 h-20 w-20 rounded-xl border-2 border-violet-200 bg-gradient-to-br from-violet-50 to-white flex items-center justify-center shadow-sm overflow-hidden">
+                                    {sponsor.logo ? (
+                                      <img src={sponsor.logo} alt={sponsor.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <Building2 className="h-10 w-10 text-violet-300" />
+                                    )}
                                   </div>
-                                  <div className="flex items-start gap-3">
-                                    <Badge 
-                                      variant="outline" 
-                                      className="shadow-sm font-medium px-3 py-1 bg-gradient-to-r from-violet-50 to-slate-50 text-violet-700 border-violet-200"
-                                    >
-                                      Platinum Tier
-                                    </Badge>
-                                    <div className="flex items-center gap-1">
-                                      <Button 
-                                        variant="ghost" 
-                                        size="sm"
-                                        className="h-8 px-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
-                                        onClick={() => handleEditSponsor({} as Sponsor)}
-                                      >
-                                        <PenLine className="h-4 w-4" />
-                                      </Button>
-                                      <Button 
-                                        variant="ghost" 
-                                        size="sm"
-                                        className="h-8 px-2 text-slate-600 hover:text-red-600 hover:bg-red-50"
-                                        onClick={() => handleDeleteSponsor({} as Sponsor)}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
+                                  
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-start justify-between gap-4">
+                                      <div>
+                                        <h3 className="text-lg font-semibold text-slate-900">{sponsor.name}</h3>
+                                        {sponsor.website && (
+                                          <a 
+                                            href={sponsor.website} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="mt-1 text-sm text-blue-600 hover:text-blue-700 hover:underline inline-flex items-center gap-1.5"
+                                          >
+                                            <Globe className="h-3.5 w-3.5" />
+                                            {sponsor.website.replace(/^https?:\/\//, '')}
+                                          </a>
+                                        )}
+                                      </div>
+                                      <div className="flex items-start gap-3">
+                                        <Badge 
+                                          variant="outline" 
+                                          className={cn(
+                                            "shadow-sm font-medium px-3 py-1 capitalize",
+                                            sponsor.tier === 'platinum' ? "bg-violet-50 text-violet-700 border-violet-200" :
+                                            sponsor.tier === 'gold' ? "bg-amber-50 text-amber-700 border-amber-200" :
+                                            sponsor.tier === 'silver' ? "bg-slate-50 text-slate-700 border-slate-200" :
+                                            "bg-orange-50 text-orange-700 border-orange-200"
+                                          )}
+                                        >
+                                          {sponsor.tier} Tier
+                                        </Badge>
+                                        <div className="flex items-center gap-1">
+                                          <Button 
+                                            variant="ghost" 
+                                            size="sm"
+                                            className="h-8 px-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
+                                            onClick={() => handleEditSponsor(sponsor)}
+                                          >
+                                            <PenLine className="h-4 w-4" />
+                                          </Button>
+                                          <Button 
+                                            variant="ghost" 
+                                            size="sm"
+                                            className="h-8 px-2 text-slate-600 hover:text-red-600 hover:bg-red-50"
+                                            onClick={() => handleDeleteSponsor(sponsor)}
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <p className="mt-2 text-sm text-slate-600 max-w-3xl">{sponsor.description}</p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="p-6 space-y-6">
+                                {sponsor.contacts && sponsor.contacts.length > 0 && (
+                                  <div>
+                                    <div className="flex items-center gap-2 mb-3">
+                                      <User className="h-4 w-4 text-slate-500" />
+                                      <h4 className="text-sm font-medium text-slate-900">Primary Contact</h4>
+                                    </div>
+                                    <div className="p-4 rounded-xl border bg-gradient-to-br from-slate-50 to-white shadow-sm border-violet-200/50">
+                                      <div className="flex items-center gap-3 mb-3">
+                                        <div className="h-10 w-10 rounded-full flex items-center justify-center text-white text-sm font-medium shadow-sm bg-gradient-to-br from-violet-500 to-violet-600">
+                                          {sponsor.contacts[0].name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                                        </div>
+                                        <div>
+                                          <div className="font-medium text-slate-900">{sponsor.contacts[0].name}</div>
+                                          <div className="text-sm text-slate-600">{sponsor.contacts[0].role}</div>
+                                        </div>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                                          <Mail className="h-4 w-4 text-slate-400" />
+                                          <span>{sponsor.contacts[0].email}</span>
+                                        </div>
+                                        {sponsor.contacts[0].phone && (
+                                          <div className="flex items-center gap-2 text-sm text-slate-600">
+                                            <Phone className="h-4 w-4 text-slate-400" />
+                                            <span>{sponsor.contacts[0].phone}</span>
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
+                                )}
+
+                                {sponsor.benefits && sponsor.benefits.length > 0 && (
+                                  <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                      <Gift className="h-4 w-4 text-slate-500" />
+                                      <h4 className="text-sm font-medium text-slate-900">Sponsorship Benefits</h4>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                      {sponsor.benefits.map((benefit, index) => (
+                                        <div key={index} className="px-3 py-1.5 rounded-lg border shadow-sm text-sm flex items-center gap-2 bg-gradient-to-r from-violet-50 to-slate-50 text-violet-700 border-violet-200">
+                                          <Check className="h-3.5 w-3.5" />
+                                          {benefit.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="pt-4 border-t border-slate-200">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-baseline gap-2">
+                                      <span className="text-sm font-medium text-slate-600">Contribution</span>
+                                      <span className="text-2xl font-semibold text-violet-700">
+                                        {sponsor.contribution.toLocaleString()} {sponsor.currency}
+                                      </span>
+                                    </div>
+                                    <Badge 
+                                      variant="outline" 
+                                      className={cn(
+                                        "shadow-sm font-medium capitalize",
+                                        sponsor.tier === 'platinum' ? "bg-violet-50 text-violet-700 border-violet-200" :
+                                        sponsor.tier === 'gold' ? "bg-amber-50 text-amber-700 border-amber-200" :
+                                        sponsor.tier === 'silver' ? "bg-slate-50 text-slate-700 border-slate-200" :
+                                        "bg-orange-50 text-orange-700 border-orange-200"
+                                      )}
+                                    >
+                                      {sponsor.tier}
+                                    </Badge>
+                                  </div>
                                 </div>
-                                <p className="mt-2 text-sm text-slate-600 max-w-3xl">Leading provider of enterprise AI solutions</p>
                               </div>
                             </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-12">
+                            <Building2 className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                            <h3 className="text-lg font-medium text-slate-900 mb-2">No sponsors</h3>
+                            <p className="text-slate-600 mb-4">Add sponsors to support your hackathon</p>
+                            <Button onClick={handleAddSponsor}>
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add First Sponsor
+                            </Button>
                           </div>
-
-                          <div className="p-6 space-y-6">
-                            <div>
-                              <div className="flex items-center gap-2 mb-3">
-                                <User className="h-4 w-4 text-slate-500" />
-                                <h4 className="text-sm font-medium text-slate-900">Primary Contact</h4>
-                              </div>
-                              <div className="p-4 rounded-xl border bg-gradient-to-br from-slate-50 to-white shadow-sm border-violet-200/50">
-                                <div className="flex items-center gap-3 mb-3">
-                                  <div className="h-10 w-10 rounded-full flex items-center justify-center text-white text-sm font-medium shadow-sm bg-gradient-to-br from-violet-500 to-violet-600">
-                                    MC
-                                  </div>
-                                  <div>
-                                    <div className="font-medium text-slate-900">Michael Chang</div>
-                                    <div className="text-sm text-slate-600">Partnership Director</div>
-                                  </div>
-                                </div>
-                                <div className="space-y-2">
-                                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                                    <Mail className="h-4 w-4 text-slate-400" />
-                                    <span>m.chang@techcorp.ai</span>
-                                  </div>
-                                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                                    <Phone className="h-4 w-4 text-slate-400" />
-                                    <span>+1 (555) 123-4567</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <Gift className="h-4 w-4 text-slate-500" />
-                                <h4 className="text-sm font-medium text-slate-900">Sponsorship Benefits</h4>
-                              </div>
-                              <div className="flex flex-wrap gap-2">
-                                <div className="px-3 py-1.5 rounded-lg border shadow-sm text-sm flex items-center gap-2 bg-gradient-to-r from-violet-50 to-slate-50 text-violet-700 border-violet-200">
-                                  <Check className="h-3.5 w-3.5" />
-                                  Keynote speaking slot
-                                </div>
-                                <div className="px-3 py-1.5 rounded-lg border shadow-sm text-sm flex items-center gap-2 bg-gradient-to-r from-violet-50 to-slate-50 text-violet-700 border-violet-200">
-                                  <Check className="h-3.5 w-3.5" />
-                                  Dedicated workshop session
-                                </div>
-                                <div className="px-3 py-1.5 rounded-lg border shadow-sm text-sm flex items-center gap-2 bg-gradient-to-r from-violet-50 to-slate-50 text-violet-700 border-violet-200">
-                                  <Check className="h-3.5 w-3.5" />
-                                  Premium booth space
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="pt-4 border-t border-slate-200">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-baseline gap-2">
-                                  <span className="text-sm font-medium text-slate-600">Contribution</span>
-                                  <span className="text-2xl font-semibold text-violet-700">
-                                    25,000 AED
-                                  </span>
-                                </div>
-                                <Badge 
-                                  variant="outline" 
-                                  className="shadow-sm font-medium bg-violet-50 text-violet-700 border-violet-200"
-                                >
-                                  Platinum
-                                </Badge>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -1320,65 +2499,40 @@ export default function HackathonManagement() {
                     </CardHeader>
                     <CardContent className="p-6">
                       <div className="space-y-4">
-                        <div className="p-4 rounded-xl bg-gradient-to-br from-violet-50 to-white border-violet-200 border shadow-sm hover:shadow-md transition-all duration-200">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h4 className="font-medium capitalize text-violet-900">Platinum</h4>
-                              <p className="text-sm text-slate-600 mt-1">Premium partnership with maximum visibility</p>
+                        {sponsorshipTiers.map((tier) => (
+                          <div key={tier.name} className={cn(
+                            "p-4 rounded-xl border shadow-sm hover:shadow-md transition-all duration-200",
+                            tier.name === 'platinum' ? "bg-gradient-to-br from-violet-50 to-white border-violet-200" :
+                            tier.name === 'gold' ? "bg-gradient-to-br from-amber-50 to-white border-amber-200" :
+                            tier.name === 'silver' ? "bg-gradient-to-br from-slate-50 to-white border-slate-200" :
+                            "bg-gradient-to-br from-orange-50 to-white border-orange-200"
+                          )}>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h4 className={cn(
+                                  "font-medium capitalize",
+                                  tier.name === 'platinum' ? "text-violet-900" :
+                                  tier.name === 'gold' ? "text-amber-900" :
+                                  tier.name === 'silver' ? "text-slate-900" :
+                                  "text-orange-900"
+                                )}>{tier.name}</h4>
+                                <p className="text-sm text-slate-600 mt-1">{tier.description}</p>
+                              </div>
+                              <Badge 
+                                variant="outline" 
+                                className={cn(
+                                  "shadow-sm font-medium",
+                                  tier.name === 'platinum' ? "bg-violet-50 text-violet-700 border-violet-200" :
+                                  tier.name === 'gold' ? "bg-amber-50 text-amber-700 border-amber-200" :
+                                  tier.name === 'silver' ? "bg-slate-50 text-slate-700 border-slate-200" :
+                                  "bg-orange-50 text-orange-700 border-orange-200"
+                                )}
+                              >
+                                {tier.min_contribution.toLocaleString()}+ {tier.currency}
+                              </Badge>
                             </div>
-                            <Badge 
-                              variant="outline" 
-                              className="shadow-sm font-medium bg-violet-50 text-violet-700 border-violet-200"
-                            >
-                              25,000+ AED
-                            </Badge>
                           </div>
-                        </div>
-
-                        <div className="p-4 rounded-xl bg-gradient-to-br from-amber-50 to-white border-amber-200 border shadow-sm hover:shadow-md transition-all duration-200">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h4 className="font-medium capitalize text-amber-900">Gold</h4>
-                              <p className="text-sm text-slate-600 mt-1">Enhanced visibility with premium placement</p>
-                            </div>
-                            <Badge 
-                              variant="outline" 
-                              className="shadow-sm font-medium bg-amber-50 text-amber-700 border-amber-200"
-                            >
-                              15,000+ AED
-                            </Badge>
-                          </div>
-                        </div>
-
-                        <div className="p-4 rounded-xl bg-gradient-to-br from-slate-50 to-white border-slate-200 border shadow-sm hover:shadow-md transition-all duration-200">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h4 className="font-medium capitalize text-slate-900">Silver</h4>
-                              <p className="text-sm text-slate-600 mt-1">Standard sponsorship package</p>
-                            </div>
-                            <Badge 
-                              variant="outline" 
-                              className="shadow-sm font-medium bg-slate-50 text-slate-700 border-slate-200"
-                            >
-                              10,000+ AED
-                            </Badge>
-                          </div>
-                        </div>
-
-                        <div className="p-4 rounded-xl bg-gradient-to-br from-orange-50 to-white border-orange-200 border shadow-sm hover:shadow-md transition-all duration-200">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h4 className="font-medium capitalize text-orange-900">Bronze</h4>
-                              <p className="text-sm text-slate-600 mt-1">Basic sponsorship package</p>
-                            </div>
-                            <Badge 
-                              variant="outline" 
-                              className="shadow-sm font-medium bg-orange-50 text-orange-700 border-orange-200"
-                            >
-                              5,000+ AED
-                            </Badge>
-                          </div>
-                        </div>
+                        ))}
                       </div>
                     </CardContent>
                   </Card>
@@ -1397,123 +2551,18 @@ export default function HackathonManagement() {
                           </div>
                           <CardTitle className="text-lg font-semibold text-slate-800">Event Timeline</CardTitle>
                         </div>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md">
-                              <Plus className="h-4 w-4 mr-2" />
-                              Add Event
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="sm:max-w-[600px] p-0 gap-0">
-                            <DialogHeader className="bg-gradient-to-r from-slate-50 via-purple-50 to-blue-50 border-b border-slate-200 p-6 relative overflow-hidden">
-                              <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
-                              <div className="relative">
-                                <DialogTitle className="text-xl font-semibold tracking-tight text-slate-900">Add New Event</DialogTitle>
-                                <DialogDescription className="text-base text-slate-500 mt-2">
-                                  Add a new event to your hackathon timeline.
-                                </DialogDescription>
-                              </div>
-                            </DialogHeader>
-                            
-                            <div className="p-6 space-y-6">
-                              <div className="space-y-4">
-                                <div className="space-y-2">
-                                  <Label htmlFor="event-title" className="text-sm font-medium text-slate-900">Title</Label>
-                                  <Input 
-                                    id="event-title" 
-                                    placeholder="Enter event title"
-                                    defaultValue={selectedTimeline?.title}
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
-                                  />
-                                </div>
-                                
-                                <div className="space-y-2">
-                                  <Label htmlFor="event-description" className="text-sm font-medium text-slate-900">Description</Label>
-                                  <Textarea 
-                                    id="event-description" 
-                                    placeholder="Describe the event"
-                                    defaultValue={selectedTimeline?.description}
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow min-h-[100px]"
-                                  />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div className="space-y-2">
-                                    <Label htmlFor="event-date" className="text-sm font-medium text-slate-900">Date</Label>
-                                    <Input 
-                                      id="event-date" 
-                                      type="date"
-                                      defaultValue={selectedTimeline?.date}
-                                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label htmlFor="event-type" className="text-sm font-medium text-slate-900">Event Type</Label>
-                                    <select 
-                                      id="event-type" 
-                                      defaultValue={selectedTimeline?.type}
-                                      className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
-                                    >
-                                      <option value="milestone">Milestone</option>
-                                      <option value="deadline">Deadline</option>
-                                      <option value="workshop">Workshop</option>
-                                      <option value="announcement">Announcement</option>
-                                    </select>
-                                  </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div className="space-y-2">
-                                    <Label htmlFor="event-duration" className="text-sm font-medium text-slate-900">Duration (minutes)</Label>
-                                    <Input 
-                                      id="event-duration" 
-                                      type="number"
-                                      placeholder="Enter duration"
-                                      defaultValue={selectedTimeline?.duration}
-                                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label htmlFor="event-location" className="text-sm font-medium text-slate-900">Location</Label>
-                                    <Input 
-                                      id="event-location" 
-                                      placeholder="Enter location"
-                                      defaultValue={selectedTimeline?.location}
-                                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
-                                    />
-                                  </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                  <Label htmlFor="event-status" className="text-sm font-medium text-slate-900">Status</Label>
-                                  <select 
-                                    id="event-status" 
-                                    defaultValue={selectedTimeline?.status}
-                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
-                                  >
-                                    <option value="upcoming">Upcoming</option>
-                                    <option value="ongoing">Ongoing</option>
-                                    <option value="completed">Completed</option>
-                                  </select>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 bg-slate-50">
-                              <Button 
-                                variant="outline"
-                                className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
-                              >
-                                Cancel
-                              </Button>
-                              <Button 
-                                className="rounded-lg px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md transition-all hover:shadow-lg"
-                              >
-                                Create Event
-                              </Button>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md"
+                            onClick={() => {
+                              resetTimelineForm();
+                              setAddTimelineOpen(true);
+                            }}
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Event
+                          </Button>
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent className="p-6">
@@ -1521,113 +2570,99 @@ export default function HackathonManagement() {
                         {/* Timeline line */}
                         <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-purple-200 via-blue-200 to-slate-200" />
 
-                        {/* Example timeline events - replace with actual data */}
-                        <div className="relative pl-10 pr-4 py-4 rounded-lg border bg-white hover:shadow-md transition-all duration-200">
-                          <div className="absolute left-0 ml-2 -mt-2">
-                            <div className="w-5 h-5 rounded-full border-2 border-white shadow-md bg-emerald-500" />
-                          </div>
-
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-grow">
-                              <div className="flex items-center gap-2 mb-2">
-                                <h4 className="font-medium text-slate-900">Registration Opens</h4>
-                                <Badge 
-                                  variant="outline" 
-                                  className="capitalize shadow-sm bg-purple-50 text-purple-700 border-purple-200"
-                                >
-                                  milestone
-                                </Badge>
-                                <Badge 
-                                  variant="outline" 
-                                  className="capitalize shadow-sm bg-emerald-50 text-emerald-700 border-emerald-200"
-                                >
-                                  completed
-                                </Badge>
+                        {timelineEvents.length > 0 ? (
+                          timelineEvents.map((event, index) => (
+                            <div key={event.id} className="relative pl-10 pr-4 py-4 rounded-lg border bg-white hover:shadow-md transition-all duration-200">
+                              <div className="absolute left-0 ml-2 -mt-2">
+                                <div className={cn(
+                                  "w-5 h-5 rounded-full border-2 border-white shadow-md",
+                                  event.status === 'completed' ? "bg-emerald-500" :
+                                  event.status === 'ongoing' ? "bg-blue-500" :
+                                  "bg-slate-400"
+                                )}>
+                                  {event.status === 'ongoing' && (
+                                    <div className="absolute top-0 left-0 w-5 h-5">
+                                      <div className="absolute inline-flex w-full h-full rounded-full opacity-75 bg-blue-500 animate-ping" />
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                              <p className="text-sm text-slate-600 mb-3">Team registration and project ideation phase begins</p>
-                              <div className="flex items-center gap-4 text-sm text-slate-500">
-                                <div className="flex items-center gap-1.5">
-                                  <Calendar className="h-4 w-4" />
-                                  {new Date(hackathon.startDate).toLocaleDateString()}
+
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-grow">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <h4 className="font-medium text-slate-900">{event.title}</h4>
+                                    <Badge 
+                                      variant="outline" 
+                                      className={cn(
+                                        "capitalize shadow-sm",
+                                        event.event_type === 'milestone' ? "bg-purple-50 text-purple-700 border-purple-200" :
+                                        event.event_type === 'deadline' ? "bg-red-50 text-red-700 border-red-200" :
+                                        event.event_type === 'workshop' ? "bg-blue-50 text-blue-700 border-blue-200" :
+                                        "bg-green-50 text-green-700 border-green-200"
+                                      )}
+                                    >
+                                      {event.event_type}
+                                    </Badge>
+                                    <Badge 
+                                      variant="outline" 
+                                      className={cn(
+                                        "capitalize shadow-sm",
+                                        event.status === 'completed' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                        event.status === 'ongoing' ? "bg-blue-50 text-blue-700 border-blue-200" :
+                                        "bg-slate-50 text-slate-700 border-slate-200"
+                                      )}
+                                    >
+                                      {event.status}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-sm text-slate-600 mb-3">{event.description}</p>
+                                  <div className="flex items-center gap-4 text-sm text-slate-500">
+                                    <div className="flex items-center gap-1.5">
+                                      <Calendar className="h-4 w-4" />
+                                      {new Date(event.date).toLocaleDateString()}
+                                    </div>
+                                    {event.duration && (
+                                      <div className="flex items-center gap-1.5">
+                                        <Timer className="h-4 w-4" />
+                                        {event.duration} min
+                                      </div>
+                                    )}
+                                    {event.location && (
+                                      <div className="flex items-center gap-1.5">
+                                        <MapPin className="h-4 w-4" />
+                                        {event.location}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="flex items-start gap-2">
+                                  <Button 
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleEditTimeline(event)}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDeleteTimeline(event)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
                                 </div>
                               </div>
                             </div>
-
-                            <div className="flex items-start gap-2">
-                              <Button 
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEditTimeline({} as TimelineEvent)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteTimeline({} as TimelineEvent)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-12">
+                            <Calendar className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                            <h3 className="text-lg font-medium text-slate-900 mb-2">No timeline events</h3>
+                            <p className="text-slate-600 mb-4">Create events to plan your hackathon schedule</p>
                           </div>
-                        </div>
-
-                        <div className="relative pl-10 pr-4 py-4 rounded-lg border bg-white hover:shadow-md transition-all duration-200">
-                          <div className="absolute left-0 ml-2 -mt-2">
-                            <div className="w-5 h-5 rounded-full border-2 border-white shadow-md bg-blue-500" />
-                            <div className="absolute top-0 left-0 w-5 h-5">
-                              <div className="absolute inline-flex w-full h-full rounded-full opacity-75 bg-blue-500 animate-ping" />
-                            </div>
-                          </div>
-
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-grow">
-                              <div className="flex items-center gap-2 mb-2">
-                                <h4 className="font-medium text-slate-900">Project Submissions Due</h4>
-                                <Badge 
-                                  variant="outline" 
-                                  className="capitalize shadow-sm bg-red-50 text-red-700 border-red-200"
-                                >
-                                  deadline
-                                </Badge>
-                                <Badge 
-                                  variant="outline" 
-                                  className="capitalize shadow-sm bg-blue-50 text-blue-700 border-blue-200"
-                                >
-                                  ongoing
-                                </Badge>
-                              </div>
-                              <p className="text-sm text-slate-600 mb-3">Final project submissions including code and documentation</p>
-                              <div className="flex items-center gap-4 text-sm text-slate-500">
-                                <div className="flex items-center gap-1.5">
-                                  <Calendar className="h-4 w-4" />
-                                  {new Date(hackathon.endDate).toLocaleDateString()}
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Timer className="h-4 w-4" />
-                                  48 hours
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="flex items-start gap-2">
-                              <Button 
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEditTimeline({} as TimelineEvent)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteTimeline({} as TimelineEvent)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -1743,7 +2778,10 @@ export default function HackathonManagement() {
                         </div>
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md">
+                            <Button 
+                              className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md"
+                              onClick={() => resetResourceForm()}
+                            >
                               <Plus className="h-4 w-4 mr-2" />
                               Add Resource
                             </Button>
@@ -1766,6 +2804,8 @@ export default function HackathonManagement() {
                                   <Input 
                                     id="resource-title" 
                                     placeholder="Enter resource title"
+                                    value={resourceForm.title}
+                                    onChange={(e) => setResourceForm({...resourceForm, title: e.target.value})}
                                     className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                                   />
                                 </div>
@@ -1775,6 +2815,8 @@ export default function HackathonManagement() {
                                   <Textarea 
                                     id="resource-description" 
                                     placeholder="Provide a detailed description of the resource" 
+                                    value={resourceForm.description}
+                                    onChange={(e) => setResourceForm({...resourceForm, description: e.target.value})}
                                     className="min-h-[100px] w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow resize-y"
                                   />
                                 </div>
@@ -1784,6 +2826,8 @@ export default function HackathonManagement() {
                                     <Label htmlFor="resource-type" className="text-sm font-medium text-slate-900">Resource Type</Label>
                                     <select 
                                       id="resource-type" 
+                                      value={resourceForm.resource_type}
+                                      onChange={(e) => setResourceForm({...resourceForm, resource_type: e.target.value as any})}
                                       className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
                                     >
                                       <option value="dataset">Dataset</option>
@@ -1796,12 +2840,36 @@ export default function HackathonManagement() {
                                     <Label htmlFor="resource-access" className="text-sm font-medium text-slate-900">Access Level</Label>
                                     <select 
                                       id="resource-access" 
+                                      value={resourceForm.access_level}
+                                      onChange={(e) => setResourceForm({...resourceForm, access_level: e.target.value as any})}
                                       className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
                                     >
                                       <option value="public">Public</option>
                                       <option value="private">Private</option>
                                     </select>
                                   </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label htmlFor="resource-url" className="text-sm font-medium text-slate-900">Resource URL</Label>
+                                  <Input 
+                                    id="resource-url" 
+                                    placeholder="Enter resource URL"
+                                    value={resourceForm.url}
+                                    onChange={(e) => setResourceForm({...resourceForm, url: e.target.value})}
+                                    className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                                  />
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label htmlFor="resource-category" className="text-sm font-medium text-slate-900">Category</Label>
+                                  <Input 
+                                    id="resource-category" 
+                                    placeholder="Enter category"
+                                    value={resourceForm.category}
+                                    onChange={(e) => setResourceForm({...resourceForm, category: e.target.value})}
+                                    className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                                  />
                                 </div>
                               </div>
                             </div>
@@ -1810,13 +2878,23 @@ export default function HackathonManagement() {
                               <Button 
                                 variant="outline"
                                 className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
+                                disabled={isSubmitting}
                               >
                                 Cancel
                               </Button>
                               <Button 
                                 className="rounded-lg px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md transition-all hover:shadow-lg"
+                                onClick={() => handleSubmitResource(false)}
+                                disabled={isSubmitting || !resourceForm.title || !resourceForm.url}
                               >
-                                Add Resource
+                                {isSubmitting ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                    Adding...
+                                  </>
+                                ) : (
+                                  'Add Resource'
+                                )}
                               </Button>
                             </div>
                           </DialogContent>
@@ -1825,98 +2903,89 @@ export default function HackathonManagement() {
                     </CardHeader>
                     <CardContent className="p-6">
                       <div className="space-y-4">
-                        {/* Example resources - replace with actual data */}
-                        <div className="rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-white overflow-hidden hover:shadow-md transition-all duration-200">
-                          <div className="p-4">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex items-start gap-4">
-                                <div className="h-10 w-10 rounded-lg flex items-center justify-center shadow-sm bg-gradient-to-br from-purple-100 to-purple-50 text-purple-700 border border-purple-200">
-                                  <Database className="h-5 w-5" />
-                                </div>
-                                <div className="space-y-1">
-                                  <div className="flex items-center gap-2">
-                                    <h4 className="font-medium text-slate-900">AI Training Dataset</h4>
-                                    <Badge 
-                                      variant="outline" 
-                                      className="capitalize shadow-sm bg-emerald-50 text-emerald-700 border-emerald-200"
-                                    >
-                                      public
-                                    </Badge>
+                        {resources.length > 0 ? (
+                          resources.map((resource) => (
+                            <div key={resource.id} className="rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-white overflow-hidden hover:shadow-md transition-all duration-200">
+                              <div className="p-4">
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex items-start gap-4">
+                                    <div className={cn(
+                                      "h-10 w-10 rounded-lg flex items-center justify-center shadow-sm border",
+                                      resource.type === 'dataset' ? "bg-gradient-to-br from-purple-100 to-purple-50 text-purple-700 border-purple-200" :
+                                      resource.type === 'api' ? "bg-gradient-to-br from-blue-100 to-blue-50 text-blue-700 border-blue-200" :
+                                      resource.type === 'documentation' ? "bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-700 border-emerald-200" :
+                                      "bg-gradient-to-br from-amber-100 to-amber-50 text-amber-700 border-amber-200"
+                                    )}>
+                                      {resource.type === 'dataset' ? <Database className="h-5 w-5" /> :
+                                       resource.type === 'api' ? <FileCode2 className="h-5 w-5" /> :
+                                       resource.type === 'documentation' ? <FileText className="h-5 w-5" /> :
+                                       <Settings className="h-5 w-5" />}
+                                    </div>
+                                    <div className="space-y-1">
+                                      <div className="flex items-center gap-2">
+                                        <h4 className="font-medium text-slate-900">{resource.title}</h4>
+                                        <Badge 
+                                          variant="outline" 
+                                          className={cn(
+                                            "capitalize shadow-sm",
+                                            resource.access_level === 'public' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                            "bg-amber-50 text-amber-700 border-amber-200"
+                                          )}
+                                        >
+                                          {resource.access_level}
+                                        </Badge>
+                                        {resource.featured && (
+                                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                            Featured
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      <p className="text-sm text-slate-600">{resource.description}</p>
+                                      <div className="flex items-center gap-4 text-sm text-slate-500">
+                                        <span className="capitalize">{resource.category}</span>
+                                        {resource.format && <span>Format: {resource.format}</span>}
+                                        {resource.size && <span>Size: {resource.size}</span>}
+                                        <span>Downloads: {resource.downloads}</span>
+                                      </div>
+                                      {resource.tags && resource.tags.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 mt-2">
+                                          {resource.tags.map((tag) => (
+                                            <Badge key={tag} variant="outline" className="text-xs bg-slate-50 text-slate-600">
+                                              {tag}
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
-                                  <p className="text-sm text-slate-600">Curated dataset for machine learning model training</p>
-                                  <div className="flex items-center gap-4 text-sm text-slate-500">
-                                    <span className="capitalize">Machine Learning</span>
-                                    <span>Format: CSV, JSON</span>
-                                    <span>Size: 2.5GB</span>
-                                    <span>Downloads: 128</span>
-                                  </div>
-                                </div>
-                              </div>
 
-                              <div className="flex items-center gap-2">
-                                <Button 
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleEditResource({} as Resource)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleDeleteResource({} as Resource)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                  <div className="flex items-center gap-2">
+                                    <Button 
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleEditResource(resource)}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleDeleteResource(resource)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
                               </div>
                             </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-12">
+                            <Database className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                            <h3 className="text-lg font-medium text-slate-900 mb-2">No resources</h3>
+                            <p className="text-slate-600 mb-4">Add resources to help participants with their projects</p>
                           </div>
-                        </div>
-
-                        <div className="rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-white overflow-hidden hover:shadow-md transition-all duration-200">
-                          <div className="p-4">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex items-start gap-4">
-                                <div className="h-10 w-10 rounded-lg flex items-center justify-center shadow-sm bg-gradient-to-br from-blue-100 to-blue-50 text-blue-700 border border-blue-200">
-                                  <FileText className="h-5 w-5" />
-                                </div>
-                                <div className="space-y-1">
-                                  <div className="flex items-center gap-2">
-                                    <h4 className="font-medium text-slate-900">Computer Vision API</h4>
-                                    <Badge 
-                                      variant="outline" 
-                                      className="capitalize shadow-sm bg-amber-50 text-amber-700 border-amber-200"
-                                    >
-                                      private
-                                    </Badge>
-                                  </div>
-                                  <p className="text-sm text-slate-600">API access for image recognition and processing</p>
-                                  <div className="flex items-center gap-4 text-sm text-slate-500">
-                                    <span className="capitalize">Computer Vision</span>
-                                    <span>Downloads: 85</span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-2">
-                                <Button 
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleEditResource({} as Resource)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleDeleteResource({} as Resource)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -2489,7 +3558,10 @@ export default function HackathonManagement() {
                         </div>
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md">
+                            <Button 
+                              className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md"
+                              onClick={() => resetFaqForm()}
+                            >
                               <Plus className="h-4 w-4 mr-2" />
                               Add FAQ
                             </Button>
@@ -2512,6 +3584,8 @@ export default function HackathonManagement() {
                                   <Input 
                                     id="faq-question" 
                                     placeholder="Enter your question" 
+                                    value={faqForm.question}
+                                    onChange={(e) => setFaqForm({...faqForm, question: e.target.value})}
                                     className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                                   />
                                 </div>
@@ -2521,6 +3595,8 @@ export default function HackathonManagement() {
                                   <Textarea 
                                     id="faq-answer" 
                                     placeholder="Provide a clear and concise answer" 
+                                    value={faqForm.answer}
+                                    onChange={(e) => setFaqForm({...faqForm, answer: e.target.value})}
                                     className="min-h-[150px] w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow resize-y"
                                   />
                                 </div>
@@ -2530,8 +3606,11 @@ export default function HackathonManagement() {
                                     <Label htmlFor="faq-category" className="text-sm font-medium text-slate-900">Category</Label>
                                     <select 
                                       id="faq-category" 
+                                      value={faqForm.category}
+                                      onChange={(e) => setFaqForm({...faqForm, category: e.target.value})}
                                       className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
                                     >
+                                      <option value="">Select Category</option>
                                       <option value="general">General</option>
                                       <option value="technical">Technical</option>
                                       <option value="judging">Judging</option>
@@ -2545,6 +3624,8 @@ export default function HackathonManagement() {
                                       type="number" 
                                       min="1"
                                       placeholder="Set display priority"
+                                      value={faqForm.order}
+                                      onChange={(e) => setFaqForm({...faqForm, order: parseInt(e.target.value) || 0})}
                                       className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                                     />
                                   </div>
@@ -2560,6 +3641,8 @@ export default function HackathonManagement() {
                                     <div className="flex items-center gap-2">
                                       <Checkbox 
                                         id="faq-published" 
+                                        checked={faqForm.published}
+                                        onCheckedChange={(checked) => setFaqForm({...faqForm, published: !!checked})}
                                         className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                                       />
                                       <Label htmlFor="faq-published" className="text-sm text-slate-600">
@@ -2569,6 +3652,8 @@ export default function HackathonManagement() {
                                     <div className="flex items-center gap-2">
                                       <Checkbox 
                                         id="faq-featured" 
+                                        checked={faqForm.featured}
+                                        onCheckedChange={(checked) => setFaqForm({...faqForm, featured: !!checked})}
                                         className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                                       />
                                       <Label htmlFor="faq-featured" className="text-sm text-slate-600">
@@ -2584,13 +3669,23 @@ export default function HackathonManagement() {
                               <Button 
                                 variant="outline"
                                 className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
+                                disabled={isSubmitting}
                               >
                                 Cancel
                               </Button>
                               <Button 
                                 className="rounded-lg px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md transition-all hover:shadow-lg"
+                                onClick={() => handleSubmitFAQ(false)}
+                                disabled={isSubmitting || !faqForm.question || !faqForm.answer}
                               >
-                                Add FAQ
+                                {isSubmitting ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                    Adding...
+                                  </>
+                                ) : (
+                                  'Add FAQ'
+                                )}
                               </Button>
                             </div>
                           </DialogContent>
@@ -2620,48 +3715,61 @@ export default function HackathonManagement() {
 
                         {/* FAQ List */}
                         <div className="space-y-4">
-                          {filteredFaqs.map((faq) => (
-                            <div 
-                              key={faq.id} 
-                              className="rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-white p-4 hover:shadow-md transition-all duration-200"
-                            >
-                              <div className="flex items-start justify-between gap-4">
-                                <div className="flex-grow space-y-2">
-                                  <div className="flex items-center gap-2">
-                                    <h4 className="font-medium text-slate-900">{faq.question}</h4>
-                                    <Badge 
-                                      variant="outline" 
-                                      className="bg-slate-50 text-slate-700 shadow-sm"
+                          {filteredFaqs.length > 0 ? (
+                            filteredFaqs.map((faq) => (
+                              <div 
+                                key={faq.id} 
+                                className="rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-white p-4 hover:shadow-md transition-all duration-200"
+                              >
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex-grow space-y-2">
+                                    <div className="flex items-center gap-2">
+                                      <h4 className="font-medium text-slate-900">{faq.question}</h4>
+                                      <Badge 
+                                        variant="outline" 
+                                        className="bg-slate-50 text-slate-700 shadow-sm"
+                                      >
+                                        {faq.category}
+                                      </Badge>
+                                      {faq.featured && (
+                                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                          Featured
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-slate-600">{faq.answer}</p>
+                                    <div className="flex items-center gap-4 text-xs text-slate-500">
+                                      <span>{faq.views} views</span>
+                                      <span>{faq.helpful} found helpful</span>
+                                      <span>Updated {new Date(faq.last_updated).toLocaleDateString()}</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-start gap-2">
+                                    <Button 
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleEditFAQ(faq)}
                                     >
-                                      {faq.category}
-                                    </Badge>
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleDeleteFAQ(faq)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
                                   </div>
-                                  <p className="text-sm text-slate-600">{faq.answer}</p>
-                                  <div className="flex items-center gap-4 text-xs text-slate-500">
-                                    <span>{faq.views} views</span>
-                                    <span>{faq.helpful} found helpful</span>
-                                    <span>Updated {new Date(faq.lastUpdated).toLocaleDateString()}</span>
-                                  </div>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                  <Button 
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleEditFAQ(faq)}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDeleteFAQ(faq)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
                                 </div>
                               </div>
+                            ))
+                          ) : (
+                            <div className="text-center py-12">
+                              <MessageSquare className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                              <h3 className="text-lg font-medium text-slate-900 mb-2">No FAQs</h3>
+                              <p className="text-slate-600 mb-4">Add frequently asked questions to help participants</p>
                             </div>
-                          ))}
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -2760,36 +3868,44 @@ export default function HackathonManagement() {
           <div className="p-6 space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="event-title" className="text-sm font-medium text-slate-900">Event Title</Label>
+                <Label htmlFor="edit-event-title" className="text-sm font-medium text-slate-900">Event Title</Label>
                 <Input 
-                  id="event-title" 
+                  id="edit-event-title" 
                   placeholder="Enter event title"
+                  value={timelineForm.title}
+                  onChange={(e) => setTimelineForm({...timelineForm, title: e.target.value})}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="event-description" className="text-sm font-medium text-slate-900">Description</Label>
+                <Label htmlFor="edit-event-description" className="text-sm font-medium text-slate-900">Description</Label>
                 <Textarea 
-                  id="event-description" 
+                  id="edit-event-description" 
                   placeholder="Describe the event"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow min-h-[100px]"
+                  value={timelineForm.description}
+                  onChange={(e) => setTimelineForm({...timelineForm, description: e.target.value})}
+                  className="min-h-[100px] w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow resize-y"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="event-date" className="text-sm font-medium text-slate-900">Date</Label>
+                  <Label htmlFor="edit-event-date" className="text-sm font-medium text-slate-900">Date</Label>
                   <Input 
-                    id="event-date" 
+                    id="edit-event-date" 
                     type="date"
+                    value={timelineForm.date}
+                    onChange={(e) => setTimelineForm({...timelineForm, date: e.target.value})}
                     className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="event-type" className="text-sm font-medium text-slate-900">Event Type</Label>
+                  <Label htmlFor="edit-event-type" className="text-sm font-medium text-slate-900">Event Type</Label>
                   <select 
-                    id="event-type" 
+                    id="edit-event-type" 
+                    value={timelineForm.event_type}
+                    onChange={(e) => setTimelineForm({...timelineForm, event_type: e.target.value as any})}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
                   >
                     <option value="milestone">Milestone</option>
@@ -2878,6 +3994,8 @@ export default function HackathonManagement() {
                 <Input 
                   id="member-name" 
                   placeholder="Enter member name"
+                  value={memberForm.name}
+                  onChange={(e) => setMemberForm({...memberForm, name: e.target.value})}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                 />
               </div>
@@ -2888,6 +4006,8 @@ export default function HackathonManagement() {
                   id="member-email" 
                   type="email" 
                   placeholder="Enter email address"
+                  value={memberForm.email}
+                  onChange={(e) => setMemberForm({...memberForm, email: e.target.value})}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                 />
               </div>
@@ -2896,6 +4016,8 @@ export default function HackathonManagement() {
                 <Label htmlFor="member-role" className="text-sm font-medium text-slate-900">Role</Label>
                 <select 
                   id="member-role" 
+                  value={memberForm.role}
+                  onChange={(e) => setMemberForm({...memberForm, role: e.target.value as any})}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
                 >
                   <option value="organizer">Organizer</option>
@@ -2912,42 +4034,56 @@ export default function HackathonManagement() {
                   </Label>
                 </div>
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Checkbox 
-                      id="perm-admin" 
-                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                    />
-                    <Label htmlFor="perm-admin" className="text-sm text-slate-600">
-                      Admin access
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox 
-                      id="perm-teams" 
-                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                    />
-                    <Label htmlFor="perm-teams" className="text-sm text-slate-600">
-                      Manage teams
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox 
-                      id="perm-submissions" 
-                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                    />
-                    <Label htmlFor="perm-submissions" className="text-sm text-slate-600">
-                      Manage submissions
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox 
-                      id="perm-communications" 
-                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                    />
-                    <Label htmlFor="perm-communications" className="text-sm text-slate-600">
-                      Send communications
-                    </Label>
-                  </div>
+                  {['admin', 'manage_teams', 'manage_submissions', 'send_communications', 'manage_resources', 'score_submissions'].map((permission) => (
+                    <div key={permission} className="flex items-center gap-2">
+                      <Checkbox 
+                        id={`perm-${permission}`}
+                        checked={memberForm.permissions.includes(permission)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setMemberForm({
+                              ...memberForm,
+                              permissions: [...memberForm.permissions, permission]
+                            });
+                          } else {
+                            setMemberForm({
+                              ...memberForm,
+                              permissions: memberForm.permissions.filter(p => p !== permission)
+                            });
+                          }
+                        }}
+                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                      />
+                      <Label htmlFor={`perm-${permission}`} className="text-sm text-slate-600">
+                        {permission.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Checkbox 
+                    id="member-auto-approve"
+                    checked={memberForm.auto_approve}
+                    onCheckedChange={(checked) => setMemberForm({...memberForm, auto_approve: !!checked})}
+                    className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                  />
+                  <Label htmlFor="member-auto-approve" className="text-sm text-slate-600">
+                    Auto-approve for this role
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox 
+                    id="member-notifications"
+                    checked={memberForm.notifications_enabled}
+                    onCheckedChange={(checked) => setMemberForm({...memberForm, notifications_enabled: !!checked})}
+                    className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                  />
+                  <Label htmlFor="member-notifications" className="text-sm text-slate-600">
+                    Enable notifications
+                  </Label>
                 </div>
               </div>
             </div>
@@ -2958,14 +4094,23 @@ export default function HackathonManagement() {
               variant="outline"
               className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
               onClick={() => setAddMemberOpen(false)}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
             <Button 
               className="rounded-lg px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md transition-all hover:shadow-lg"
-              onClick={() => setAddMemberOpen(false)}
+              onClick={() => handleSubmitMember(false)}
+              disabled={isSubmitting || !memberForm.name || !memberForm.email}
             >
-              Add Member
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Adding...
+                </>
+              ) : (
+                'Add Member'
+              )}
             </Button>
           </div>
         </DialogContent>
@@ -3000,15 +4145,24 @@ export default function HackathonManagement() {
               variant="outline"
               className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
               onClick={() => setDeleteFAQOpen(false)}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
             <Button 
               variant="destructive"
               className="rounded-lg px-4 bg-red-600 hover:bg-red-700 text-white shadow-md transition-all hover:shadow-lg"
-              onClick={() => setDeleteFAQOpen(false)}
+              onClick={handleConfirmDeleteFAQ}
+              disabled={isSubmitting}
             >
-              Delete FAQ
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Deleting...
+                </>
+              ) : (
+                'Delete FAQ'
+              )}
             </Button>
           </div>
         </DialogContent>
@@ -3034,6 +4188,8 @@ export default function HackathonManagement() {
                 <Input 
                   id="edit-resource-title" 
                   placeholder="Enter resource title"
+                  value={resourceForm.title}
+                  onChange={(e) => setResourceForm({...resourceForm, title: e.target.value})}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                 />
               </div>
@@ -3043,6 +4199,8 @@ export default function HackathonManagement() {
                 <Textarea 
                   id="edit-resource-description" 
                   placeholder="Provide a detailed description of the resource" 
+                  value={resourceForm.description}
+                  onChange={(e) => setResourceForm({...resourceForm, description: e.target.value})}
                   className="min-h-[100px] w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow resize-y"
                 />
               </div>
@@ -3052,6 +4210,8 @@ export default function HackathonManagement() {
                   <Label htmlFor="edit-resource-type" className="text-sm font-medium text-slate-900">Resource Type</Label>
                   <select 
                     id="edit-resource-type" 
+                    value={resourceForm.resource_type}
+                    onChange={(e) => setResourceForm({...resourceForm, resource_type: e.target.value as any})}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
                   >
                     <option value="dataset">Dataset</option>
@@ -3064,6 +4224,8 @@ export default function HackathonManagement() {
                   <Label htmlFor="edit-resource-access" className="text-sm font-medium text-slate-900">Access Level</Label>
                   <select 
                     id="edit-resource-access" 
+                    value={resourceForm.access_level}
+                    onChange={(e) => setResourceForm({...resourceForm, access_level: e.target.value as any})}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
                   >
                     <option value="public">Public</option>
@@ -3077,6 +4239,19 @@ export default function HackathonManagement() {
                 <Input 
                   id="edit-resource-url" 
                   placeholder="Enter resource URL"
+                  value={resourceForm.url}
+                  onChange={(e) => setResourceForm({...resourceForm, url: e.target.value})}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-resource-category" className="text-sm font-medium text-slate-900">Category</Label>
+                <Input 
+                  id="edit-resource-category" 
+                  placeholder="Enter category"
+                  value={resourceForm.category}
+                  onChange={(e) => setResourceForm({...resourceForm, category: e.target.value})}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                 />
               </div>
@@ -3088,14 +4263,23 @@ export default function HackathonManagement() {
               variant="outline"
               className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
               onClick={() => setEditResourceOpen(false)}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
             <Button 
               className="rounded-lg px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md transition-all hover:shadow-lg"
-              onClick={() => setEditResourceOpen(false)}
+              onClick={() => handleSubmitResource(true)}
+              disabled={isSubmitting || !resourceForm.title || !resourceForm.url}
             >
-              Save Changes
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
             </Button>
           </div>
         </DialogContent>
@@ -3121,6 +4305,8 @@ export default function HackathonManagement() {
                 <Input 
                   id="edit-member-name" 
                   placeholder="Enter member name"
+                  value={memberForm.name}
+                  onChange={(e) => setMemberForm({...memberForm, name: e.target.value})}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                 />
               </div>
@@ -3131,6 +4317,8 @@ export default function HackathonManagement() {
                   id="edit-member-email" 
                   type="email" 
                   placeholder="Enter email address"
+                  value={memberForm.email}
+                  onChange={(e) => setMemberForm({...memberForm, email: e.target.value})}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                 />
               </div>
@@ -3139,6 +4327,8 @@ export default function HackathonManagement() {
                 <Label htmlFor="edit-member-role" className="text-sm font-medium text-slate-900">Role</Label>
                 <select 
                   id="edit-member-role" 
+                  value={memberForm.role}
+                  onChange={(e) => setMemberForm({...memberForm, role: e.target.value as any})}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
                 >
                   <option value="organizer">Organizer</option>
@@ -3155,42 +4345,56 @@ export default function HackathonManagement() {
                   </Label>
                 </div>
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Checkbox 
-                      id="edit-perm-admin" 
-                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                    />
-                    <Label htmlFor="edit-perm-admin" className="text-sm text-slate-600">
-                      Admin access
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox 
-                      id="edit-perm-teams" 
-                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                    />
-                    <Label htmlFor="edit-perm-teams" className="text-sm text-slate-600">
-                      Manage teams
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox 
-                      id="edit-perm-submissions" 
-                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                    />
-                    <Label htmlFor="edit-perm-submissions" className="text-sm text-slate-600">
-                      Manage submissions
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox 
-                      id="edit-perm-communications" 
-                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                    />
-                    <Label htmlFor="edit-perm-communications" className="text-sm text-slate-600">
-                      Send communications
-                    </Label>
-                  </div>
+                  {['admin', 'manage_teams', 'manage_submissions', 'send_communications', 'manage_resources', 'score_submissions'].map((permission) => (
+                    <div key={permission} className="flex items-center gap-2">
+                      <Checkbox 
+                        id={`edit-perm-${permission}`}
+                        checked={memberForm.permissions.includes(permission)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setMemberForm({
+                              ...memberForm,
+                              permissions: [...memberForm.permissions, permission]
+                            });
+                          } else {
+                            setMemberForm({
+                              ...memberForm,
+                              permissions: memberForm.permissions.filter(p => p !== permission)
+                            });
+                          }
+                        }}
+                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                      />
+                      <Label htmlFor={`edit-perm-${permission}`} className="text-sm text-slate-600">
+                        {permission.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Checkbox 
+                    id="edit-member-auto-approve"
+                    checked={memberForm.auto_approve}
+                    onCheckedChange={(checked) => setMemberForm({...memberForm, auto_approve: !!checked})}
+                    className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                  />
+                  <Label htmlFor="edit-member-auto-approve" className="text-sm text-slate-600">
+                    Auto-approve for this role
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox 
+                    id="edit-member-notifications"
+                    checked={memberForm.notifications_enabled}
+                    onCheckedChange={(checked) => setMemberForm({...memberForm, notifications_enabled: !!checked})}
+                    className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                  />
+                  <Label htmlFor="edit-member-notifications" className="text-sm text-slate-600">
+                    Enable notifications
+                  </Label>
                 </div>
               </div>
             </div>
@@ -3201,14 +4405,23 @@ export default function HackathonManagement() {
               variant="outline"
               className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
               onClick={() => setEditMemberOpen(false)}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
             <Button 
               className="rounded-lg px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md transition-all hover:shadow-lg"
-              onClick={() => setEditMemberOpen(false)}
+              onClick={() => handleSubmitMember(true)}
+              disabled={isSubmitting || !memberForm.name || !memberForm.email}
             >
-              Save Changes
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
             </Button>
           </div>
         </DialogContent>
@@ -3234,6 +4447,8 @@ export default function HackathonManagement() {
                 <Input 
                   id="edit-sponsor-name" 
                   placeholder="Enter company name"
+                  value={sponsorForm.name}
+                  onChange={(e) => setSponsorForm({...sponsorForm, name: e.target.value})}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                 />
               </div>
@@ -3243,6 +4458,8 @@ export default function HackathonManagement() {
                   <Label htmlFor="edit-sponsor-tier" className="text-sm font-medium text-slate-900">Sponsorship Tier</Label>
                   <select 
                     id="edit-sponsor-tier" 
+                    value={sponsorForm.tier}
+                    onChange={(e) => setSponsorForm({...sponsorForm, tier: e.target.value as any})}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
                   >
                     <option value="platinum">Platinum</option>
@@ -3257,6 +4474,8 @@ export default function HackathonManagement() {
                     id="edit-sponsor-amount" 
                     type="number" 
                     placeholder="Enter amount"
+                    value={sponsorForm.contribution}
+                    onChange={(e) => setSponsorForm({...sponsorForm, contribution: parseFloat(e.target.value) || 0})}
                     className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                   />
                 </div>
@@ -3266,9 +4485,12 @@ export default function HackathonManagement() {
                 <Label htmlFor="edit-sponsor-website" className="text-sm font-medium text-slate-900">Website</Label>
                 <Input 
                   id="edit-sponsor-website" 
-                  placeholder="https://example.com"
+                  placeholder="https://example.com or example.com"
+                  value={sponsorForm.website}
+                  onChange={(e) => setSponsorForm({...sponsorForm, website: e.target.value})}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                 />
+                <p className="text-xs text-slate-500">Enter the company website URL (https:// will be added automatically if not provided)</p>
               </div>
 
               <div className="space-y-2">
@@ -3276,6 +4498,8 @@ export default function HackathonManagement() {
                 <Textarea 
                   id="edit-sponsor-description" 
                   placeholder="Brief description of the sponsor" 
+                  value={sponsorForm.description}
+                  onChange={(e) => setSponsorForm({...sponsorForm, description: e.target.value})}
                   className="min-h-[100px] w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow resize-y"
                 />
               </div>
@@ -3292,16 +4516,41 @@ export default function HackathonManagement() {
                     <Input 
                       id="edit-contact-name" 
                       placeholder="Enter contact name"
+                      value={sponsorForm.contacts[0]?.name || ''}
+                      onChange={(e) => setSponsorForm({
+                        ...sponsorForm,
+                        contacts: [{
+                          ...sponsorForm.contacts[0],
+                          name: e.target.value
+                        }]
+                      })}
                       className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="edit-contact-role" className="text-sm font-medium text-slate-900">Role</Label>
-                    <Input 
+                    <select 
                       id="edit-contact-role" 
-                      placeholder="Enter role"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
-                    />
+                      value={sponsorForm.contacts[0]?.role || ''}
+                      onChange={(e) => setSponsorForm({
+                        ...sponsorForm,
+                        contacts: [{
+                          ...sponsorForm.contacts[0],
+                          role: e.target.value
+                        }]
+                      })}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
+                    >
+                      <option value="">Select Role</option>
+                      <option value="CEO">CEO</option>
+                      <option value="CTO">CTO</option>
+                      <option value="Marketing Director">Marketing Director</option>
+                      <option value="Partnership Manager">Partnership Manager</option>
+                      <option value="Sponsorship Manager">Sponsorship Manager</option>
+                      <option value="Business Development">Business Development</option>
+                      <option value="Sales Manager">Sales Manager</option>
+                      <option value="Other">Other</option>
+                    </select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="edit-contact-email" className="text-sm font-medium text-slate-900">Email</Label>
@@ -3309,6 +4558,14 @@ export default function HackathonManagement() {
                       id="edit-contact-email" 
                       type="email" 
                       placeholder="Enter email"
+                      value={sponsorForm.contacts[0]?.email || ''}
+                      onChange={(e) => setSponsorForm({
+                        ...sponsorForm,
+                        contacts: [{
+                          ...sponsorForm.contacts[0],
+                          email: e.target.value
+                        }]
+                      })}
                       className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                     />
                   </div>
@@ -3317,6 +4574,14 @@ export default function HackathonManagement() {
                     <Input 
                       id="edit-contact-phone" 
                       placeholder="Enter phone number"
+                      value={sponsorForm.contacts[0]?.phone || ''}
+                      onChange={(e) => setSponsorForm({
+                        ...sponsorForm,
+                        contacts: [{
+                          ...sponsorForm.contacts[0],
+                          phone: e.target.value
+                        }]
+                      })}
                       className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                     />
                   </div>
@@ -3330,51 +4595,45 @@ export default function HackathonManagement() {
                   </Label>
                 </div>
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Checkbox 
-                      id="edit-benefit-keynote" 
-                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                    />
-                    <Label htmlFor="edit-benefit-keynote" className="text-sm text-slate-600">
-                      Keynote speaking slot
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox 
-                      id="edit-benefit-workshop" 
-                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                    />
-                    <Label htmlFor="edit-benefit-workshop" className="text-sm text-slate-600">
-                      Dedicated workshop session
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox 
-                      id="edit-benefit-booth" 
-                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                    />
-                    <Label htmlFor="edit-benefit-booth" className="text-sm text-slate-600">
-                      Premium booth space
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox 
-                      id="edit-benefit-branding" 
-                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                    />
-                    <Label htmlFor="edit-benefit-branding" className="text-sm text-slate-600">
-                      Logo on all materials
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox 
-                      id="edit-benefit-recruitment" 
-                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                    />
-                    <Label htmlFor="edit-benefit-recruitment" className="text-sm text-slate-600">
-                      Recruitment opportunities
-                    </Label>
-                  </div>
+                  {['keynote_speaking', 'workshop_session', 'premium_booth', 'logo_placement', 'recruitment_access'].map((benefit) => (
+                    <div key={benefit} className="flex items-center gap-2">
+                      <Checkbox 
+                        id={`edit-benefit-${benefit}`}
+                        checked={sponsorForm.benefits.includes(benefit)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSponsorForm({
+                              ...sponsorForm,
+                              benefits: [...sponsorForm.benefits, benefit]
+                            });
+                          } else {
+                            setSponsorForm({
+                              ...sponsorForm,
+                              benefits: sponsorForm.benefits.filter(b => b !== benefit)
+                            });
+                          }
+                        }}
+                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                      />
+                      <Label htmlFor={`edit-benefit-${benefit}`} className="text-sm text-slate-600">
+                        {benefit.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Checkbox 
+                    id="edit-sponsor-featured"
+                    checked={sponsorForm.featured}
+                    onCheckedChange={(checked) => setSponsorForm({...sponsorForm, featured: !!checked})}
+                    className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                  />
+                  <Label htmlFor="edit-sponsor-featured" className="text-sm text-slate-600">
+                    Feature this sponsor
+                  </Label>
                 </div>
               </div>
             </div>
@@ -3385,14 +4644,23 @@ export default function HackathonManagement() {
               variant="outline"
               className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
               onClick={() => setEditSponsorOpen(false)}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
             <Button 
               className="rounded-lg px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md transition-all hover:shadow-lg"
-              onClick={() => setEditSponsorOpen(false)}
+              onClick={() => handleSubmitSponsor(true)}
+              disabled={isSubmitting || !sponsorForm.name}
             >
-              Save Changes
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
             </Button>
           </div>
         </DialogContent>
@@ -3418,6 +4686,8 @@ export default function HackathonManagement() {
                 <Input 
                   id="sponsor-name" 
                   placeholder="Enter company name"
+                  value={sponsorForm.name}
+                  onChange={(e) => setSponsorForm({...sponsorForm, name: e.target.value})}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                 />
               </div>
@@ -3427,6 +4697,8 @@ export default function HackathonManagement() {
                   <Label htmlFor="sponsor-tier" className="text-sm font-medium text-slate-900">Sponsorship Tier</Label>
                   <select 
                     id="sponsor-tier" 
+                    value={sponsorForm.tier}
+                    onChange={(e) => setSponsorForm({...sponsorForm, tier: e.target.value as any})}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
                   >
                     <option value="platinum">Platinum</option>
@@ -3441,6 +4713,8 @@ export default function HackathonManagement() {
                     id="sponsor-amount" 
                     type="number" 
                     placeholder="Enter amount"
+                    value={sponsorForm.contribution}
+                    onChange={(e) => setSponsorForm({...sponsorForm, contribution: parseFloat(e.target.value) || 0})}
                     className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                   />
                 </div>
@@ -3450,9 +4724,12 @@ export default function HackathonManagement() {
                 <Label htmlFor="sponsor-website" className="text-sm font-medium text-slate-900">Website</Label>
                 <Input 
                   id="sponsor-website" 
-                  placeholder="https://example.com"
+                  placeholder="https://example.com or example.com"
+                  value={sponsorForm.website}
+                  onChange={(e) => setSponsorForm({...sponsorForm, website: e.target.value})}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                 />
+                <p className="text-xs text-slate-500">Enter the company website URL (https:// will be added automatically if not provided)</p>
               </div>
 
               <div className="space-y-2">
@@ -3460,6 +4737,8 @@ export default function HackathonManagement() {
                 <Textarea 
                   id="sponsor-description" 
                   placeholder="Brief description of the sponsor" 
+                  value={sponsorForm.description}
+                  onChange={(e) => setSponsorForm({...sponsorForm, description: e.target.value})}
                   className="min-h-[100px] w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow resize-y"
                 />
               </div>
@@ -3476,16 +4755,41 @@ export default function HackathonManagement() {
                     <Input 
                       id="contact-name" 
                       placeholder="Enter contact name"
+                      value={sponsorForm.contacts[0]?.name || ''}
+                      onChange={(e) => setSponsorForm({
+                        ...sponsorForm,
+                        contacts: [{
+                          ...sponsorForm.contacts[0],
+                          name: e.target.value
+                        }]
+                      })}
                       className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="contact-role" className="text-sm font-medium text-slate-900">Role</Label>
-                    <Input 
+                    <select 
                       id="contact-role" 
-                      placeholder="Enter role"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
-                    />
+                      value={sponsorForm.contacts[0]?.role || ''}
+                      onChange={(e) => setSponsorForm({
+                        ...sponsorForm,
+                        contacts: [{
+                          ...sponsorForm.contacts[0],
+                          role: e.target.value
+                        }]
+                      })}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
+                    >
+                      <option value="">Select Role</option>
+                      <option value="CEO">CEO</option>
+                      <option value="CTO">CTO</option>
+                      <option value="Marketing Director">Marketing Director</option>
+                      <option value="Partnership Manager">Partnership Manager</option>
+                      <option value="Sponsorship Manager">Sponsorship Manager</option>
+                      <option value="Business Development">Business Development</option>
+                      <option value="Sales Manager">Sales Manager</option>
+                      <option value="Other">Other</option>
+                    </select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="contact-email" className="text-sm font-medium text-slate-900">Email</Label>
@@ -3493,6 +4797,14 @@ export default function HackathonManagement() {
                       id="contact-email" 
                       type="email" 
                       placeholder="Enter email"
+                      value={sponsorForm.contacts[0]?.email || ''}
+                      onChange={(e) => setSponsorForm({
+                        ...sponsorForm,
+                        contacts: [{
+                          ...sponsorForm.contacts[0],
+                          email: e.target.value
+                        }]
+                      })}
                       className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                     />
                   </div>
@@ -3501,6 +4813,14 @@ export default function HackathonManagement() {
                     <Input 
                       id="contact-phone" 
                       placeholder="Enter phone number"
+                      value={sponsorForm.contacts[0]?.phone || ''}
+                      onChange={(e) => setSponsorForm({
+                        ...sponsorForm,
+                        contacts: [{
+                          ...sponsorForm.contacts[0],
+                          phone: e.target.value
+                        }]
+                      })}
                       className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                     />
                   </div>
@@ -3514,51 +4834,45 @@ export default function HackathonManagement() {
                   </Label>
                 </div>
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Checkbox 
-                      id="benefit-keynote" 
-                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                    />
-                    <Label htmlFor="benefit-keynote" className="text-sm text-slate-600">
-                      Keynote speaking slot
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox 
-                      id="benefit-workshop" 
-                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                    />
-                    <Label htmlFor="benefit-workshop" className="text-sm text-slate-600">
-                      Dedicated workshop session
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox 
-                      id="benefit-booth" 
-                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                    />
-                    <Label htmlFor="benefit-booth" className="text-sm text-slate-600">
-                      Premium booth space
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox 
-                      id="benefit-branding" 
-                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                    />
-                    <Label htmlFor="benefit-branding" className="text-sm text-slate-600">
-                      Logo on all materials
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox 
-                      id="benefit-recruitment" 
-                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                    />
-                    <Label htmlFor="benefit-recruitment" className="text-sm text-slate-600">
-                      Recruitment opportunities
-                    </Label>
-                  </div>
+                  {['keynote_speaking', 'workshop_session', 'premium_booth', 'logo_placement', 'recruitment_access'].map((benefit) => (
+                    <div key={benefit} className="flex items-center gap-2">
+                      <Checkbox 
+                        id={`benefit-${benefit}`}
+                        checked={sponsorForm.benefits.includes(benefit)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSponsorForm({
+                              ...sponsorForm,
+                              benefits: [...sponsorForm.benefits, benefit]
+                            });
+                          } else {
+                            setSponsorForm({
+                              ...sponsorForm,
+                              benefits: sponsorForm.benefits.filter(b => b !== benefit)
+                            });
+                          }
+                        }}
+                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                      />
+                      <Label htmlFor={`benefit-${benefit}`} className="text-sm text-slate-600">
+                        {benefit.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Checkbox 
+                    id="sponsor-featured"
+                    checked={sponsorForm.featured}
+                    onCheckedChange={(checked) => setSponsorForm({...sponsorForm, featured: !!checked})}
+                    className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                  />
+                  <Label htmlFor="sponsor-featured" className="text-sm text-slate-600">
+                    Feature this sponsor
+                  </Label>
                 </div>
               </div>
             </div>
@@ -3569,14 +4883,23 @@ export default function HackathonManagement() {
               variant="outline"
               className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
               onClick={() => setAddSponsorOpen(false)}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
             <Button 
               className="rounded-lg px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md transition-all hover:shadow-lg"
-              onClick={() => setAddSponsorOpen(false)}
+              onClick={() => handleSubmitSponsor(false)}
+              disabled={isSubmitting || !sponsorForm.name}
             >
-              Add Sponsor
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Adding...
+                </>
+              ) : (
+                'Add Sponsor'
+              )}
             </Button>
           </div>
         </DialogContent>
@@ -3602,6 +4925,8 @@ export default function HackathonManagement() {
                 <Input 
                   id="edit-faq-question" 
                   placeholder="Enter your question" 
+                  value={faqForm.question}
+                  onChange={(e) => setFaqForm({...faqForm, question: e.target.value})}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                 />
               </div>
@@ -3611,6 +4936,8 @@ export default function HackathonManagement() {
                 <Textarea 
                   id="edit-faq-answer" 
                   placeholder="Provide a clear and concise answer" 
+                  value={faqForm.answer}
+                  onChange={(e) => setFaqForm({...faqForm, answer: e.target.value})}
                   className="min-h-[150px] w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow resize-y"
                 />
               </div>
@@ -3620,8 +4947,11 @@ export default function HackathonManagement() {
                   <Label htmlFor="edit-faq-category" className="text-sm font-medium text-slate-900">Category</Label>
                   <select 
                     id="edit-faq-category" 
+                    value={faqForm.category}
+                    onChange={(e) => setFaqForm({...faqForm, category: e.target.value})}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-blue-500/20 transition-shadow bg-white"
                   >
+                    <option value="">Select Category</option>
                     <option value="general">General</option>
                     <option value="technical">Technical</option>
                     <option value="judging">Judging</option>
@@ -3635,6 +4965,8 @@ export default function HackathonManagement() {
                     type="number" 
                     min="1"
                     placeholder="Set display priority"
+                    value={faqForm.order}
+                    onChange={(e) => setFaqForm({...faqForm, order: parseInt(e.target.value) || 0})}
                     className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                   />
                 </div>
@@ -3650,6 +4982,8 @@ export default function HackathonManagement() {
                   <div className="flex items-center gap-2">
                     <Checkbox 
                       id="edit-faq-published" 
+                      checked={faqForm.published}
+                      onCheckedChange={(checked) => setFaqForm({...faqForm, published: !!checked})}
                       className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                     />
                     <Label htmlFor="edit-faq-published" className="text-sm text-slate-600">
@@ -3659,6 +4993,8 @@ export default function HackathonManagement() {
                   <div className="flex items-center gap-2">
                     <Checkbox 
                       id="edit-faq-featured" 
+                      checked={faqForm.featured}
+                      onCheckedChange={(checked) => setFaqForm({...faqForm, featured: !!checked})}
                       className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                     />
                     <Label htmlFor="edit-faq-featured" className="text-sm text-slate-600">
@@ -3675,14 +5011,23 @@ export default function HackathonManagement() {
               variant="outline"
               className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
               onClick={() => setEditFAQOpen(false)}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
             <Button 
               className="rounded-lg px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md transition-all hover:shadow-lg"
-              onClick={() => setEditFAQOpen(false)}
+              onClick={() => handleSubmitFAQ(true)}
+              disabled={isSubmitting || !faqForm.question || !faqForm.answer}
             >
-              Save Changes
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
             </Button>
           </div>
         </DialogContent>
@@ -3732,22 +5077,24 @@ export default function HackathonManagement() {
               variant="outline"
               className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
               onClick={() => setDeleteMemberOpen(false)}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
             <Button 
               variant="destructive"
               className="rounded-lg px-4 bg-red-600 hover:bg-red-700 text-white shadow-md transition-all hover:shadow-lg"
-              onClick={() => {
-                // Handle delete
-                setDeleteMemberOpen(false);
-                toast({
-                  title: "Team member removed",
-                  description: "The team member has been successfully removed.",
-                });
-              }}
+              onClick={handleConfirmDeleteMember}
+              disabled={isSubmitting}
             >
-              Remove Member
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Removing...
+                </>
+              ) : (
+                'Remove Member'
+              )}
             </Button>
           </div>
         </DialogContent>
@@ -3796,22 +5143,24 @@ export default function HackathonManagement() {
               variant="outline"
               className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
               onClick={() => setDeleteSponsorOpen(false)}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
             <Button 
               variant="destructive"
               className="rounded-lg px-4 bg-red-600 hover:bg-red-700 text-white shadow-md transition-all hover:shadow-lg"
-              onClick={() => {
-                // Handle delete
-                setDeleteSponsorOpen(false);
-                toast({
-                  title: "Sponsor removed",
-                  description: "The sponsor has been successfully removed.",
-                });
-              }}
+              onClick={handleConfirmDeleteSponsor}
+              disabled={isSubmitting}
             >
-              Remove Sponsor
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Removing...
+                </>
+              ) : (
+                'Remove Sponsor'
+              )}
             </Button>
           </div>
         </DialogContent>
@@ -3837,7 +5186,7 @@ export default function HackathonManagement() {
                   <p className="font-medium text-slate-900">{selectedTimeline.title}</p>
                   <p className="text-sm text-slate-600">{new Date(selectedTimeline.date).toLocaleDateString()}</p>
                   <Badge variant="outline" className="mt-1 capitalize">
-                    {selectedTimeline.type}
+                    {selectedTimeline.event_type}
                   </Badge>
                 </div>
               </div>
@@ -3863,22 +5212,24 @@ export default function HackathonManagement() {
               variant="outline"
               className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
               onClick={() => setDeleteTimelineOpen(false)}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
             <Button 
               variant="destructive"
               className="rounded-lg px-4 bg-red-600 hover:bg-red-700 text-white shadow-md transition-all hover:shadow-lg"
-              onClick={() => {
-                // Handle delete
-                setDeleteTimelineOpen(false);
-                toast({
-                  title: "Timeline event deleted",
-                  description: "The timeline event has been successfully deleted.",
-                });
-              }}
+              onClick={handleConfirmDeleteTimeline}
+              disabled={isSubmitting}
             >
-              Delete Event
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Deleting...
+                </>
+              ) : (
+                'Delete Event'
+              )}
             </Button>
           </div>
         </DialogContent>
@@ -3930,22 +5281,24 @@ export default function HackathonManagement() {
               variant="outline"
               className="rounded-lg px-4 hover:bg-slate-100 transition-colors"
               onClick={() => setDeleteResourceOpen(false)}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
             <Button 
               variant="destructive"
               className="rounded-lg px-4 bg-red-600 hover:bg-red-700 text-white shadow-md transition-all hover:shadow-lg"
-              onClick={() => {
-                // Handle delete
-                setDeleteResourceOpen(false);
-                toast({
-                  title: "Resource deleted",
-                  description: "The resource has been successfully deleted.",
-                });
-              }}
+              onClick={handleConfirmDeleteResource}
+              disabled={isSubmitting}
             >
-              Delete Resource
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Deleting...
+                </>
+              ) : (
+                'Delete Resource'
+              )}
             </Button>
           </div>
         </DialogContent>
@@ -3971,7 +5324,8 @@ export default function HackathonManagement() {
                 <Textarea 
                   id="role-description" 
                   placeholder="Describe the role's responsibilities"
-                  defaultValue={selectedRole?.description}
+                  value={roleConfigForm.description}
+                  onChange={(e) => setRoleConfigForm({...roleConfigForm, description: e.target.value})}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
                 />
               </div>
@@ -3986,8 +5340,14 @@ export default function HackathonManagement() {
                   <div className="flex items-center gap-2">
                     <Checkbox 
                       id="role-perm-admin" 
+                      checked={roleConfigForm.permissions.includes('admin')}
+                      onCheckedChange={(checked) => {
+                        const newPermissions = checked 
+                          ? [...roleConfigForm.permissions, 'admin']
+                          : roleConfigForm.permissions.filter(p => p !== 'admin');
+                        setRoleConfigForm({...roleConfigForm, permissions: newPermissions});
+                      }}
                       className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                      defaultChecked={selectedRole?.name === 'organizer'}
                     />
                     <Label htmlFor="role-perm-admin" className="text-sm text-slate-600">
                       Admin access
@@ -3996,8 +5356,14 @@ export default function HackathonManagement() {
                   <div className="flex items-center gap-2">
                     <Checkbox 
                       id="role-perm-teams" 
+                      checked={roleConfigForm.permissions.includes('manage_teams')}
+                      onCheckedChange={(checked) => {
+                        const newPermissions = checked 
+                          ? [...roleConfigForm.permissions, 'manage_teams']
+                          : roleConfigForm.permissions.filter(p => p !== 'manage_teams');
+                        setRoleConfigForm({...roleConfigForm, permissions: newPermissions});
+                      }}
                       className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                      defaultChecked={selectedRole?.name === 'organizer' || selectedRole?.name === 'mentor'}
                     />
                     <Label htmlFor="role-perm-teams" className="text-sm text-slate-600">
                       Manage teams
@@ -4006,8 +5372,14 @@ export default function HackathonManagement() {
                   <div className="flex items-center gap-2">
                     <Checkbox 
                       id="role-perm-submissions" 
+                      checked={roleConfigForm.permissions.includes('manage_submissions')}
+                      onCheckedChange={(checked) => {
+                        const newPermissions = checked 
+                          ? [...roleConfigForm.permissions, 'manage_submissions']
+                          : roleConfigForm.permissions.filter(p => p !== 'manage_submissions');
+                        setRoleConfigForm({...roleConfigForm, permissions: newPermissions});
+                      }}
                       className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                      defaultChecked={selectedRole?.name === 'organizer' || selectedRole?.name === 'judge'}
                     />
                     <Label htmlFor="role-perm-submissions" className="text-sm text-slate-600">
                       Manage submissions
@@ -4016,8 +5388,14 @@ export default function HackathonManagement() {
                   <div className="flex items-center gap-2">
                     <Checkbox 
                       id="role-perm-communications" 
+                      checked={roleConfigForm.permissions.includes('send_communications')}
+                      onCheckedChange={(checked) => {
+                        const newPermissions = checked 
+                          ? [...roleConfigForm.permissions, 'send_communications']
+                          : roleConfigForm.permissions.filter(p => p !== 'send_communications');
+                        setRoleConfigForm({...roleConfigForm, permissions: newPermissions});
+                      }}
                       className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                      defaultChecked={selectedRole?.name === 'organizer'}
                     />
                     <Label htmlFor="role-perm-communications" className="text-sm text-slate-600">
                       Send communications
@@ -4026,8 +5404,14 @@ export default function HackathonManagement() {
                   <div className="flex items-center gap-2">
                     <Checkbox 
                       id="role-perm-resources" 
+                      checked={roleConfigForm.permissions.includes('manage_resources')}
+                      onCheckedChange={(checked) => {
+                        const newPermissions = checked 
+                          ? [...roleConfigForm.permissions, 'manage_resources']
+                          : roleConfigForm.permissions.filter(p => p !== 'manage_resources');
+                        setRoleConfigForm({...roleConfigForm, permissions: newPermissions});
+                      }}
                       className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                      defaultChecked={selectedRole?.name === 'organizer' || selectedRole?.name === 'mentor'}
                     />
                     <Label htmlFor="role-perm-resources" className="text-sm text-slate-600">
                       Manage resources
@@ -4036,8 +5420,14 @@ export default function HackathonManagement() {
                   <div className="flex items-center gap-2">
                     <Checkbox 
                       id="role-perm-scoring" 
+                      checked={roleConfigForm.permissions.includes('score_submissions')}
+                      onCheckedChange={(checked) => {
+                        const newPermissions = checked 
+                          ? [...roleConfigForm.permissions, 'score_submissions']
+                          : roleConfigForm.permissions.filter(p => p !== 'score_submissions');
+                        setRoleConfigForm({...roleConfigForm, permissions: newPermissions});
+                      }}
                       className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                      defaultChecked={selectedRole?.name === 'judge'}
                     />
                     <Label htmlFor="role-perm-scoring" className="text-sm text-slate-600">
                       Score submissions
@@ -4053,33 +5443,33 @@ export default function HackathonManagement() {
                   </Label>
                 </div>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Label htmlFor="role-auto-approve" className="text-sm text-slate-600">
-                        Auto-approve members
-                      </Label>
-                      <div className="text-xs text-slate-500">
-                        Automatically approve new members with this role
-                      </div>
-                    </div>
-                    <Switch 
+                  <div className="flex items-center gap-2">
+                    <Checkbox 
                       id="role-auto-approve"
-                      defaultChecked={selectedRole?.name === 'mentor'}
+                      checked={roleConfigForm.auto_approve}
+                      onCheckedChange={(checked) => setRoleConfigForm({...roleConfigForm, auto_approve: !!checked})}
+                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                     />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Label htmlFor="role-notifications" className="text-sm text-slate-600">
-                        Role notifications
-                      </Label>
-                      <div className="text-xs text-slate-500">
-                        Send notifications about role changes
-                      </div>
+                    <Label htmlFor="role-auto-approve" className="text-sm text-slate-600">
+                      Auto-approve members
+                    </Label>
+                    <div className="text-xs text-slate-500 ml-2">
+                      Automatically approve new members with this role
                     </div>
-                    <Switch 
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox 
                       id="role-notifications"
-                      defaultChecked={true}
+                      checked={roleConfigForm.notifications_enabled}
+                      onCheckedChange={(checked) => setRoleConfigForm({...roleConfigForm, notifications_enabled: !!checked})}
+                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                     />
+                    <Label htmlFor="role-notifications" className="text-sm text-slate-600">
+                      Role notifications
+                    </Label>
+                    <div className="text-xs text-slate-500 ml-2">
+                      Send notifications about role changes
+                    </div>
                   </div>
                 </div>
               </div>
@@ -4096,15 +5486,17 @@ export default function HackathonManagement() {
             </Button>
             <Button 
               className="rounded-lg px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md transition-all hover:shadow-lg"
-              onClick={() => {
-                setConfigureRoleOpen(false);
-                toast({
-                  title: "Role updated",
-                  description: "The role settings have been successfully updated.",
-                });
-              }}
+              onClick={handleSaveRoleConfiguration}
+              disabled={isSubmitting}
             >
-              Save Changes
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
             </Button>
           </div>
         </DialogContent>

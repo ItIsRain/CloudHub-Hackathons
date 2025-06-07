@@ -5,9 +5,9 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, UserRole } from '@/types/user';
 import axios from 'axios';
-import { toast } from 'sonner';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Cookies from 'js-cookie';
+import { useToast } from '@/components/ui/use-toast';
 
 // Types
 export interface LoginCredentials {
@@ -79,8 +79,9 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
+    // Log error for debugging, but don't show toast here since we're outside component context
     if (error.response?.status >= 500) {
-      toast.error('Server error. Please try again later.');
+      console.error('Server error:', error);
     }
     
     return Promise.reject(error);
@@ -108,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
   const router = useRouter();
+  const { toast } = useToast();
 
   // Initialize auth state
   useEffect(() => {
@@ -263,6 +265,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch (refreshError) {
           console.log('❌ Token refresh failed, logging out:', refreshError);
           // If refresh fails, log the user out
+          // Show toast notification about automatic logout
+          toast({
+            title: "Session Expired",
+            description: "Your session has expired. Please log in again.",
+            variant: "destructive"
+          });
           await logout();
         }
       }
@@ -438,8 +446,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('👋 Logging out user');
       clearTokens();
       setUser(null);
-      router.push('/login');
       setLoading(false);
+      
+      // Force redirect to login page
+      try {
+        router.push('/login');
+        // Fallback: if router.push doesn't work, use window.location
+        setTimeout(() => {
+          if (window.location.pathname !== '/login') {
+            console.log('🔄 Router redirect failed, using window.location');
+            window.location.href = '/login';
+          }
+        }, 100);
+      } catch (routerError) {
+        console.log('🔄 Router failed, using window.location immediately');
+        window.location.href = '/login';
+      }
     }
   };
 
