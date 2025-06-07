@@ -46,6 +46,7 @@ import { useUserRole } from "./user-role-context"
 import { LucideIcon } from "lucide-react"
 import Image from "next/image"
 import { useAuth } from '@/contexts/auth-context'
+import { useState, useEffect } from 'react'
 
 // Define the type for navigation items
 interface NavItem {
@@ -55,11 +56,81 @@ interface NavItem {
   badge?: string
 }
 
+// Define type for user hackathons
+interface UserHackathon {
+  id: string
+  title: string
+  slug?: string
+}
+
 export default function DashboardSidebar() {
   const pathname = usePathname()
   const { state } = useSidebar()
   const { isOrganizer } = useUserRole()
   const { user, logout } = useAuth()
+  const [userHackathons, setUserHackathons] = useState<UserHackathon[]>([])
+  const [isLoadingHackathons, setIsLoadingHackathons] = useState(true)
+
+  // Fetch user's created hackathons
+  useEffect(() => {
+    const fetchUserHackathons = async () => {
+      if (!isOrganizer || !user) {
+        setIsLoadingHackathons(false)
+        return
+      }
+
+      try {
+        console.log('Fetching user hackathons for sidebar...')
+        
+        // Get authentication token
+        const token = localStorage.getItem('access_token') || 
+                     sessionStorage.getItem('access_token') ||
+                     document.cookie.split('; ').find(row => row.startsWith('access_token='))?.split('=')[1]
+
+        if (!token) {
+          console.error('No authentication token found')
+          setUserHackathons([])
+          setIsLoadingHackathons(false)
+          return
+        }
+
+        // Use the existing API endpoint for user's hackathons
+        const response = await fetch('http://localhost:8000/api/hackathons/my-hackathons', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include'
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          console.log('Hackathons API response:', data)
+          
+          // Extract hackathons from response and map to sidebar format
+          const hackathons = (data.hackathons || []).map((hackathon: any) => ({
+            id: hackathon.id,
+            title: hackathon.title,
+            slug: hackathon.slug || hackathon.id // fallback to id if no slug
+          }))
+          
+          console.log('Mapped hackathons for sidebar:', hackathons)
+          setUserHackathons(hackathons)
+        } else {
+          console.error('Failed to fetch hackathons:', response.status, response.statusText)
+          setUserHackathons([])
+        }
+      } catch (error) {
+        console.error('Failed to fetch user hackathons:', error)
+        setUserHackathons([])
+      } finally {
+        setIsLoadingHackathons(false)
+      }
+    }
+
+    fetchUserHackathons()
+  }, [isOrganizer, user])
 
   // Check if a menu item is active based on the current path
   const isActive = (href: string) => {
@@ -107,6 +178,9 @@ export default function DashboardSidebar() {
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
     { name: "Help & Support", href: "/dashboard/help", icon: HelpCircle },
   ]
+
+  // Check if we should show the Management section
+  const shouldShowManagement = isOrganizer && !isLoadingHackathons && userHackathons.length > 0
 
   return (
     <Sidebar className="border-r border-slate-100 bg-white/70 backdrop-blur-md shadow-sm">
@@ -157,7 +231,7 @@ export default function DashboardSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {isOrganizer ? (
+        {shouldShowManagement && (
           <SidebarGroup>
             <SidebarGroupLabel className="text-xs font-medium text-slate-500">Management</SidebarGroupLabel>
             <SidebarGroupAction>
@@ -176,38 +250,31 @@ export default function DashboardSidebar() {
             </SidebarGroupAction>
             <SidebarGroupContent>
               <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton 
-                    asChild 
-                    tooltip="AI Innovation Challenge"
-                  >
-                    <Link href="/dashboard/organizer/hackathons/ai-innovation-challenge" className="flex items-center gap-2 hover:bg-blue-50 transition-all rounded-md">
-                      <div className="relative flex items-center justify-center h-5 w-5">
-                        <div className="absolute inset-0 rounded-full bg-blue-100 opacity-40 hover:opacity-60 transition-opacity"></div>
-                        <Sparkles className="h-3.5 w-3.5 text-blue-500 hover:text-blue-600 transition-colors" />
-                      </div>
-                      <span className="text-slate-700 hover:text-slate-900 transition-colors">AI Innovation Challenge</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton 
-                    asChild 
-                    tooltip="Web3 Hackathon"
-                  >
-                    <Link href="/dashboard/organizer/hackathons/web3" className="flex items-center gap-2 hover:bg-blue-50 transition-all rounded-md">
-                      <div className="relative flex items-center justify-center h-5 w-5">
-                        <div className="absolute inset-0 rounded-full bg-blue-100 opacity-40 hover:opacity-60 transition-opacity"></div>
-                        <Sparkles className="h-3.5 w-3.5 text-blue-500 hover:text-blue-600 transition-colors" />
-                      </div>
-                      <span className="text-slate-700 hover:text-slate-900 transition-colors">Web3 Hackathon</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                {userHackathons.map((hackathon) => {
+                  const hackathonHref = `/dashboard/organizer/hackathons/${hackathon.slug || hackathon.id}`
+                  return (
+                    <SidebarMenuItem key={hackathon.id}>
+                      <SidebarMenuButton 
+                        asChild 
+                        isActive={isActive(hackathonHref)}
+                        tooltip={hackathon.title}
+                        className={isActive(hackathonHref) ? 'bg-blue-50 text-blue-700 border-blue-200 shadow-sm font-medium' : ''}
+                      >
+                        <Link href={hackathonHref} className="flex items-center gap-2 hover:bg-blue-50 transition-all rounded-md">
+                          <div className="relative flex items-center justify-center h-5 w-5">
+                            <div className="absolute inset-0 rounded-full bg-blue-100 opacity-40 hover:opacity-60 transition-opacity"></div>
+                            <Sparkles className={`h-3.5 w-3.5 ${isActive(hackathonHref) ? 'text-blue-600' : 'text-blue-500 hover:text-blue-600'} transition-colors`} />
+                          </div>
+                          <span className={`${isActive(hackathonHref) ? 'text-blue-700' : 'text-slate-700 hover:text-slate-900'} transition-colors truncate`}>{hackathon.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-        ) : null}
+        )}
 
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs font-medium text-slate-500">Support</SidebarGroupLabel>
