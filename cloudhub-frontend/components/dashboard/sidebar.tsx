@@ -67,12 +67,18 @@ export default function DashboardSidebar() {
     const normalizedPathname = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
     const normalizedHref = href.endsWith('/') ? href.slice(0, -1) : href
     
-    // For the dashboard root, check if it's either /dashboard or /dashboard/
-    if (normalizedHref === '/dashboard') {
-      return normalizedPathname === '/dashboard'
+    // For the dashboard root paths, be exact
+    if (normalizedHref === '/dashboard' || normalizedHref === '/dashboard/organizer') {
+      return normalizedPathname === normalizedHref
     }
-    // For other pages, check if pathname starts with href
-    return normalizedPathname.startsWith(normalizedHref)
+
+    // For other pages, check if it's an exact match or a direct child route
+    // This prevents parent routes from being active when on child routes
+    const isExactMatch = normalizedPathname === normalizedHref
+    const isDirectChild = normalizedPathname.startsWith(normalizedHref + '/') && 
+      normalizedPathname.split('/').length === normalizedHref.split('/').length + 1
+
+    return isExactMatch || isDirectChild
   }
 
   // Participant navigation items
