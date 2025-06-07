@@ -87,7 +87,7 @@ export default function DashboardSidebar() {
 
   // Organizer navigation items
   const organizerNavItems: NavItem[] = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Dashboard", href: "/dashboard/organizer", icon: LayoutDashboard },
     { name: "My Hackathons", href: "/dashboard/organizer/my-hackathons", icon: Sparkles },
     { name: "Participants", href: "/dashboard/organizer/participants", icon: Users },
     { name: "Judging", href: "/dashboard/organizer/judging", icon: Award },
@@ -106,7 +106,7 @@ export default function DashboardSidebar() {
     <Sidebar className="border-r border-slate-100 bg-white/70 backdrop-blur-md shadow-sm">
       <SidebarHeader className="border-b border-slate-100 dark:border-slate-700">
         <div className="flex items-center justify-center h-16 px-4">
-          <Link href="/dashboard" className="group flex items-center justify-center w-full py-2">
+          <Link href={isOrganizer ? "/dashboard/organizer" : "/dashboard"} className="group flex items-center justify-center w-full py-2">
             <Image 
               src="/CloudHubV2.svg" 
               alt="CloudHub Logo" 
@@ -156,8 +156,15 @@ export default function DashboardSidebar() {
             <SidebarGroupLabel className="text-xs font-medium text-slate-500">Management</SidebarGroupLabel>
             <SidebarGroupAction>
               <div className="flex items-center justify-center">
-                <Button variant="ghost" size="icon" className="h-5 w-5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-full">
-                  <PlusCircle className="h-4 w-4" />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-5 w-5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-full"
+                  asChild
+                >
+                  <Link href="/dashboard/organizer/my-hackathons">
+                    <PlusCircle className="h-4 w-4" />
+                  </Link>
                 </Button>
               </div>
             </SidebarGroupAction>
@@ -182,7 +189,7 @@ export default function DashboardSidebar() {
                     asChild 
                     tooltip="Web3 Hackathon"
                   >
-                    <Link href="/dashboard/hackathons/web3" className="flex items-center gap-2 hover:bg-blue-50 transition-all rounded-md">
+                    <Link href="/dashboard/organizer/hackathons/web3" className="flex items-center gap-2 hover:bg-blue-50 transition-all rounded-md">
                       <div className="relative flex items-center justify-center h-5 w-5">
                         <div className="absolute inset-0 rounded-full bg-blue-100 opacity-40 hover:opacity-60 transition-opacity"></div>
                         <Sparkles className="h-3.5 w-3.5 text-blue-500 hover:text-blue-600 transition-colors" />

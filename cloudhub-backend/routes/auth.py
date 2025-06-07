@@ -467,4 +467,12 @@ async def disable_2fa(
 ):
     """Disable 2FA for user."""
     await auth_service.disable_2fa(str(current_user.id))
-    return {"message": "2FA disabled successfully"} 
+    return {"message": "2FA disabled successfully"}
+
+@router.get("/check-role")
+async def check_role(current_user: User = Depends(get_current_user)):
+    """Check the role of the current user."""
+    return {
+        "role": current_user.role,
+        "is_organizer": current_user.role == "organizer"
+    } 

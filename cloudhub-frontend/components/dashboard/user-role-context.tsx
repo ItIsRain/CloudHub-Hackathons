@@ -1,41 +1,63 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react"
+import React, { createContext, useContext, useState, useEffect } from "react"
 import { useAuth } from "@/contexts/auth-context"
 
-type UserRole = "organizer" | "participant" | "judge" | "mentor" | "media"
-
 type UserRoleContextType = {
-  userRole: UserRole
   isOrganizer: boolean
-  isParticipant: boolean
+  isLoading: boolean
 }
 
-const UserRoleContext = createContext<UserRoleContextType | undefined>(undefined)
+const UserRoleContext = createContext<UserRoleContextType>({
+  isOrganizer: false,
+  isLoading: true
+})
 
-export function UserRoleProvider({ children }: { children: ReactNode }) {
+export function UserRoleProvider({ children }: { children: React.ReactNode }) {
+  const [isOrganizer, setIsOrganizer] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const { user } = useAuth()
-  const [userRole, setUserRole] = useState<UserRole>("participant") // Default to participant
 
   useEffect(() => {
-    if (user?.role) {
-      setUserRole(user.role as UserRole)
+    const checkRole = async () => {
+      if (!user) {
+        setIsOrganizer(false)
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        const token = localStorage.getItem("access_token")
+        const response = await fetch("http://localhost:8000/api/auth/check-role", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setIsOrganizer(data.role === "organizer")
+        } else {
+          setIsOrganizer(false)
+        }
+      } catch (error) {
+        console.error("Error checking role:", error)
+        setIsOrganizer(false)
+      } finally {
+        setIsLoading(false)
+      }
     }
+
+    checkRole()
   }, [user])
 
-  const value = {
-    userRole,
-    isOrganizer: userRole === "organizer",
-    isParticipant: userRole === "participant",
-  }
-
-  return <UserRoleContext.Provider value={value}>{children}</UserRoleContext.Provider>
+  return (
+    <UserRoleContext.Provider value={{ isOrganizer, isLoading }}>
+      {children}
+    </UserRoleContext.Provider>
+  )
 }
 
 export function useUserRole() {
-  const context = useContext(UserRoleContext)
-  if (context === undefined) {
-    throw new Error("useUserRole must be used within a UserRoleProvider")
-  }
-  return context
+  return useContext(UserRoleContext)
 }

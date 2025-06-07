@@ -23,7 +23,18 @@ export function middleware(request: NextRequest) {
   // Get tokens from cookies
   const accessToken = request.cookies.get('access_token')?.value;
   const userDataStr = request.cookies.get('user')?.value;
-  const userData = userDataStr ? JSON.parse(userDataStr) : null;
+  
+  // Safely parse user data
+  let userData = null;
+  if (userDataStr) {
+    try {
+      userData = JSON.parse(userDataStr);
+    } catch (error) {
+      console.error('Failed to parse user data from cookie:', error);
+      // If we can't parse user data, treat as if no user data exists
+      userData = null;
+    }
+  }
   
   // Check if path requires authentication
   const requiresAuth = authRequiredPaths.some(path => pathname.startsWith(path));
@@ -39,6 +50,18 @@ export function middleware(request: NextRequest) {
   const isOrganizerPath = organizerPaths.some(path => pathname.startsWith(path));
   if (isOrganizerPath && userData?.role !== 'organizer') {
     // Redirect non-organizers to participant dashboard
+    console.log('Redirecting non-organizer from organizer path:', { 
+      pathname, 
+      userRole: userData?.role, 
+      hasUserData: !!userData,
+      hasAccessToken: !!accessToken 
+    });
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+  
+  // If we have a token and we're on the login page,
+  // redirect to the dashboard
+  if (accessToken && pathname === '/login') {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
   
@@ -55,5 +78,7 @@ export const config = {
      * - favicon.ico (favicon file)
      */
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/dashboard/:path*',
+    '/login'
   ],
 }; 
