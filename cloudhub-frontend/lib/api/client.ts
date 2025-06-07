@@ -87,12 +87,9 @@ class ApiClient {
         document.cookie = 'refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         document.cookie = 'user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         
-        // Call the unauthorized handler if set
+        // Call the unauthorized handler if set (auth context will handle redirect)
         if (this.onUnauthorized) {
           this.onUnauthorized();
-        } else {
-          // Fallback: redirect to login
-          window.location.href = '/login';
         }
         
         throw new Error('Session expired. Please log in again.');

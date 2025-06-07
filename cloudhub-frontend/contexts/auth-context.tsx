@@ -112,13 +112,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { toast } = useToast();
 
-  // Initialize auth state
-  useEffect(() => {
-    if (!isInitialized) {
-      initializeAuth();
-    }
-  }, [isInitialized]);
-
   // Listen for storage changes
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
@@ -131,7 +124,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Set up API client unauthorized handler
+  // Initialize auth state
+  useEffect(() => {
+    if (!isInitialized) {
+      initializeAuth();
+    }
+  }, [isInitialized]);
+
+  const logout = async () => {
+    setLoading(true);
+    try {
+      const refresh_token = localStorage.getItem(TOKEN_STORAGE.REFRESH_TOKEN);
+      if (refresh_token) {
+        await axiosInstance.post('/auth/logout', { refresh_token });
+      }
+    } catch (error) {
+      // Continue with local logout even if API call fails
+      console.log('⚠️ Server logout failed, continuing with local logout');
+    } finally {
+      console.log('👋 Logging out user');
+      clearTokens();
+      setUser(null);
+      setLoading(false);
+      
+      // Use window.location.replace for immediate, non-conflicting redirect
+      window.location.replace('/login');
+    }
+  };
+
+  // Set up API client unauthorized handler after logout is defined
   useEffect(() => {
     apiClient.setUnauthorizedHandler(() => {
       console.log('🔒 API Client triggered auto logout');
@@ -142,7 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       logout();
     });
-  }, []);
+  }, [logout, toast]);
 
   const initializeAuth = async () => {
     try {
@@ -443,39 +464,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await logout();
       }
       throw error;
-    }
-  };
-
-  const logout = async () => {
-    setLoading(true);
-    try {
-      const refresh_token = localStorage.getItem(TOKEN_STORAGE.REFRESH_TOKEN);
-      if (refresh_token) {
-        await axiosInstance.post('/auth/logout', { refresh_token });
-      }
-    } catch (error) {
-      // Continue with local logout even if API call fails
-      console.log('⚠️ Server logout failed, continuing with local logout');
-    } finally {
-      console.log('👋 Logging out user');
-      clearTokens();
-      setUser(null);
-      setLoading(false);
-      
-      // Force redirect to login page
-      try {
-        router.push('/login');
-        // Fallback: if router.push doesn't work, use window.location
-        setTimeout(() => {
-          if (window.location.pathname !== '/login') {
-            console.log('🔄 Router redirect failed, using window.location');
-            window.location.href = '/login';
-          }
-        }, 100);
-      } catch (routerError) {
-        console.log('🔄 Router failed, using window.location immediately');
-        window.location.href = '/login';
-      }
     }
   };
 

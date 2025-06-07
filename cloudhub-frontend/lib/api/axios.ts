@@ -34,9 +34,9 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      console.warn('🔒 401 Unauthorized from Axios - Auto logout triggered');
+      console.warn('🔒 401 Unauthorized from Axios - Tokens cleared');
       
-      // Clear tokens immediately
+      // Clear tokens immediately  
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('user');
@@ -49,8 +49,8 @@ axiosInstance.interceptors.response.use(
       document.cookie = 'refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       document.cookie = 'user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       
-      // Redirect to login
-      window.location.href = '/login';
+      // Note: We don't redirect here since the auth context should handle this
+      // through the API client's onUnauthorized handler
     }
     
     return Promise.reject(error);
