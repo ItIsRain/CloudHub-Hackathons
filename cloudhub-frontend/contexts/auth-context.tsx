@@ -8,6 +8,7 @@ import axios from 'axios';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { useToast } from '@/components/ui/use-toast';
+import { apiClient } from '@/lib/api/client';
 
 // Types
 export interface LoginCredentials {
@@ -128,6 +129,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Set up API client unauthorized handler
+  useEffect(() => {
+    apiClient.setUnauthorizedHandler(() => {
+      console.log('🔒 API Client triggered auto logout');
+      toast({
+        title: "Session Expired",
+        description: "Your session has expired. Please log in again.",
+        variant: "destructive"
+      });
+      logout();
+    });
   }, []);
 
   const initializeAuth = async () => {

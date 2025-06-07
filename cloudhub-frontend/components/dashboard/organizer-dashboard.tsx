@@ -49,6 +49,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { apiClient } from '@/lib/api/client'
 
 const participantData = [
   { name: "Registered", value: 450 },
@@ -175,25 +176,13 @@ export default function OrganizerDashboard() {
     const fetchHackathons = async () => {
       try {
         setIsLoading(true);
-        const token = localStorage.getItem('access_token');
+        setError(null);
+
+        console.log('Fetching hackathons for organizer dashboard...');
+
+        // Use the new API client that handles 401 automatically
+        const data = await apiClient.get<{hackathons: Hackathon[]}>('/hackathons/my-hackathons');
         
-        if (!token) {
-          throw new Error('No authentication token found');
-        }
-
-        // Fetch owned hackathons
-        const response = await fetch('http://localhost:8000/api/hackathons/my-hackathons', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json',
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch hackathons');
-        }
-
-        const data = await response.json();
         const hackathons: Hackathon[] = data.hackathons || [];
         console.log('Fetched hackathons:', hackathons);
         setOwnedHackathons(hackathons);

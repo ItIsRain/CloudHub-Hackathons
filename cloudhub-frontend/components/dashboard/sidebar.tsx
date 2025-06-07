@@ -47,6 +47,7 @@ import { LucideIcon } from "lucide-react"
 import Image from "next/image"
 import { useAuth } from '@/contexts/auth-context'
 import { useState, useEffect } from 'react'
+import { apiClient } from '@/lib/api/client'
 
 // Define the type for navigation items
 interface NavItem {
@@ -82,45 +83,21 @@ export default function DashboardSidebar() {
       try {
         console.log('Fetching user hackathons for sidebar...')
         
-        // Get authentication token
-        const token = localStorage.getItem('access_token') || 
-                     sessionStorage.getItem('access_token') ||
-                     document.cookie.split('; ').find(row => row.startsWith('access_token='))?.split('=')[1]
-
-        if (!token) {
-          console.error('No authentication token found')
-          setUserHackathons([])
-          setIsLoadingHackathons(false)
-          return
-        }
-
-        // Use the existing API endpoint for user's hackathons
-        const response = await fetch('http://localhost:8000/api/hackathons/my-hackathons', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          },
-          credentials: 'include'
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          console.log('Hackathons API response:', data)
-          
-          // Extract hackathons from response and map to sidebar format
-          const hackathons = (data.hackathons || []).map((hackathon: any) => ({
-            id: hackathon.id,
-            title: hackathon.title,
-            slug: hackathon.slug || hackathon.id // fallback to id if no slug
-          }))
-          
-          console.log('Mapped hackathons for sidebar:', hackathons)
-          setUserHackathons(hackathons)
-        } else {
-          console.error('Failed to fetch hackathons:', response.status, response.statusText)
-          setUserHackathons([])
-        }
+        // Use the new API client that handles 401 automatically
+        const data = await apiClient.get<{hackathons: any[]}>('/hackathons/my-hackathons')
+        
+        console.log('Hackathons API response:', data)
+        
+        // Extract hackathons from response and map to sidebar format
+        const hackathons = (data.hackathons || []).map((hackathon: any) => ({
+          id: hackathon.id,
+          title: hackathon.title,
+          slug: hackathon.slug || hackathon.id // fallback to id if no slug
+        }))
+        
+        console.log('Mapped hackathons for sidebar:', hackathons)
+        setUserHackathons(hackathons)
+        
       } catch (error) {
         console.error('Failed to fetch user hackathons:', error)
         setUserHackathons([])
